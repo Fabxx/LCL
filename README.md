@@ -1,0 +1,2 @@
+# LLC
+Libretro Launcher Cores

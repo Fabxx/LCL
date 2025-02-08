@@ -167,7 +167,7 @@ bool retro_load_game(const struct retro_game_info *info)
          return NULL;
       }
       
-      snprintf(xenia_canary_exec, MAX_PATH, "%s\\%s --fullscreen=true", xenia_canary_dir, findFileData.cFileName);
+      snprintf(xenia_canary_exec, MAX_PATH, "%s\\%s", xenia_canary_dir, findFileData.cFileName);
       FindClose(hFind);
    #elif defined __APPLE__
       //TODO: Figure path for macOS

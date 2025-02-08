@@ -173,7 +173,7 @@ bool retro_load_game(const struct retro_game_info *info)
       //TODO: Figure path for macOS
    #endif
 
-   // Concat xemu arguments, enclose info->path in double quotes to avoid truncation.
+   // Concat duckstation arguments, enclose info->path in double quotes to avoid truncation.
    const char *args[] = {" ", "--fullscreen ", "\"", info->path, "\""};
 
     strncat(duckstation_exec, args[0], sizeof(args[0]));

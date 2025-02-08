@@ -173,16 +173,14 @@ bool retro_load_game(const struct retro_game_info *info)
       //TODO: Figure path for macOS
    #endif
 
-   const char *args[] = {" ", "--fullscreen=true", info->path};
-   
-    printf("xenia_canary path: %s\n", xenia_canary_exec);
+   // Concat xenia arguments, enclose info->path in double quotes to avoid truncation.
+   const char *args[] = {" ", "--fullscreen=true ", "\"", info->path, "\""};
 
-   // Add space to emulator binary to concat arguments
-  if (info != NULL && info->path != NULL && info->path[0] != '\0') {
-     strcat(xenia_canary_exec, args[0]);
-     strcat(xenia_canary_exec, args[1]);
-     strcat(xenia_canary_exec, args[2]);
-   }
+    strcat(xenia_canary_exec, args[0]); 
+    strcat(xenia_canary_exec, args[1]);
+    strcat(xenia_canary_exec, args[2]); 
+    strcat(xenia_canary_exec, args[3]);
+    strcat(xenia_canary_exec, args[4]);
 
    if (system(xenia_canary_exec) == 0) {
       printf("libretro-xenia_canary-launcher: Finished running xenia_canary.\n");

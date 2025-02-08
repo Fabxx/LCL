@@ -173,11 +173,15 @@ bool retro_load_game(const struct retro_game_info *info)
       //TODO: Figure path for macOS
    #endif
 
-    printf("melonDS path: %s\n", melonDS_exec);
+   // Concat melonDS arguments, enclose info->path in double quotes to avoid truncation.
+   const char *args[] = {" ", "\"", info->path, "\""};
 
-   if (info != NULL && info->path != NULL && info->path[0] != '\0') {
-      sprintf(melonDS_exec, "\"%s\"", info->path);
-   }
+    strncat(melonDS_exec, args[0], sizeof(args[0]));
+    strncat(melonDS_exec, args[1], sizeof(args[1])); 
+    strncat(melonDS_exec, args[2], sizeof(args[2])); 
+    strncat(melonDS_exec, args[3], sizeof(args[3]));  
+
+    printf("melonDS path: %s\n", melonDS_exec);
 
    if (system(melonDS_exec) == 0) {
       printf("libretro-melonDS-launcher: Finished running melonDS.\n");

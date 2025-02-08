@@ -176,11 +176,11 @@ bool retro_load_game(const struct retro_game_info *info)
    // Concat xenia arguments, enclose info->path in double quotes to avoid truncation.
    const char *args[] = {" ", "--fullscreen=true ", "\"", info->path, "\""};
 
-    strcat(xenia_canary_exec, args[0]); 
-    strcat(xenia_canary_exec, args[1]);
-    strcat(xenia_canary_exec, args[2]); 
-    strcat(xenia_canary_exec, args[3]);
-    strcat(xenia_canary_exec, args[4]);
+    strncat(xenia_canary_exec, args[0], sizeof(args[0]));
+    strncat(xenia_canary_exec, args[1], sizeof(args[1])); 
+    strncat(xenia_canary_exec, args[2], sizeof(args[2])); 
+    strncat(xenia_canary_exec, args[3], sizeof(args[3])); 
+    strncat(xenia_canary_exec, args[4], sizeof(args[4])); 
 
    if (system(xenia_canary_exec) == 0) {
       printf("libretro-xenia_canary-launcher: Finished running xenia_canary.\n");

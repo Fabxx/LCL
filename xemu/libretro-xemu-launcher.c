@@ -173,11 +173,17 @@ bool retro_load_game(const struct retro_game_info *info)
       //TODO: Figure path for macOS
    #endif
 
-    printf("xemu path: %s\n", xemu_exec);
+   // Concat xemu arguments, enclose info->path in double quotes to avoid truncation.
+   const char *args[] = {" ", "-full-screen=true ", "-dvd_path ", "\"", info->path, "\""};
 
-   if (info != NULL && info->path != NULL && info->path[0] != '\0') {
-      sprintf(xemu_exec, "\"%s\"", info->path);
-   }
+    strncat(xemu_exec, args[0], sizeof(args[0]));
+    strncat(xemu_exec, args[1], sizeof(args[1])); 
+    strncat(xemu_exec, args[2], sizeof(args[2])); 
+    strncat(xemu_exec, args[3], sizeof(args[3])); 
+    strncat(xemu_exec, args[4], sizeof(args[4]));
+    strncat(xemu_exec, args[5], sizeof(args[5])); 
+
+    printf("xemu path: %s\n", xemu_exec);
 
    if (system(xemu_exec) == 0) {
       printf("libretro-xemu-launcher: Finished running xemu.\n");

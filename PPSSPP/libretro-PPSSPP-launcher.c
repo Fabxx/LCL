@@ -173,11 +173,22 @@ bool retro_load_game(const struct retro_game_info *info)
       //TODO: Figure path for macOS
    #endif
 
-    printf("PPSSPP path: %s\n", PPSSPP_exec);
+   // Concat PPSSPP arguments, enclose info->path in double quotes to avoid truncation.
+   const char *args[] = {" ", "\"", info->path, "\""};
 
-   if (info != NULL && info->path != NULL && info->path[0] != '\0') {
-      sprintf(PPSSPP_exec, "\"%s\"", info->path);
+    strncat(PPSSPP_exec, args[0], sizeof(args[0]));
+    strncat(PPSSPP_exec, args[1], sizeof(args[1])); 
+    strncat(PPSSPP_exec, args[2], sizeof(args[2])); 
+    strncat(PPSSPP_exec, args[3], sizeof(args[3]));  
+
+    printf("xemu path: %s\n", PPSSPP_exec);
+
+   if (system(PPSSPP_exec) == 0) {
+      printf("libretro-xemu-launcher: Finished running xemu.\n");
+      return true;
    }
+
+    printf("PPSSPP path: %s\n", PPSSPP_exec);
 
    if (system(PPSSPP_exec) == 0) {
       printf("libretro-PPSSPP-launcher: Finished running PPSSPP.\n");

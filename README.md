@@ -71,3 +71,5 @@ Just copy-paste the png inside the `Thumbnails` folder of retroarch
 
 - RPCS3 Launcher is currently unusable because when creating a playlist you can't filter by `EBOOT.BIN` which is what the emulator currently requires. Until it supports iso/chd
   or any usable format to filter the extension search, it is not possible to create a playlist.
+
+- Some emulators might have multiple exes with the same name, rename/move/delete the executable that you don't need.

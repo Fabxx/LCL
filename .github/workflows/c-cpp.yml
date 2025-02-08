@@ -1,0 +1,141 @@
+name: CI/CD Pipeline for LCL
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0  # Necessario per contare tutte le commit
+
+    - name: Configure Git
+      run: |
+        git pull --rebase origin main
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+    - name: Read and update version
+      id: version
+      run: |
+        git pull --rebase origin main
+
+        BASE_VERSION=0.0.1
+        COMMIT_COUNT=$(git rev-list --count HEAD)
+        NEW_VERSION="${BASE_VERSION}-${COMMIT_COUNT}"
+
+        echo "$NEW_VERSION" > version.txt
+        echo "VERSION=$NEW_VERSION" >> $GITHUB_ENV
+        echo "New version: $NEW_VERSION"
+
+        git add version.txt
+        git commit -m "Update version to $NEW_VERSION" || echo "No changes to commit"
+        git push origin main
+        
+    - name: Create Git tag
+      run: |
+        git tag v${{ env.VERSION }}
+        git push origin v${{ env.VERSION }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential
+
+    - name: Build emulators for Linux
+      run: |
+        mkdir -p output
+        for dir in */; do
+          if [ -f "$dir/Makefile" ]; then
+            echo "Building $dir"
+            make -C "$dir"
+            cp "$dir"/*.so "$dir"/*.info "output"
+          fi
+        done
+
+    - name: Create ZIP archive for Linux
+      run: |
+        mkdir -p Launchers
+        mv output/* Launchers
+        zip -r LCL_linux_x86_64.zip Launchers
+    
+    - name: Upload Linux ZIP release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: v${{ env.VERSION }}
+        files: "LCL_linux_x86_64.zip"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    - name: Setup MSYS2
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: MINGW64
+        install: >-
+          mingw-w64-x86_64-make
+          mingw-w64-x86_64-gcc
+          mingw-w64-x86_64-libsystre
+          base-devel
+        update: true
+
+    - name: Verify make installation
+      run: which make
+      shell: msys2 {0}
+    
+    - name: Read version from commit count
+      id: version
+      run: |
+        BASE_VERSION=0.0.1
+        COMMIT_COUNT=$(git rev-list --count HEAD)
+        NEW_VERSION="${BASE_VERSION}-${COMMIT_COUNT}"
+        echo "VERSION=$NEW_VERSION" >> $GITHUB_ENV
+      shell: bash
+
+    - name: Build emulators for Windows
+      run: |
+        mkdir -p output
+        for dir in */; do
+          if [ -f "$dir/Makefile" ]; then
+            echo "Building $dir"
+            make -C "$dir"
+            cp "$dir"/*.dll "$dir"/*.info "output" || true
+          fi
+        done
+      shell: msys2 {0}
+      
+    - name: Create ZIP archive for Windows
+      run: |
+        mkdir Launchers
+        move output/* Launchers
+        Compress-Archive -Path Launchers -DestinationPath LCL_win64.zip
+    
+    - name: Upload Windows ZIP release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: v${{ env.VERSION }}
+        files: "LCL_win64.zip"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

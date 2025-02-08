@@ -1,4 +1,4 @@
-# libretro-launcher-cores
+# libretro-core-launchers
 Custom launchers to allow the execution of emulators instead of integrated cores.
 
 # Setup

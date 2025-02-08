@@ -1,6 +1,12 @@
 # libretro-core-launchers
 Custom launchers to allow the execution of emulators instead of integrated cores.
 
+Initially based on this repo: https://github.com/new-penguin/libretro-xemu-launcher-antimicrox
+
+The code has been refactored to add support to windows/Linux in a more generic way.
+
+macOS will come later.
+
 # Setup
 
 The cores search automatically in the default path of retroarch.

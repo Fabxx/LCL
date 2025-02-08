@@ -34,8 +34,8 @@ jobs:
         git pull --rebase origin main
 
         BASE_VERSION=0.0.1
-        COMMIT_COUNT=$(git rev-list --count HEAD)
-        NEW_VERSION="${BASE_VERSION}-${COMMIT_COUNT}"
+        COMMIT_HASH=$(git rev-parse --short HEAD)
+        NEW_VERSION="${BASE_VERSION}-${COMMIT_HASH}"
 
         echo "$NEW_VERSION" > version.txt
         echo "VERSION=$NEW_VERSION" >> $GITHUB_ENV
@@ -109,8 +109,8 @@ jobs:
       id: version
       run: |
         BASE_VERSION=0.0.1
-        COMMIT_COUNT=$(git rev-list --count HEAD)
-        NEW_VERSION="${BASE_VERSION}-${COMMIT_COUNT}"
+        COMMIT_HASH=$(git rev-parse --short HEAD)
+        NEW_VERSION="${BASE_VERSION}-${COMMIT_HASH}"
         echo "VERSION=$NEW_VERSION" >> $GITHUB_ENV
       shell: bash
 

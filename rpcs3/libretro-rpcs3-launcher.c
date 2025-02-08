@@ -176,11 +176,9 @@ bool retro_load_game(const struct retro_game_info *info)
    // Concat xemu arguments, enclose info->path in double quotes to avoid truncation.
    const char *args[] = {" ", "--no-gui ", "\"", info->path, "\""};
 
-    strncat(rpcs3_exec, args[0], sizeof(args[0]));
-    strncat(rpcs3_exec, args[1], sizeof(args[1])); 
-    strncat(rpcs3_exec, args[2], sizeof(args[2])); 
-    strncat(rpcs3_exec, args[3], sizeof(args[3])); 
-    strncat(rpcs3_exec, args[4], sizeof(args[4]));
+    for (size_t i = 0; i < 5; i++) {
+    strncat(rpcs3_exec, args[i], strlen(args[i]));
+}
 
     printf("rpcs3 path: %s\n", rpcs3_exec);
 

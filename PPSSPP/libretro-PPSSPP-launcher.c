@@ -176,10 +176,9 @@ bool retro_load_game(const struct retro_game_info *info)
    // Concat PPSSPP arguments, enclose info->path in double quotes to avoid truncation.
    const char *args[] = {" ", "\"", info->path, "\""};
 
-    strncat(PPSSPP_exec, args[0], sizeof(args[0]));
-    strncat(PPSSPP_exec, args[1], sizeof(args[1])); 
-    strncat(PPSSPP_exec, args[2], sizeof(args[2])); 
-    strncat(PPSSPP_exec, args[3], sizeof(args[3]));  
+    for (size_t i = 0; i < 4; i++) {
+    strncat(PPSSPP_exec, args[i], strlen(args[i]));
+}
 
     printf("xemu path: %s\n", PPSSPP_exec);
 

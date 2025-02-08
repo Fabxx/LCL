@@ -176,12 +176,9 @@ bool retro_load_game(const struct retro_game_info *info)
    // Concat lime3ds arguments, enclose info->path in double quotes to avoid truncation.
    const char *args[] = {" ", "-f ", "-g ", "\"", info->path, "\""};
 
-    strncat(lime3ds_exec, args[0], sizeof(args[0]));
-    strncat(lime3ds_exec, args[1], sizeof(args[1])); 
-    strncat(lime3ds_exec, args[2], sizeof(args[2])); 
-    strncat(lime3ds_exec, args[3], sizeof(args[3])); 
-    strncat(lime3ds_exec, args[4], sizeof(args[4]));
-    strncat(lime3ds_exec, args[5], sizeof(args[5])); 
+    for (size_t i = 0; i < 6; i++) {
+       strncat(lime3ds_exec, args[i], strlen(args[i]));
+   }
 
     printf("lime3ds path: %s\n", lime3ds_exec);
 

@@ -176,10 +176,9 @@ bool retro_load_game(const struct retro_game_info *info)
    // Concat melonDS arguments, enclose info->path in double quotes to avoid truncation.
    const char *args[] = {" ", "\"", info->path, "\""};
 
-    strncat(melonDS_exec, args[0], sizeof(args[0]));
-    strncat(melonDS_exec, args[1], sizeof(args[1])); 
-    strncat(melonDS_exec, args[2], sizeof(args[2])); 
-    strncat(melonDS_exec, args[3], sizeof(args[3]));  
+   for (size_t i = 0; i < 4; i++) {
+    strncat(melonDS_exec, args[i], strlen(args[i]));
+   } 
 
     printf("melonDS path: %s\n", melonDS_exec);
 

@@ -174,7 +174,7 @@ bool retro_load_game(const struct retro_game_info *info)
    #endif
 
    // Concat xemu arguments, enclose info->path in double quotes to avoid truncation.
-   const char *args[] = {" ", "-full-screen=true ", "-dvd_path ", "\"", info->path, "\""};
+   const char *args[] = {" ", "-full-screen ", "-dvd_path ", "\"", info->path, "\""};
 
     for (size_t i = 0; i < 6; i++) {
     strncat(xemu_exec, args[i], strlen(args[i]));

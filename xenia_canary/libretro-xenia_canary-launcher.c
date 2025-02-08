@@ -173,7 +173,7 @@ bool retro_load_game(const struct retro_game_info *info)
       //TODO: Figure path for macOS
    #endif
 
-   const char *args[] = {" ", --fullscreen=true ", info->path};
+   const char *args[] = {" ", "--fullscreen=true", info->path};
    
     printf("xenia_canary path: %s\n", xenia_canary_exec);
 

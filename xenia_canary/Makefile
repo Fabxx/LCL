@@ -111,7 +111,7 @@ else
    CFLAGS += -O3
 endif
 
-OBJECTS := libretro-xenia-canary-launcher.o
+OBJECTS := libretro-xenia_canary-launcher.o
 CFLAGS += -Wall -pedantic $(fpic)
 
 ifneq (,$(findstring qnx,$(platform)))

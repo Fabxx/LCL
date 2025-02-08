@@ -175,8 +175,8 @@ bool retro_load_game(const struct retro_game_info *info)
 
     printf("xenia_canary path: %s\n", xenia_canary_exec);
 
-   if (info != NULL && info->path != NULL && info->path[0] != '\0') {
-      sprintf(xenia_canary_exec, "\"%s\"", info->path);
+  if (info != NULL && info->path != NULL && info->path[0] != '\0') {
+   snprintf(xenia_canary_exec, sizeof(xenia_canary_exec), "\"%s\" --fullscreen \"%s\"", xenia_canary_exec, info->path);
    }
 
    if (system(xenia_canary_exec) == 0) {

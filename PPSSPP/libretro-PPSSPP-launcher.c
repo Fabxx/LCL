@@ -10,6 +10,9 @@
    #include <windows.h>
 #elif defined __linux__ || __APPLE__
    #include <glob.h>
+   #include <sys/types.h>
+   #include <sys/stat.h>
+   #include <unistd.h>
 #endif
 
 static uint32_t *frame_buf;
@@ -52,7 +55,7 @@ void retro_get_system_info(struct retro_system_info *info)
    info->library_name     = "PPSSPP Launcher";
    info->library_version  = "0.1a";
    info->need_fullpath    = true;
-   info->valid_extensions = "iso";
+   info->valid_extensions = "elf|iso|cso|prx|pbp|chd";
 }
 
 static retro_video_refresh_t video_cb;
@@ -141,15 +144,40 @@ void retro_run(void)
 
 /**
  * libretro callback; Called when a game is to be loaded.
+ * If under Linux resolve HOME path, apply regex search with glob for the 
+   binary to let the user use any binary with/without extension
+   filter possible folders that have the same binary name
+   save final binary path.
+
+   If under Windows, search directly for the file type
+   filtered by base name of the emulator + *.exe
+
+
+   Then attach ROM absolute path contained in info->path in double quoted
+   strings for system() function, avoids truncation.
  */
 bool retro_load_game(const struct retro_game_info *info)
 {
    #ifdef __linux__
-      char PPSSPP_exec[512];
-      glob_t buf;
 
-      if (glob("~/.config/retroarch/system/PPSSPP/PPSSPP*.*", 0, NULL, &buf) == 0) {
-         snprintf(PPSSPP_exec, sizeof(PPSSPP_exec), "%s", buf.gl_pathv[0]);
+      glob_t buf;
+      struct stat path_stat;
+      char path[512] = "";
+      char PPSSPP_exec[512] = "";
+      const char *home = getenv("HOME");
+
+      if (!home) {
+         return false;
+      }
+      snprintf(path, sizeof(path), "%s/.config/retroarch/system/PPSSPP/PPSSPP*", home);
+
+      if (glob(path, 0, NULL, &buf) == 0) {
+         for (size_t i = 0; i < buf.gl_pathc; i++) {
+               if (stat(buf.gl_pathv[i], &path_stat) == 0 && !S_ISDIR(path_stat.st_mode)) {
+                  snprintf(PPSSPP_exec, sizeof(PPSSPP_exec), "%s", buf.gl_pathv[i]);
+                  break;
+               }
+         }
          globfree(&buf);
       }
    #elif defined __WIN32__
@@ -172,20 +200,12 @@ bool retro_load_game(const struct retro_game_info *info)
    #elif defined __APPLE__
       //TODO: Figure path for macOS
    #endif
-
-   // Concat PPSSPP arguments, enclose info->path in double quotes to avoid truncation.
+   
    const char *args[] = {" ", "\"", info->path, "\""};
 
-    for (size_t i = 0; i < 4; i++) {
+   for (size_t i = 0; i < 4; i++) {
     strncat(PPSSPP_exec, args[i], strlen(args[i]));
-}
-
-    printf("xemu path: %s\n", PPSSPP_exec);
-
-   if (system(PPSSPP_exec) == 0) {
-      printf("libretro-PPSSPP-launcher: Finished running PPSSPP.\n");
-      return true;
-   }
+   } 
 
     printf("PPSSPP path: %s\n", PPSSPP_exec);
 

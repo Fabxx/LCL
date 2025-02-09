@@ -56,15 +56,10 @@ Just copy-paste the png inside the `thumbnails` folder of retroarch
 
 # Creating a playlist
 
-- Use manual scan, if the system name it's not available then choose `custom` and type your custom name.
+- You can use `auto` or `manual` scan.
 
-- In case of the Xbox 360 playlist, the core has the associated icon in the `.info` file
-
-- add your rom extensions
-
-- Associate the launcher core
-
-- Scan and play.
+- In case of the Xbox 360 playlist, you need to apply manual scan, and give a custom playlist name like `Microsoft - Xbox 360`
+  supported extensions are `|xex|iso|zar`. Then associate the launcher core, scan and play.
 
 # NOTES
 

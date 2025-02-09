@@ -20,8 +20,29 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
       with:
-        fetch-depth: 0  # Necessario per contare tutte le commit
+        fetch-depth: 0
 
+    - name: Check modified files
+      id: check_files
+      run: |
+        CHANGED_FILES=$(git diff --name-only HEAD^ HEAD)
+        echo "Changed files: $CHANGED_FILES"
+
+        BLACKLIST=("README.md" "LICENSE" ".github/workflows/c-cpp.yml")
+        INDEX=0
+
+        for file in $CHANGED_FILES; do
+          if [[ ! " ${BLACKLIST[@]} " =~ " $file " ]]; then
+            INDEX=$((INDEX++))
+          fi
+        done
+
+        if [[ "$INDEX" -eq 0 ]]; then
+          echo "Only ignored files changed, skipping release."
+          exit 0
+        fi
+      shell: bash
+    
     - name: Configure Git
       run: |
         git pull --rebase origin main
@@ -32,19 +53,16 @@ jobs:
       id: version
       run: |
         git pull --rebase origin main
-
         BASE_VERSION=0.0.1
         COMMIT_HASH=$(git rev-parse --short HEAD)
         NEW_VERSION="${BASE_VERSION}-${COMMIT_HASH}"
-
         echo "$NEW_VERSION" > version.txt
         echo "VERSION=$NEW_VERSION" >> $GITHUB_ENV
         echo "New version: $NEW_VERSION"
-
         git add version.txt
         git commit -m "Update version to $NEW_VERSION" || echo "No changes to commit"
         git push origin main
-        
+
     - name: Create Git tag
       run: |
         git tag v${{ env.VERSION }}

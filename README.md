@@ -33,13 +33,15 @@ melonDS
 
 then download the emulator you want and drag & drop it in the respective created folder.
 
-# Core files installation
+# Core installation [Windows]
 
-`.dll` or `.so` files must go in `cores` folder of retroarch
+`.dll` files must go in `cores` folder of retroarch
 
 `.info` files must go in `info` folder
 
-The cores are programmed to search in both windows/linux the binary to execute, so no need to worry about the executable/binary name or extensions.
+# Core Installation [Linux]
+
+both `.so` and `.info` files must go in `cores` folder of retroarch
 
 
 # Playlist contorller icon

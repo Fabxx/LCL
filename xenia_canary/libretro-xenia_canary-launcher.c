@@ -149,7 +149,7 @@ bool retro_load_game(const struct retro_game_info *info)
       glob_t buf;
 
       if (glob("~/.config/retroarch/system/xenia_canary/xenia_canary*.*", 0, NULL, &buf) == 0) {
-         snprintf(xenia_canary_exec, sizeof(xenia_canary_exec), "%s", buf.gl_pathv[0]);
+         snprintf(xenia_canary_exec, sizeof(xenia_canary_exec), "wine %s", buf.gl_pathv[0]);
          globfree(&buf);
       }
    #elif defined __WIN32__

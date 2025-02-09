@@ -28,18 +28,18 @@ jobs:
         CHANGED_FILES=$(git diff --name-only HEAD^ HEAD)
         echo "Changed files: $CHANGED_FILES"
 
-        BLACKLIST=("README.md" "LICENSE" ".github/workflows/c-cpp.yml")
-        INDEX=0
+        IGNORED_FILES=("README.md" "LICENSE" ".github/workflows/ci.yml")
+        NON_IGNORED_COUNT=0
 
         for file in $CHANGED_FILES; do
-          if [[ ! " ${BLACKLIST[@]} " =~ " $file " ]]; then
-            INDEX=$((INDEX++))
+          if [[ ! " ${IGNORED_FILES[@]} " =~ " $file " ]]; then
+            NON_IGNORED_COUNT=$((NON_IGNORED_COUNT + 1))
           fi
         done
 
-        if [[ "$INDEX" -eq 0 ]]; then
+        if [[ "$NON_IGNORED_COUNT" -eq 0 ]]; then
           echo "Only ignored files changed, skipping release."
-          exit 0
+          exit 78  # Skips the job without failing
         fi
       shell: bash
     
@@ -108,6 +108,27 @@ jobs:
       uses: actions/checkout@v3
       with:
         fetch-depth: 0
+
+    - name: Check modified files
+      id: check_files
+      run: |
+        $CHANGED_FILES = git diff --name-only HEAD~1 HEAD
+        echo "Changed files: $CHANGED_FILES"
+
+        $IGNORED_FILES = @("README.md", "LICENSE", ".github/workflows/ci.yml")
+        $NON_IGNORED_COUNT = 0
+
+        foreach ($file in $CHANGED_FILES) {
+          if ($IGNORED_FILES -notcontains $file) {
+            $NON_IGNORED_COUNT++
+          }
+        }
+
+        if ($NON_IGNORED_COUNT -eq 0) {
+          echo "Only ignored files changed, skipping release."
+          exit 78
+        }
+      shell: pwsh
 
     - name: Setup MSYS2
       uses: msys2/setup-msys2@v2

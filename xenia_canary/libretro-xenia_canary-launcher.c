@@ -169,6 +169,17 @@ bool retro_load_game(const struct retro_game_info *info)
       if (!home) {
          return false;
       }
+
+      if (system("wine") != 0) {
+         printf("You need to install wine first.\n");
+         exit(127);
+      }
+
+      if (system("winetricks --force dxvk vkd3d") != 0) {
+         printf("You need winetricks to install dependencies to run xenia.\n");
+         exit(127);
+      }
+      
       snprintf(path, sizeof(path), "%s/.config/retroarch/system/xenia_canary/xenia_canary*", home);
 
       if (glob(path, 0, NULL, &buf) == 0) {

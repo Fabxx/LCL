@@ -4,7 +4,6 @@
 #include <stdarg.h>
 #include <string.h>
 #include <math.h>
-#include <threads.h>
 #include "libretro.h"
 
 #ifdef __WIN32__

@@ -46,13 +46,13 @@ both `.so` and `.info` files must go in `cores` folder of retroarch
 
 # Playlist contorller icon
 
-I have provided a thumbnails folder with pngs inside for those console that don't have an icon, for nor this is the list:
+I have provided a thumbnails folder with pngs inside for those console that don't have an icon, for now this is the list:
 
 ```
 Xbox 360.png
 ```
 
-Just copy-paste the png inside the `Thumbnails` folder of retroarch
+Just copy-paste the png inside the `thumbnails` folder of retroarch
 
 # Creating a playlist
 
@@ -69,9 +69,10 @@ Just copy-paste the png inside the `Thumbnails` folder of retroarch
 # NOTES
 
 - These cores do not integrate retroarch menu when running the emulators, you will have to use the integrated emulator menus if the devs have provided them.
-  Most of the menus already have controller support. Besides you must configure the emulator as usual (provde BIOS files, HDD image and such)
+  Most of the menus already have controller support. Besides you must configure the standalone emulators as usual (provide BIOS files and such.)
 
 - RPCS3 Launcher is currently unusable because when creating a playlist you can't filter by `EBOOT.BIN` which is what the emulator currently requires. Until it supports iso/chd
-  or any usable format to filter the extension search, it is not possible to create a playlist.
+  or any usable format to filter the extension search, it is not possible to create a playlist. You can filter by `.bin` but that would find thousands of files,
+  since RPCS3 requires you to decrypt and unpack the game files at the current state.
 
-- Some emulators might have multiple exes with the same name, rename/move/delete the executable that you don't need.
+- Some emulators might have multiple exes with the same name (example: PPSSPPWindows.exe and PPSSPPWindows64.exe), rename/move/delete the executable that you don't need.

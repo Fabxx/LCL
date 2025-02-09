@@ -183,7 +183,7 @@ bool retro_load_game(const struct retro_game_info *info)
     printf("xemu path: %s\n", PPSSPP_exec);
 
    if (system(PPSSPP_exec) == 0) {
-      printf("libretro-xemu-launcher: Finished running xemu.\n");
+      printf("libretro-PPSSPP-launcher: Finished running PPSSPP.\n");
       return true;
    }
 

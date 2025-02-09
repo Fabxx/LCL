@@ -28,7 +28,7 @@ jobs:
         CHANGED_FILES=$(git diff --name-only HEAD^ HEAD)
         echo "Changed files: $CHANGED_FILES"
 
-        IGNORED_FILES=("README.md" "LICENSE" ".github/workflows/ci.yml")
+        IGNORED_FILES=("README.md" "LICENSE" ".github/workflows/c-cpp.yml")
         NON_IGNORED_COUNT=0
 
         for file in $CHANGED_FILES; do
@@ -115,7 +115,7 @@ jobs:
         $CHANGED_FILES = git diff --name-only HEAD~1 HEAD
         echo "Changed files: $CHANGED_FILES"
 
-        $IGNORED_FILES = @("README.md", "LICENSE", ".github/workflows/ci.yml")
+        $IGNORED_FILES = @("README.md", "LICENSE", ".github/workflows/c-cpp.yml")
         $NON_IGNORED_COUNT = 0
 
         foreach ($file in $CHANGED_FILES) {

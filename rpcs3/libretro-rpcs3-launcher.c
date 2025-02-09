@@ -10,6 +10,9 @@
    #include <windows.h>
 #elif defined __linux__ || __APPLE__
    #include <glob.h>
+   #include <sys/types.h>
+   #include <sys/stat.h>
+   #include <unistd.h>
 #endif
 
 static uint32_t *frame_buf;
@@ -141,15 +144,40 @@ void retro_run(void)
 
 /**
  * libretro callback; Called when a game is to be loaded.
+ * If under Linux resolve HOME path, apply regex search with glob for the 
+   binary to let the user use any binary with/without extension
+   filter possible folders that have the same binary name
+   save final binary path.
+
+   If under Windows, search directly for the file type
+   filtered by base name of the emulator + *.exe
+
+
+   Then attach ROM absolute path contained in info->path in double quoted
+   strings for system() function, avoids truncation.
  */
 bool retro_load_game(const struct retro_game_info *info)
 {
    #ifdef __linux__
-      char rpcs3_exec[512];
-      glob_t buf;
 
-      if (glob("~/.config/retroarch/system/rpcs3/rpcs3*.*", 0, NULL, &buf) == 0) {
-         snprintf(rpcs3_exec, sizeof(rpcs3_exec), "%s", buf.gl_pathv[0]);
+      glob_t buf;
+      struct stat path_stat;
+      char path[512] = "";
+      char rpcs3_exec[512] = "";
+      const char *home = getenv("HOME");
+
+      if (!home) {
+         return false;
+      }
+      snprintf(path, sizeof(path), "%s/.config/retroarch/system/rpcs3/rpcs3*", home);
+
+      if (glob(path, 0, NULL, &buf) == 0) {
+         for (size_t i = 0; i < buf.gl_pathc; i++) {
+               if (stat(buf.gl_pathv[i], &path_stat) == 0 && !S_ISDIR(path_stat.st_mode)) {
+                  snprintf(rpcs3_exec, sizeof(rpcs3_exec), "%s", buf.gl_pathv[i]);
+                  break;
+               }
+         }
          globfree(&buf);
       }
    #elif defined __WIN32__
@@ -172,13 +200,12 @@ bool retro_load_game(const struct retro_game_info *info)
    #elif defined __APPLE__
       //TODO: Figure path for macOS
    #endif
+   
+   const char *args[] = {" ", "\"", info->path, "\""};
 
-   // Concat xemu arguments, enclose info->path in double quotes to avoid truncation.
-   const char *args[] = {" ", "--no-gui ", "\"", info->path, "\""};
-
-    for (size_t i = 0; i < 5; i++) {
+   for (size_t i = 0; i < 4; i++) {
     strncat(rpcs3_exec, args[i], strlen(args[i]));
-}
+   } 
 
     printf("rpcs3 path: %s\n", rpcs3_exec);
 

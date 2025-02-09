@@ -10,6 +10,9 @@
    #include <windows.h>
 #elif defined __linux__ || __APPLE__
    #include <glob.h>
+   #include <sys/types.h>
+   #include <sys/stat.h>
+   #include <unistd.h>
 #endif
 
 static uint32_t *frame_buf;
@@ -52,7 +55,7 @@ void retro_get_system_info(struct retro_system_info *info)
    info->library_name     = "lime3ds Launcher";
    info->library_version  = "0.1a";
    info->need_fullpath    = true;
-   info->valid_extensions = "3ds|cia";
+   info->valid_extensions = "3ds|3dsx|elf|axf|cci|cxi|app";
 }
 
 static retro_video_refresh_t video_cb;
@@ -141,15 +144,40 @@ void retro_run(void)
 
 /**
  * libretro callback; Called when a game is to be loaded.
+ * If under Linux resolve HOME path, apply regex search with glob for the 
+   binary to let the user use any binary with/without extension
+   filter possible folders that have the same binary name
+   save final binary path.
+
+   If under Windows, search directly for the file type
+   filtered by base name of the emulator + *.exe
+
+
+   Then attach ROM absolute path contained in info->path in double quoted
+   strings for system() function, avoids truncation.
  */
 bool retro_load_game(const struct retro_game_info *info)
 {
    #ifdef __linux__
-      char lime3ds_exec[512];
-      glob_t buf;
 
-      if (glob("~/.config/retroarch/system/lime3ds/lime3ds*.*", 0, NULL, &buf) == 0) {
-         snprintf(lime3ds_exec, sizeof(lime3ds_exec), "%s", buf.gl_pathv[0]);
+      glob_t buf;
+      struct stat path_stat;
+      char path[512] = "";
+      char lime3ds_exec[512] = "";
+      const char *home = getenv("HOME");
+
+      if (!home) {
+         return false;
+      }
+      snprintf(path, sizeof(path), "%s/.config/retroarch/system/lime3ds/lime3ds*", home);
+
+      if (glob(path, 0, NULL, &buf) == 0) {
+         for (size_t i = 0; i < buf.gl_pathc; i++) {
+               if (stat(buf.gl_pathv[i], &path_stat) == 0 && !S_ISDIR(path_stat.st_mode)) {
+                  snprintf(lime3ds_exec, sizeof(lime3ds_exec), "%s", buf.gl_pathv[i]);
+                  break;
+               }
+         }
          globfree(&buf);
       }
    #elif defined __WIN32__
@@ -172,13 +200,12 @@ bool retro_load_game(const struct retro_game_info *info)
    #elif defined __APPLE__
       //TODO: Figure path for macOS
    #endif
+   
+   const char *args[] = {" ", "\"", info->path, "\""};
 
-   // Concat lime3ds arguments, enclose info->path in double quotes to avoid truncation.
-   const char *args[] = {" ", "-f ", "-g ", "\"", info->path, "\""};
-
-    for (size_t i = 0; i < 6; i++) {
-       strncat(lime3ds_exec, args[i], strlen(args[i]));
-   }
+   for (size_t i = 0; i < 4; i++) {
+    strncat(lime3ds_exec, args[i], strlen(args[i]));
+   } 
 
     printf("lime3ds path: %s\n", lime3ds_exec);
 

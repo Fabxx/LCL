@@ -10,6 +10,9 @@
    #include <windows.h>
 #elif defined __linux__ || __APPLE__
    #include <glob.h>
+   #include <sys/types.h>
+   #include <sys/stat.h>
+   #include <unistd.h>
 #endif
 
 static uint32_t *frame_buf;
@@ -141,29 +144,40 @@ void retro_run(void)
 
 /**
  * libretro callback; Called when a game is to be loaded.
+ * If under Linux resolve HOME path, apply regex search with glob for the 
+   binary to let the user use any binary with/without extension
+   filter possible folders that have the same binary name
+   save final binary path.
+
+   If under Windows, search directly for the file type
+   filtered by base name of the emulator + *.exe
+
+
+   Then attach ROM absolute path contained in info->path in double quoted
+   strings for system() function, avoids truncation.
  */
 bool retro_load_game(const struct retro_game_info *info)
 {
    #ifdef __linux__
 
-      const char *cmds[] = {"wineboot", "winetricks", "winetricks\\ --force\\ dxvk\\ vkd3d"};
-
-      if (system(cmds[0]) != 0) {
-         printf("You must have wine to execute xenia canary under Linux.\n");
-         exit(127);
-      } else if (system(cmds[1]) != 0) {
-         printf("You must have winetricks to install dxvk and vkd3d.\n");
-         exit(127);
-      } else if (system(cmds[2]) != 0) {
-         printf("could not install dxvk vkd3d, aborting.\n");
-         exit(1);
-      }
-
-      char xenia_canary_exec[512];
       glob_t buf;
+      struct stat path_stat;
+      char path[512] = "";
+      char xenia_canary_exec[512] = "";
+      const char *home = getenv("HOME");
 
-      if (glob("~/.config/retroarch/system/xenia_canary/xenia_canary*.*", 0, NULL, &buf) == 0) {
-         snprintf(xenia_canary_exec, sizeof(xenia_canary_exec), "wine %s", buf.gl_pathv[0]);
+      if (!home) {
+         return false;
+      }
+      snprintf(path, sizeof(path), "%s/.config/retroarch/system/xenia_canary/xenia_canary*", home);
+
+      if (glob(path, 0, NULL, &buf) == 0) {
+         for (size_t i = 0; i < buf.gl_pathc; i++) {
+               if (stat(buf.gl_pathv[i], &path_stat) == 0 && !S_ISDIR(path_stat.st_mode)) {
+                  snprintf(xenia_canary_exec, sizeof(xenia_canary_exec), "%s", buf.gl_pathv[i]);
+                  break;
+               }
+         }
          globfree(&buf);
       }
    #elif defined __WIN32__
@@ -186,13 +200,14 @@ bool retro_load_game(const struct retro_game_info *info)
    #elif defined __APPLE__
       //TODO: Figure path for macOS
    #endif
+   
+   const char *args[] = {" ", "\"", info->path, "\""};
 
-   // Concat xenia arguments, enclose info->path in double quotes to avoid truncation.
-   const char *args[] = {" ", "--fullscreen=true ", "\"", info->path, "\""};
-
-    for (size_t i = 0; i < 5; i++) {
+   for (size_t i = 0; i < 4; i++) {
     strncat(xenia_canary_exec, args[i], strlen(args[i]));
-}
+   } 
+
+    printf("xenia_canary path: %s\n", xenia_canary_exec);
 
    if (system(xenia_canary_exec) == 0) {
       printf("libretro-xenia_canary-launcher: Finished running xenia_canary.\n");

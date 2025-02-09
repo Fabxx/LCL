@@ -4,6 +4,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <math.h>
+#include <threads.h>
 #include "libretro.h"
 
 #ifdef __WIN32__
@@ -145,6 +146,20 @@ void retro_run(void)
 bool retro_load_game(const struct retro_game_info *info)
 {
    #ifdef __linux__
+
+      const char *cmds[] = {"wineboot", "winetricks", "winetricks\\ --force\\ dxvk\\ vkd3d"};
+
+      if (system(cmds[0]) != 0) {
+         printf("You must have wine to execute xenia canary under Linux.\n");
+         exit(127);
+      } else if (system(cmds[1]) != 0) {
+         printf("You must have winetricks to install dxvk and vkd3d.\n");
+         exit(127);
+      } else if (system(cmds[2]) != 0) {
+         printf("could not install dxvk vkd3d, aborting.\n");
+         exit(1);
+      }
+
       char xenia_canary_exec[512];
       glob_t buf;
 

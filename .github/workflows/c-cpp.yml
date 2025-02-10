@@ -208,7 +208,7 @@ jobs:
     - name: Upload macOS ZIP release
       uses: softprops/action-gh-release@v1
       with:
-        tag_name: latest
+        tag_name: v${{ env.VERSION }}
         files: "LCL_macOS_x86_64.zip"
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

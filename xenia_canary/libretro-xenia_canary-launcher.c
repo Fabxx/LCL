@@ -146,6 +146,9 @@ void retro_run(void)
 /*
    Linux/macOS: Check if file is ELF, then use it.
 */
+
+#if defined __linux__ || __APPLE__
+
  int is_elf_executable(const char *filename) {
     
     unsigned char magic[4];
@@ -160,7 +163,7 @@ void retro_run(void)
 
     return (read_bytes == 4 && memcmp(magic, ELF_MAGIC, 4) == 0);
 }
-
+#endif
 /**
  * libretro callback; Called when a game is to be loaded.
  *

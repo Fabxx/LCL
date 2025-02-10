@@ -7,6 +7,7 @@
 
 #ifdef __WIN32__
    #include <windows.h>
+   #include <direct.h>
 #elif defined __linux__ || __APPLE__
    #define ELF_MAGIC "\x7F""ELF"
    #include <glob.h>

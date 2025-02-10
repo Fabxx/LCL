@@ -201,6 +201,15 @@ jobs:
             cp "$dir"/*.dylib "$dir"/*.info cores || true
           fi
         done
+        
+    - name: Read version from commit count
+      id: version
+      run: |
+        BASE_VERSION=0.0.1
+        COMMIT_HASH=$(git rev-parse --short HEAD)
+        NEW_VERSION="${BASE_VERSION}-${COMMIT_HASH}"
+        echo "VERSION=$NEW_VERSION" >> $GITHUB_ENV
+      shell: bash
     
     - name: Create ZIP archive for macOS
       run: zip -r LCL_macOS_x86_64.zip cores

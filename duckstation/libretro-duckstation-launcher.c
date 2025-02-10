@@ -147,7 +147,6 @@ void retro_run(void)
 /*
    Linux/macOS: Check if file is ELF, then use it.
 */
-
 #if defined __linux__ || __APPLE__
 
 static int is_elf_executable(const char *filename) {

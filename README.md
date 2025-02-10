@@ -5,8 +5,6 @@ Initially based on this repo: https://github.com/new-penguin/libretro-xemu-launc
 
 The code has been refactored to add support to windows/Linux in a more generic way.
 
-macOS will come later.
-
 # Setup
 
 The cores search automatically in the default path of retroarch.
@@ -15,21 +13,9 @@ The cores search automatically in the default path of retroarch.
 
 - Linux: `~/.config/retroarch/system`
 
-- macOS: TODO
+- macOS: `~/Library/Application Support/RetroArch/system`
 
-for each emulator you must create a folder in `system` like this:
-
-```
-duckstation
-pcsx2
-rpcs3
-PPSSPP
-xemu
-xenia_canary
-mGBA
-lime3ds
-melonDS
-```
+Running a core will generate a folder with the name of the emulator to use.
 
 then download the emulator you want and drag & drop it in the respective created folder.
 
@@ -43,6 +29,9 @@ then download the emulator you want and drag & drop it in the respective created
 
 both `.so` and `.info` files must go in `cores` folder of retroarch
 
+# Core Installation [macOS]
+
+both `.dylib` and `.info` files must go in `cores` folder of retroarch
 
 # Playlist contorller icon
 
@@ -58,8 +47,8 @@ Just copy-paste the png inside the `thumbnails` folder of retroarch
 
 - You can use `auto` or `manual` scan.
 
-- In case of the Xbox 360 playlist, you need to apply manual scan, and give a custom playlist name like `Microsoft - Xbox 360`
-  supported extensions are `|xex|iso|zar`. Then associate the launcher core, scan and play.
+- In case of the Xbox 360 playlist, you need to apply manual scan. Then associate the launcher core, scan and play.
+  until a rdb database is created from the respective dat file of the Xbox 360 library to support auto scan.
 
 # NOTES
 

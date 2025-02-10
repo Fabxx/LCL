@@ -3,16 +3,17 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
-#include <math.h>
 #include "libretro.h"
 
 #ifdef __WIN32__
    #include <windows.h>
 #elif defined __linux__ || __APPLE__
+   #define ELF_MAGIC "\x7F""ELF"
    #include <glob.h>
    #include <sys/types.h>
    #include <sys/stat.h>
    #include <unistd.h>
+   #include <fcntl.h>
 #endif
 
 static uint32_t *frame_buf;
@@ -142,19 +143,39 @@ void retro_run(void)
    environ_cb(RETRO_ENVIRONMENT_SHUTDOWN, NULL);
 }
 
+/*
+   Linux/macOS: Check if file is ELF, then use it.
+*/
+ int is_elf_executable(const char *filename) {
+    
+    unsigned char magic[4];
+    int fd = open(filename, O_RDONLY);
+
+    if (fd < 0) {
+        return 0;
+    }
+
+    ssize_t read_bytes = read(fd, magic, 4);
+    close(fd);
+
+    return (read_bytes == 4 && memcmp(magic, ELF_MAGIC, 4) == 0);
+}
+
 /**
  * libretro callback; Called when a game is to be loaded.
- * If under Linux resolve HOME path, apply regex search with glob for the 
-   binary to let the user use any binary with/without extension
-   filter possible folders that have the same binary name
-   save final binary path.
-
-   If under Windows, search directly for the file type
-   filtered by base name of the emulator + *.exe
-
-
-   Then attach ROM absolute path contained in info->path in double quoted
-   strings for system() function, avoids truncation.
+ *
+ *  - Linux/macOS:
+ *        - resolve HOME path 
+ *        - create dir for emulator files 
+ *        - apply regex search with glob, filter by file and ELF executable
+ *  
+ *  - Windows:
+ *       - create dir for emulator files and bios
+ *       - search for .exe binary with name pattern.
+ *
+ *    
+ * - Final Steps:
+ *       - attach ROM absolute path from info->path in double quotes for system() function, avoids truncation.
  */
 bool retro_load_game(const struct retro_game_info *info)
 {
@@ -162,70 +183,132 @@ bool retro_load_game(const struct retro_game_info *info)
 
       glob_t buf;
       struct stat path_stat;
-      char path[512] = "";
-      char xenia_canary_exec[512] = "";
+      char executable[512] = {0};
+      char path[512] = {0};
       const char *home = getenv("HOME");
-
+      
       if (!home) {
          return false;
       }
-
-      if (system("wine") != 0) {
-         printf("You need to install wine first.\n");
-         exit(127);
-      }
-
-      if (system("winetricks --force dxvk vkd3d") != 0) {
-         printf("You need winetricks to install dependencies to run xenia.\n");
-         exit(127);
-      }
       
-      snprintf(path, sizeof(path), "%s/.config/retroarch/system/xenia_canary/xenia_canary*", home);
+      // Create emulator folder if it doesn't exist
+      snprintf(path, sizeof(path), "%s/.config/retroarch/system/xenia_canary", home);
 
-      if (glob(path, 0, NULL, &buf) == 0) {
+      if (stat(path, &path_stat) != 0) {
+         mkdir(path, 0755);
+         printf("[LAUNCHER-INFO]: emulator folder created in %s\n", path);
+      } else {
+         printf("[LAUNCHER-INFO]: emulator folder already exist\n");
+      }
+
+      // search for binary executable.
+      char tmpList[512] = {0};
+
+      snprintf(tmpList, sizeof(tmpList), "%s/.config/retroarch/system/xenia_canary/xenia_canary*", home);
+
+      if (glob(tmpList, 0, NULL, &buf) == 0) {
          for (size_t i = 0; i < buf.gl_pathc; i++) {
                if (stat(buf.gl_pathv[i], &path_stat) == 0 && !S_ISDIR(path_stat.st_mode)) {
-                  snprintf(xenia_canary_exec, sizeof(xenia_canary_exec), "%s", buf.gl_pathv[i]);
-                  break;
+                  if (is_elf_executable(buf.gl_pathv[i])) {
+                     snprintf(executable, sizeof(executable), "%s", buf.gl_pathv[i]);
+                     printf("[LAUNCHER-INFO]: Found emulator: %s\n", executable);
+                     break;
+                  }
                }
          }
          globfree(&buf);
       }
+
+      if (strlen(executable) == 0) {
+         printf("[LAUNCHER-ERROR]: No executable found, aborting\n");
+         return false;
+      }
+
    #elif defined __WIN32__
       WIN32_FIND_DATA findFileData;
       HANDLE hFind;
-      char xenia_canary_exec[MAX_PATH];
-      char xenia_canary_dir[256] = "C:\\RetroArch-Win64\\system\\xenia_canary";
-      char searchPath[MAX_PATH];
+      char executable[MAX_PATH] = {0};
+      char path[256] = "C:\\RetroArch-Win64\\system\\xenia_canary";
+      char searchPath[MAX_PATH] = {0};
 
-      snprintf(searchPath, MAX_PATH, "%s\\xenia_canary*.exe", xenia_canary_dir);
+       if (GetFileAttributes(path) == INVALID_FILE_ATTRIBUTES) {
+         _mkdir(path);
+          printf("[LAUNCHER-INFO]: emulator folder created in %s\n", path);
+      } else {
+         printf("[LAUNCHER-INFO]: emulator folder already exist\n");
+      }
+
+      snprintf(searchPath, MAX_PATH, "%s\\xenia_canary*.exe", path);
       hFind = FindFirstFile(searchPath, &findFileData);
 
       if (hFind == INVALID_HANDLE_VALUE) {
-         printf("xenia_canary not found!\n");
-         return NULL;
+         printf("[LAUNCHER-ERROR]: No executable found, aborting.\n");
+         return false;
       }
       
-      snprintf(xenia_canary_exec, MAX_PATH, "%s\\%s", xenia_canary_dir, findFileData.cFileName);
+      snprintf(executable, MAX_PATH, "%s\\%s", path, findFileData.cFileName);
       FindClose(hFind);
    #elif defined __APPLE__
-      //TODO: Figure path for macOS
+      
+      glob_t buf;
+      struct stat path_stat;
+      char executable[512] = {0};
+      char path[512] = {0};
+      const char *home = getenv("HOME");
+      
+      if (!home) {
+         return false;
+      }
+      
+      // Create emulator folder if it doesn't exist
+      snprintf(path, sizeof(path), "%s/Library/Application Support/RetroArch/system/xenia_canary", home);
+
+      if (stat(path, &path_stat) != 0) {
+         mkdir(path, 0755);
+         printf("[LAUNCHER-INFO]: emulator folder created in %s\n", path);
+      } else {
+         printf("[LAUNCHER-INFO]: emulator folder already exist\n");
+      }
+
+      // search for binary executable.
+      char tmpList[512] = {0};
+
+      snprintf(tmpList, sizeof(tmpList), "%s/Library/Application Support/RetroArch/system/xenia_canary*", home);
+
+      if (glob(tmpList, 0, NULL, &buf) == 0) {
+         for (size_t i = 0; i < buf.gl_pathc; i++) {
+               if (stat(buf.gl_pathv[i], &path_stat) == 0 && !S_ISDIR(path_stat.st_mode)) {
+                  if (is_elf_executable(buf.gl_pathv[i])) {
+                     snprintf(executable, sizeof(executable), "%s", buf.gl_pathv[i]);
+                     printf("[LAUNCHER-INFO]: Found emulator: %s\n", executable);
+                     break;
+                  }
+               }
+         }
+         globfree(&buf);
+      }
+
+      if (strlen(executable) == 0) {
+         printf("[LAUNCHER-ERROR]: No executable found, aborting\n");
+         return false;
+      }
    #endif
    
-   const char *args[] = {" ", "\"", info->path, "\""};
+   const char *args[] = {" ", "--fullscreen=true" "\"", info->path, "\""};
+   size_t size = sizeof(args)/sizeof(char*);
 
-   for (size_t i = 0; i < 4; i++) {
-    strncat(xenia_canary_exec, args[i], strlen(args[i]));
+   for (size_t i = 0; i < size; i++) {
+    strncat(executable, args[i], strlen(args[i]));
    } 
 
-    printf("xenia_canary path: %s\n", xenia_canary_exec);
+    printf("[LAUNCHER-INFO]: xenia_canary path: %s\n", executable);
 
-   if (system(xenia_canary_exec) == 0) {
-      printf("libretro-xenia_canary-launcher: Finished running xenia_canary.\n");
+   if (system(executable) == 0) {
+      printf("[LAUNCHER-INFO]: Finished running xenia_canary.\n");
       return true;
    }
 
-   printf("libretro-xenia_canary-launcher: Failed running xenia_canary. Place it in the right path and try again\n");
+   printf("[LAUNCHER-INFO]: Failed running xenia_canary.\n");
    return false;
 }
 

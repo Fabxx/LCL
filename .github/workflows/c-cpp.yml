@@ -177,3 +177,38 @@ jobs:
         files: "LCL_win64.zip"
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-macos:
+    runs-on: macos-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    
+    - name: Install dependencies
+      run: |
+        brew install cmake ninja
+    
+    - name: Build emulators for macOS
+      run: |
+        mkdir -p cores
+        for dir in duckstation pcsx2 rpcs3 PPSSPP mGBA lime3ds melonDS xemu; do
+          if [ -d "$dir" ] && [ -f "$dir/Makefile" ]; then
+            echo "Building $dir"
+            make -C "$dir"
+            cp "$dir"/*.dylib "$dir"/*.info cores || true
+          fi
+        done
+    
+    - name: Create ZIP archive for macOS
+      run: zip -r LCL_macOS_x86_64.zip cores
+    
+    - name: Upload macOS ZIP release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: latest
+        files: "LCL_macOS_x86_64.zip"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

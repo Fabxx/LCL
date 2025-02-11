@@ -50,6 +50,23 @@ Just copy-paste the png inside the `thumbnails` folder of retroarch
 - In case of the Xbox 360 playlist, you need to apply manual scan. Then associate the launcher core, scan and play.
   until a rdb database is created from the respective dat file of the Xbox 360 library to support auto scan.
 
+# BIOS Notes
+  - pcsx2 will run the configured BIOS through `run core` with `-bios` flag, but it must be configured first in pcsx2 GUI
+    
+  - Duckstation behaves like pcsx2 for BIOS
+    
+  - mGBA allows to select only the BIOS file with `--bios/-b` flags, but you can run it only from GUI
+ 
+  - melonDS behaves like mGBA
+ 
+  - RPCS3 Requires you to install the firmware and then boot the XMB from GUI
+    
+  - Xemu runs the bios by default if no game is selected. BIOS must be configured from GUI
+    
+  - If no BIOS is configured each emulator will just open the GUI.
+
+  - PPSSPP, xenia_canary, lime3DS do not provide a BIOS functionality yet.
+
 # NOTES
 
 - These cores do not integrate retroarch menu when running the emulators, you will have to use the integrated emulator menus if the devs have provided them.
@@ -59,4 +76,13 @@ Just copy-paste the png inside the `thumbnails` folder of retroarch
   or any usable format to filter the extension search, it is not possible to create a playlist. You can filter by `.bin` but that would find thousands of files,
   since RPCS3 requires you to decrypt and unpack the game files at the current state.
 
+- Xenia canary requires wine and winetricks in order to run under `Linux`
+
 - Some emulators might have multiple exes with the same name (example: PPSSPPWindows.exe and PPSSPPWindows64.exe), rename/move/delete the executable that you don't need.
+
+# Dev notes
+
+Retroarch initializes `info` structure and `info->path` member to get the game to load. If no game is given structure is NULL, if a game is given,
+`info->path` can be passed as argument, both `info` and `info->path` must NOT be NULL.
+
+If no games are expected don't pass info->path, just string arguments.

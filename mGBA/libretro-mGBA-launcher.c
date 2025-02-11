@@ -381,7 +381,8 @@ bool retro_load_game(const struct retro_game_info *info)
 
       if (info == NULL || info->path == NULL) {
          if (strlen(bios) > 0) {
-            const char *args[] = {" ", "-f ", "\"", bios, "\""};
+            // NOTE: mGBA only selects the bios first, cannot run BIOS Directly.
+            const char *args[] = {" ", "-f ", "--bios ", "\"", bios, "\""};
             size_t size = sizeof(args)/sizeof(char*);
             
             for (size_t i = 0; i < size; i++) {

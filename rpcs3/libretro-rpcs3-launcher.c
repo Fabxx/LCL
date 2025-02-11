@@ -235,26 +235,6 @@ bool retro_load_game(const struct retro_game_info *info)
          globfree(&buf);
       }
 
-      // search for BIOS and initialize BIOS path
-
-      char biosList[512] = {0};
-      snprintf(biosList, sizeof(biosList), "%s/.config/retroarch/system/rpcs3/bios/*.[Bb][Ii][Nn]", home);
-
-      if (glob(biosList, 0, NULL, &buf) == 0) {
-         for (size_t i = 0; i < buf.gl_pathc; i++) {
-               if (stat(buf.gl_pathv[i], &path_stat) == 0 && !S_ISDIR(path_stat.st_mode)) {
-                     snprintf(bios, sizeof(bios), "%s", buf.gl_pathv[i]);
-                     printf("[LAUNCHER-INFO]: Found BIOS: %s\n", bios);
-                     break;
-               }
-         }
-         globfree(&buf);
-      }
-
-      if (strlen(bios) == 0) {
-         printf("[LAUNCHER-INFO]: No BIOS given, will boot emulator UI.\n");
-      }
-
       if (strlen(executable) == 0) {
          printf("[LAUNCHER-ERROR]: No executable found, aborting\n");
          return false;
@@ -292,22 +272,12 @@ bool retro_load_game(const struct retro_game_info *info)
       }
 
       snprintf(executable, MAX_PATH, "%s\\%s", emuPath, findFileData.cFileName);
-
-      snprintf(searchPath, MAX_PATH, "%s\\*.bin", biosPath);
-      hFind = FindFirstFile(searchPath, &findFileData);
-
-      if (hFind == INVALID_HANDLE_VALUE) {
-         printf("[LAUNCHER-INFO]: No BIOS given, will boot emulator UI.\n");
-      }
-      
-      snprintf(bios, MAX_PATH, "%s\\%s", biosPath, findFileData.cFileName);
       FindClose(hFind);
    #elif defined __APPLE__
       
       glob_t buf;
       struct stat path_stat;
       char executable[512] = {0};
-      char bios[512] = {0};
       char path[512] = {0};
       const char *home = getenv("HOME");
       
@@ -353,42 +323,13 @@ bool retro_load_game(const struct retro_game_info *info)
          globfree(&buf);
       }
 
-      // search for BIOS and initialize BIOS path
-
-      char biosList[512] = {0};
-      snprintf(biosList, sizeof(biosList), "%s/Library/Application Support/RetroArch/system/rpcs3/bios/*.[Bb][Ii][Nn]", home);
-
-      if (glob(biosList, 0, NULL, &buf) == 0) {
-         for (size_t i = 0; i < buf.gl_pathc; i++) {
-               if (stat(buf.gl_pathv[i], &path_stat) == 0 && !S_ISDIR(path_stat.st_mode)) {
-                     snprintf(bios, sizeof(bios), "%s", buf.gl_pathv[i]);
-                     printf("[LAUNCHER-INFO]: Found BIOS: %s\n", bios);
-                     break;
-               }
-         }
-         globfree(&buf);
-      }
-
-      if (strlen(bios) == 0) {
-         printf("[LAUNCHER-INFO]: No BIOS given, will boot emulator UI.\n");
-      }
-
       if (strlen(executable) == 0) {
          printf("[LAUNCHER-ERROR]: No executable found, aborting\n");
          return false;
       }
    #endif
 
-      if (info == NULL || info->path == NULL) {
-         if (strlen(bios) > 0) {
-            const char *args[] = {" ", "--no-gui ", "\"", bios, "\""};
-            size_t size = sizeof(args)/sizeof(char*);
-            
-            for (size_t i = 0; i < size; i++) {
-               strncat(executable, args[i], strlen(args[i]));
-            }
-         }
-      } else {
+      if (info != NULL && info->path != NULL) {
          const char *args[] = {" ", "--no-gui ", "\"", info->path, "\""};
          size_t size = sizeof(args)/sizeof(char*);
          

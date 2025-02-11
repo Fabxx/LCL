@@ -189,11 +189,18 @@ bool retro_load_game(const struct retro_game_info *info)
       glob_t buf;
       struct stat path_stat;
       char executable[512] = {0};
-      char bios[512] = {0};
       char path[512] = {0};
       const char *home = getenv("HOME");
       
       if (!home) {
+         return false;
+      }
+
+      if (system("wineboot") != 0) {
+         printf("[LAUNCHER-ERROR]: You need wine to run xenia under linux.\n");
+         return false;
+      } else if (system("winetricks --force dxvk vkd3d") != 0) {
+         printf("[LAUNCHER-ERROR]: You need winetricks to install dxvk and vkd3d to run xenia.\n");
          return false;
       }
       
@@ -220,39 +227,17 @@ bool retro_load_game(const struct retro_game_info *info)
       // search for binary executable.
       char emuList[512] = {0};
 
-      snprintf(emuList, sizeof(emuList), "%s/.config/retroarch/system/xenia_canary/xenia_canary*", home);
+      snprintf(emuList, sizeof(emuList), "%s/.config/retroarch/system/xenia_canary/xenia_canary*.exe", home);
 
       if (glob(emuList, 0, NULL, &buf) == 0) {
          for (size_t i = 0; i < buf.gl_pathc; i++) {
                if (stat(buf.gl_pathv[i], &path_stat) == 0 && !S_ISDIR(path_stat.st_mode)) {
-                  if (is_elf_executable(buf.gl_pathv[i])) {
-                     snprintf(executable, sizeof(executable), "%s", buf.gl_pathv[i]);
+                     snprintf(executable, sizeof(executable), "wine %s", buf.gl_pathv[i]);
                      printf("[LAUNCHER-INFO]: Found emulator: %s\n", executable);
                      break;
-                  }
                }
          }
          globfree(&buf);
-      }
-
-      // search for BIOS and initialize BIOS path
-
-      char biosList[512] = {0};
-      snprintf(biosList, sizeof(biosList), "%s/.config/retroarch/system/xenia_canary/bios/*.[Bb][Ii][Nn]", home);
-
-      if (glob(biosList, 0, NULL, &buf) == 0) {
-         for (size_t i = 0; i < buf.gl_pathc; i++) {
-               if (stat(buf.gl_pathv[i], &path_stat) == 0 && !S_ISDIR(path_stat.st_mode)) {
-                     snprintf(bios, sizeof(bios), "%s", buf.gl_pathv[i]);
-                     printf("[LAUNCHER-INFO]: Found BIOS: %s\n", bios);
-                     break;
-               }
-         }
-         globfree(&buf);
-      }
-
-      if (strlen(bios) == 0) {
-         printf("[LAUNCHER-INFO]: No BIOS given, will boot emulator UI.\n");
       }
 
       if (strlen(executable) == 0) {
@@ -266,7 +251,6 @@ bool retro_load_game(const struct retro_game_info *info)
       char emuPath[256] = "C:\\RetroArch-Win64\\system\\xenia_canary";
       char biosPath[256] = "C:\\RetroArch-Win64\\system\\xenia_canary\\bios";
       char executable[MAX_PATH] = {0};
-      char bios[MAX_PATH] = {0};
       char searchPath[MAX_PATH] = {0};
 
        if (GetFileAttributes(emuPath) == INVALID_FILE_ATTRIBUTES) {
@@ -292,15 +276,6 @@ bool retro_load_game(const struct retro_game_info *info)
       }
 
       snprintf(executable, MAX_PATH, "%s\\%s", emuPath, findFileData.cFileName);
-
-      snprintf(searchPath, MAX_PATH, "%s\\*.bin", biosPath);
-      hFind = FindFirstFile(searchPath, &findFileData);
-
-      if (hFind == INVALID_HANDLE_VALUE) {
-         printf("[LAUNCHER-INFO]: No BIOS given, will boot emulator UI.\n");
-      }
-      
-      snprintf(bios, MAX_PATH, "%s\\%s", biosPath, findFileData.cFileName);
       FindClose(hFind);
    #elif defined __APPLE__
       
@@ -312,6 +287,14 @@ bool retro_load_game(const struct retro_game_info *info)
       const char *home = getenv("HOME");
       
       if (!home) {
+         return false;
+      }
+
+      if (system("wine") != 0) {
+         printf("[LAUNCHER-ERROR]: You need wine to run xenia under linux.\n");
+         return false;
+      } else if (system("winetricks\\ --force\\ dxvk\\ vkd3d") != 0) {
+         printf("[LAUNCHER-ERROR]: You need winetricks to install dxvk and vkd3d to run xenia.\n");
          return false;
       }
       
@@ -343,34 +326,12 @@ bool retro_load_game(const struct retro_game_info *info)
       if (glob(emuList, 0, NULL, &buf) == 0) {
          for (size_t i = 0; i < buf.gl_pathc; i++) {
                if (stat(buf.gl_pathv[i], &path_stat) == 0 && !S_ISDIR(path_stat.st_mode)) {
-                  if (is_elf_executable(buf.gl_pathv[i])) {
-                     snprintf(executable, sizeof(executable), "%s", buf.gl_pathv[i]);
+                     snprintf(executable, sizeof(executable), "wine %s", buf.gl_pathv[i]);
                      printf("[LAUNCHER-INFO]: Found emulator: %s\n", executable);
                      break;
-                  }
                }
          }
          globfree(&buf);
-      }
-
-      // search for BIOS and initialize BIOS path
-
-      char biosList[512] = {0};
-      snprintf(biosList, sizeof(biosList), "%s/Library/Application Support/RetroArch/system/xenia_canary/bios/*.[Bb][Ii][Nn]", home);
-
-      if (glob(biosList, 0, NULL, &buf) == 0) {
-         for (size_t i = 0; i < buf.gl_pathc; i++) {
-               if (stat(buf.gl_pathv[i], &path_stat) == 0 && !S_ISDIR(path_stat.st_mode)) {
-                     snprintf(bios, sizeof(bios), "%s", buf.gl_pathv[i]);
-                     printf("[LAUNCHER-INFO]: Found BIOS: %s\n", bios);
-                     break;
-               }
-         }
-         globfree(&buf);
-      }
-
-      if (strlen(bios) == 0) {
-         printf("[LAUNCHER-INFO]: No BIOS given, will boot emulator UI.\n");
       }
 
       if (strlen(executable) == 0) {
@@ -379,24 +340,16 @@ bool retro_load_game(const struct retro_game_info *info)
       }
    #endif
 
-      if (info == NULL || info->path == NULL) {
-         if (strlen(bios) > 0) {
-            const char *args[] = {" ", "--fullscreen=true ", "\"", bios, "\""};
+         // In this case we don't expect a BIOS but a game argument only, if not just boot the emulator GUI.
+         if (info != NULL && info->path != NULL) {
+            const char *args[] = {" ", "--fullscreen=true ", "\"", info->path, "\""};
             size_t size = sizeof(args)/sizeof(char*);
             
             for (size_t i = 0; i < size; i++) {
                strncat(executable, args[i], strlen(args[i]));
             }
          }
-      } else {
-         const char *args[] = {" ", "--fullscreen=true ", "\"", info->path, "\""};
-         size_t size = sizeof(args)/sizeof(char*);
          
-         for (size_t i = 0; i < size; i++) {
-            strncat(executable, args[i], strlen(args[i]));
-         }
-      }
-
    if (system(executable) == 0) {
       printf("[LAUNCHER-INFO]: Finished running xenia_canary.\n");
       return true;

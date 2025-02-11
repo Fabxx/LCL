@@ -180,7 +180,7 @@ static int is_elf_executable(const char *filename) {
  * - Final Steps:
  *       - attach ROM absolute path from info->path in double quotes for system() function, avoids truncation.
  *       - if info->path has no ROM, fallback to bios file placed by the user.
-         NOTE: info structure must be checked when is not null
+         NOTE: info structure must be checked when is not null.
  */
 bool retro_load_game(const struct retro_game_info *info)
 {

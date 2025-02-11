@@ -269,14 +269,14 @@ bool retro_load_game(const struct retro_game_info *info)
       char bios[MAX_PATH] = {0};
       char searchPath[MAX_PATH] = {0};
 
-       if (GetFileAttributes(path) == INVALID_FILE_ATTRIBUTES) {
+       if (GetFileAttributes(emuPath) == INVALID_FILE_ATTRIBUTES) {
          _mkdir(path);
           printf("[LAUNCHER-INFO]: emulator folder created in %s\n", path);
       } else {
          printf("[LAUNCHER-INFO]: emulator folder already exist\n");
       }
 
-      if (GetFileAttributes(path) == INVALID_FILE_ATTRIBUTES) {
+      if (GetFileAttributes(biosPath) == INVALID_FILE_ATTRIBUTES) {
          _mkdir(path);
           printf("[LAUNCHER-INFO]: BIOS folder created in %s\n", path);
       } else {
@@ -297,8 +297,7 @@ bool retro_load_game(const struct retro_game_info *info)
       hFind = FindFirstFile(searchPath, &findFileData);
 
       if (hFind == INVALID_HANDLE_VALUE) {
-         printf("[LAUNCHER-ERROR]: No executable found, aborting.\n");
-         return false;
+         printf("[LAUNCHER-INFO]: No BIOS given, will boot emulator UI.\n");
       }
       
       snprintf(bios, MAX_PATH, "%s\\%s", biosPath, findFileData.cFileName);

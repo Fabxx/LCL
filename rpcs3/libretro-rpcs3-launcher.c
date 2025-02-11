@@ -57,7 +57,7 @@ void retro_get_system_info(struct retro_system_info *info)
    info->library_name     = "rpcs3 Launcher";
    info->library_version  = "0.1a";
    info->need_fullpath    = true;
-   info->valid_extensions = "EBBOT.BIN";
+   info->valid_extensions = "EBOOT.BIN";
 }
 
 static retro_video_refresh_t video_cb;
@@ -147,10 +147,9 @@ void retro_run(void)
 /*
    Linux/macOS: Check if file is ELF, then use it.
 */
-
 #if defined __linux__ || __APPLE__
 
- int is_elf_executable(const char *filename) {
+static int is_elf_executable(const char *filename) {
     
     unsigned char magic[4];
     int fd = open(filename, O_RDONLY);
@@ -170,7 +169,7 @@ void retro_run(void)
  *
  *  - Linux/macOS:
  *        - resolve HOME path 
- *        - create dir for emulator files 
+ *        - create dir for emulator files and bios
  *        - apply regex search with glob, filter by file and ELF executable
  *  
  *  - Windows:
@@ -180,7 +179,8 @@ void retro_run(void)
  *    
  * - Final Steps:
  *       - attach ROM absolute path from info->path in double quotes for system() function, avoids truncation.
- *        - if info->path has no ROM, fallback to bios file placed by the user.
+ *       - if info->path has no ROM, fallback to bios file placed by the user.
+         NOTE: info structure must be checked when is not null
  */
 bool retro_load_game(const struct retro_game_info *info)
 {
@@ -189,6 +189,7 @@ bool retro_load_game(const struct retro_game_info *info)
       glob_t buf;
       struct stat path_stat;
       char executable[512] = {0};
+      char bios[512] = {0};
       char path[512] = {0};
       const char *home = getenv("HOME");
       
@@ -206,12 +207,22 @@ bool retro_load_game(const struct retro_game_info *info)
          printf("[LAUNCHER-INFO]: emulator folder already exist\n");
       }
 
+      // Create bios folder if it doesn't exist
+      snprintf(path, sizeof(path), "%s/.config/retroarch/system/rpcs3/bios", home);
+
+      if (stat(path, &path_stat) != 0) {
+         mkdir(path, 0755);
+         printf("[LAUNCHER-INFO]: BIOS folder created in %s\n", path);
+      } else {
+         printf("[LAUNCHER-INFO]: BIOS folder already exist\n");
+      }
+
       // search for binary executable.
-      char tmpList[512] = {0};
+      char emuList[512] = {0};
 
-      snprintf(tmpList, sizeof(tmpList), "%s/.config/retroarch/system/rpcs3/rpcs3*", home);
+      snprintf(emuList, sizeof(emuList), "%s/.config/retroarch/system/rpcs3/rpcs3*", home);
 
-      if (glob(tmpList, 0, NULL, &buf) == 0) {
+      if (glob(emuList, 0, NULL, &buf) == 0) {
          for (size_t i = 0; i < buf.gl_pathc; i++) {
                if (stat(buf.gl_pathv[i], &path_stat) == 0 && !S_ISDIR(path_stat.st_mode)) {
                   if (is_elf_executable(buf.gl_pathv[i])) {
@@ -224,6 +235,26 @@ bool retro_load_game(const struct retro_game_info *info)
          globfree(&buf);
       }
 
+      // search for BIOS and initialize BIOS path
+
+      char biosList[512] = {0};
+      snprintf(biosList, sizeof(biosList), "%s/.config/retroarch/system/rpcs3/bios/*.[Bb][Ii][Nn]", home);
+
+      if (glob(biosList, 0, NULL, &buf) == 0) {
+         for (size_t i = 0; i < buf.gl_pathc; i++) {
+               if (stat(buf.gl_pathv[i], &path_stat) == 0 && !S_ISDIR(path_stat.st_mode)) {
+                     snprintf(bios, sizeof(bios), "%s", buf.gl_pathv[i]);
+                     printf("[LAUNCHER-INFO]: Found BIOS: %s\n", bios);
+                     break;
+               }
+         }
+         globfree(&buf);
+      }
+
+      if (strlen(bios) == 0) {
+         printf("[LAUNCHER-INFO]: No BIOS given, will boot emulator UI.\n");
+      }
+
       if (strlen(executable) == 0) {
          printf("[LAUNCHER-ERROR]: No executable found, aborting\n");
          return false;
@@ -232,8 +263,10 @@ bool retro_load_game(const struct retro_game_info *info)
    #elif defined __WIN32__
       WIN32_FIND_DATA findFileData;
       HANDLE hFind;
+      char emuPath[256] = "C:\\RetroArch-Win64\\system\\rpcs3";
+      char biosPath[256] = "C:\\RetroArch-Win64\\system\\rpcs3\\bios";
       char executable[MAX_PATH] = {0};
-      char path[256] = "C:\\RetroArch-Win64\\system\\rpcs3";
+      char bios[MAX_PATH] = {0};
       char searchPath[MAX_PATH] = {0};
 
        if (GetFileAttributes(path) == INVALID_FILE_ATTRIBUTES) {
@@ -243,7 +276,24 @@ bool retro_load_game(const struct retro_game_info *info)
          printf("[LAUNCHER-INFO]: emulator folder already exist\n");
       }
 
-      snprintf(searchPath, MAX_PATH, "%s\\rpcs3*.exe", path);
+      if (GetFileAttributes(path) == INVALID_FILE_ATTRIBUTES) {
+         _mkdir(path);
+          printf("[LAUNCHER-INFO]: BIOS folder created in %s\n", path);
+      } else {
+         printf("[LAUNCHER-INFO]: BIOS folder already exist\n");
+      }
+
+      snprintf(searchPath, MAX_PATH, "%s\\rpcs3*.exe", emuPath);
+      hFind = FindFirstFile(searchPath, &findFileData);
+
+      if (hFind == INVALID_HANDLE_VALUE) {
+         printf("[LAUNCHER-ERROR]: No executable found, aborting.\n");
+         return false;
+      }
+
+      snprintf(executable, MAX_PATH, "%s\\%s", emuPath, findFileData.cFileName);
+
+      snprintf(searchPath, MAX_PATH, "%s\\*.bin", biosPath);
       hFind = FindFirstFile(searchPath, &findFileData);
 
       if (hFind == INVALID_HANDLE_VALUE) {
@@ -251,13 +301,14 @@ bool retro_load_game(const struct retro_game_info *info)
          return false;
       }
       
-      snprintf(executable, MAX_PATH, "%s\\%s", path, findFileData.cFileName);
+      snprintf(bios, MAX_PATH, "%s\\%s", biosPath, findFileData.cFileName);
       FindClose(hFind);
    #elif defined __APPLE__
       
       glob_t buf;
       struct stat path_stat;
       char executable[512] = {0};
+      char bios[512] = {0};
       char path[512] = {0};
       const char *home = getenv("HOME");
       
@@ -275,12 +326,22 @@ bool retro_load_game(const struct retro_game_info *info)
          printf("[LAUNCHER-INFO]: emulator folder already exist\n");
       }
 
+      // Create bios folder if it doesn't exist
+      snprintf(path, sizeof(path), "%s/Library/Application Support/RetroArch/system/rpcs3/bios", home);
+
+      if (stat(path, &path_stat) != 0) {
+         mkdir(path, 0755);
+         printf("[LAUNCHER-INFO]: BIOS folder created in %s\n", path);
+      } else {
+         printf("[LAUNCHER-INFO]: BIOS folder already exist\n");
+      }
+
       // search for binary executable.
-      char tmpList[512] = {0};
+      char emuList[512] = {0};
 
-      snprintf(tmpList, sizeof(tmpList), "%s/Library/Application Support/RetroArch/system/rpcs3*", home);
+      snprintf(emuList, sizeof(emuList), "%s/Library/Application Support/RetroArch/system/rpcs3/rpcs3*", home);
 
-      if (glob(tmpList, 0, NULL, &buf) == 0) {
+      if (glob(emuList, 0, NULL, &buf) == 0) {
          for (size_t i = 0; i < buf.gl_pathc; i++) {
                if (stat(buf.gl_pathv[i], &path_stat) == 0 && !S_ISDIR(path_stat.st_mode)) {
                   if (is_elf_executable(buf.gl_pathv[i])) {
@@ -293,20 +354,49 @@ bool retro_load_game(const struct retro_game_info *info)
          globfree(&buf);
       }
 
+      // search for BIOS and initialize BIOS path
+
+      char biosList[512] = {0};
+      snprintf(biosList, sizeof(biosList), "%s/Library/Application Support/RetroArch/system/rpcs3/bios/*.[Bb][Ii][Nn]", home);
+
+      if (glob(biosList, 0, NULL, &buf) == 0) {
+         for (size_t i = 0; i < buf.gl_pathc; i++) {
+               if (stat(buf.gl_pathv[i], &path_stat) == 0 && !S_ISDIR(path_stat.st_mode)) {
+                     snprintf(bios, sizeof(bios), "%s", buf.gl_pathv[i]);
+                     printf("[LAUNCHER-INFO]: Found BIOS: %s\n", bios);
+                     break;
+               }
+         }
+         globfree(&buf);
+      }
+
+      if (strlen(bios) == 0) {
+         printf("[LAUNCHER-INFO]: No BIOS given, will boot emulator UI.\n");
+      }
+
       if (strlen(executable) == 0) {
          printf("[LAUNCHER-ERROR]: No executable found, aborting\n");
          return false;
       }
    #endif
-   
-   const char *args[] = {" ", "--no-gui ", "\"", info->path, "\""};
-   size_t size = sizeof(args)/sizeof(char*);
 
-   for (size_t i = 0; i < size; i++) {
-    strncat(executable, args[i], strlen(args[i]));
-   } 
-
-    printf("[LAUNCHER-INFO]: rpcs3 path: %s\n", executable);
+      if (info == NULL || info->path == NULL) {
+         if (strlen(bios) > 0) {
+            const char *args[] = {" ", "--no-gui ", bios};
+            size_t size = sizeof(args)/sizeof(char*);
+            
+            for (size_t i = 0; i < size; i++) {
+               strncat(executable, args[i], strlen(args[i]));
+            }
+         }
+      } else {
+         const char *args[] = {" ", "--no-gui ", "\"", info->path, "\""};
+         size_t size = sizeof(args)/sizeof(char*);
+         
+         for (size_t i = 0; i < size; i++) {
+            strncat(executable, args[i], strlen(args[i]));
+         }
+      }
 
    if (system(executable) == 0) {
       printf("[LAUNCHER-INFO]: Finished running rpcs3.\n");

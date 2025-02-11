@@ -271,14 +271,14 @@ bool retro_load_game(const struct retro_game_info *info)
 
        if (GetFileAttributes(emuPath) == INVALID_FILE_ATTRIBUTES) {
          _mkdir(emuPath);
-          printf("[LAUNCHER-INFO]: emulator folder created in %s\n", path);
+          printf("[LAUNCHER-INFO]: emulator folder created in %s\n", emuPath);
       } else {
          printf("[LAUNCHER-INFO]: emulator folder already exist\n");
       }
 
       if (GetFileAttributes(biosPath) == INVALID_FILE_ATTRIBUTES) {
          _mkdir(biosPath);
-          printf("[LAUNCHER-INFO]: BIOS folder created in %s\n", path);
+          printf("[LAUNCHER-INFO]: BIOS folder created in %s\n", biosPath);
       } else {
          printf("[LAUNCHER-INFO]: BIOS folder already exist\n");
       }

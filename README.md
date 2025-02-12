@@ -47,7 +47,15 @@ Just copy-paste the png inside the `thumbnails` folder of retroarch
 
 - You can use `auto` or `manual` scan. There is support for local covers, or downloaded box arts thanks to the rdb databases.
 
-  NOTE: Covers must be in `.png`
+  NOTE: Covers must be in `.png` and placed in `thumbnails/system name` folder of retroarch. Inside you will have:
+
+  - `Named_Boxarts`
+  - `Named_Snaps`
+  - `Named_Titles`
+ 
+  System name can be `Sony - Playstation` etc.
+
+If you don't have these folders you can create them.
 
 - In case of the Xbox 360 playlist, you need to apply manual scan. Then associate the launcher core, scan and play.
   until a rdb database is created from the respective dat file of the Xbox 360 library to support auto scan.

@@ -19,21 +19,20 @@ Running a core will generate a folder with the name of the emulator to use.
 
 then download the emulator you want and drag & drop it in the respective created folder.
 
-# Core installation [Windows]
+# Core installation
 
-`.dll` files must go in `cores` folder of retroarch
+Windows:
+- `.dll` files must go in `cores` folder of retroarch
+-  `.info` files must go in `info` folder
 
-`.info` files must go in `info` folder
+Linux:
+- `.so` and `.info` files must go in `cores` folder of retroarch
 
-# Core Installation [Linux]
+MacOS:
+- `.dylib` and `.info` files must go in `cores` folder of retroarch
 
-both `.so` and `.info` files must go in `cores` folder of retroarch
 
-# Core Installation [macOS]
-
-both `.dylib` and `.info` files must go in `cores` folder of retroarch
-
-# Playlist contorller icon
+# Playlist custom controller icon
 
 I have provided a thumbnails folder with pngs inside for those console that don't have an icon, for now this is the list:
 
@@ -81,16 +80,15 @@ NOTE: Game names and covers must NOT have special characters like `-` `&` `'`
 
 # NOTES
 
-- These cores do not integrate retroarch menu when running the emulators, you will have to use the integrated emulator menus if the devs have provided them.
-  Most of the menus already have controller support. Besides you must configure the standalone emulators as usual (provide BIOS files and such.)
+- you must configure the standalone emulators from their GUI (provide BIOS files, video settings and such.)
 
-- RPCS3 Launcher is currently unusable because when creating a playlist you can't filter by `EBOOT.BIN` which is what the emulator currently requires. Until it supports iso/chd
-  or any usable format to filter the extension search, it is not possible to create a playlist. You can filter by `.bin` but that would find thousands of files,
-  since RPCS3 requires you to decrypt and unpack the game files at the current state.
+- RPCS3 Launcher is currently unusable. You can filter by `.bin` but that would find thousands of files,
+  since RPCS3 requires you to decrypt and unpack the game files at the current state, and launch from `EBOOT.BIN`
 
 - Xenia canary requires wine and winetricks in order to run under `Linux`
 
-- Some emulators might have multiple exes with the same name (example: PPSSPPWindows.exe and PPSSPPWindows64.exe), rename/move/delete the executable that you don't need.
+- Some emulators might have multiple exes with the same name (example: PPSSPPWindows.exe and PPSSPPWindows64.exe),
+  rename/move/delete the executable that you don't need.
 
 # Dev notes
 

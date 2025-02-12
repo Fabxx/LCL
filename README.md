@@ -57,6 +57,8 @@ Just copy-paste the png inside the `thumbnails` folder of retroarch
 
 If you don't have these folders you can create them.
 
+NOTE: Game names and covers must NOT have special characters like `-` `&` `'`
+
 - In case of the Xbox 360 playlist, you need to apply manual scan. Then associate the launcher core, scan and play.
   until a rdb database is created from the respective dat file of the Xbox 360 library to support auto scan.
 

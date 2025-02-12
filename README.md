@@ -34,13 +34,7 @@ MacOS:
 
 # Playlist custom controller icon
 
-I have provided a thumbnails folder with pngs inside for those console that don't have an icon, for now this is the list:
-
-```
-Xbox 360.png
-```
-
-Just copy-paste the png inside the `thumbnails` folder of retroarch
+for those console that don't have an icon, copy-paste the png from `thumbnails` inside the `thumbnails` folder of retroarch
 
 # Creating a playlist
 
@@ -56,10 +50,8 @@ Just copy-paste the png inside the `thumbnails` folder of retroarch
 
 If you don't have these folders you can create them.
 
-NOTE: Game names and covers must NOT have special characters like `-` `&` `'`
-
-- In case of the Xbox 360 playlist, you need to apply manual scan. Then associate the launcher core, scan and play.
-  until a rdb database is created from the respective dat file of the Xbox 360 library to support auto scan.
+NOTE: Game names and covers must NOT have special characters like `-` `&` `'`.
+      Game and cover names must be identical.
 
 # BIOS Notes
   - pcsx2 will run the configured BIOS through `run core` with `-bios` flag, but it must be configured first in pcsx2 GUI

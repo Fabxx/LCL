@@ -38,7 +38,7 @@ for those console that don't have an icon, copy-paste the png from `thumbnails` 
 
 # Creating a playlist
 
-- You can use `auto` or `manual` scan. There is support for local covers, or downloaded box arts thanks to the rdb databases.
+- You can use `directory` or `manual` scan. There is support for local covers, or downloaded box arts thanks to the rdb databases.
 
   NOTE: Covers must be in `.png` and placed in `thumbnails/system name` folder of retroarch. Inside you will have:
 
@@ -50,8 +50,13 @@ for those console that don't have an icon, copy-paste the png from `thumbnails` 
 
 If you don't have these folders you can create them.
 
-NOTE: Game names and covers must NOT have special characters like `-` `&` `'`.
-      Game and cover names must be identical.
+NOTE: 
+
+    - Game names and covers must NOT have special characters like dash, ampersand, apostrophe etc
+    
+    - Game and cover names must be identical if using manual scan.
+    
+    - If using directory scan then you can download the covers from retroarch directly.
 
 # BIOS Notes
   - pcsx2 will run the configured BIOS through `run core` with `-bios` flag, but it must be configured first in pcsx2 GUI

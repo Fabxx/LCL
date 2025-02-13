@@ -197,6 +197,36 @@ bool retro_load_game(const struct retro_game_info *info)
          printf("[LAUNCHER-INFO]: Found emulator: %s\n", executable);
       } else {
          printf("[LAUNCHER-INFO]: No executable found, downloading emulator.\n");
+
+         // Get lastes release of the emulator from URL
+      
+         char url[MAX_PATH];
+         char psCommand[MAX_PATH * 3] = {0};
+         snprintf(psCommand, sizeof(psCommand),
+       "powershell -Command \"$response = (Invoke-WebRequest -Uri 'https://api.github.com/repos/PCSX2/pcsx2/releases/latest' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json | Select-Object -First 1; "
+               "$tag = $response.tag_name;"
+               "$name = $response.assets[5].name;"
+               "$url = 'https://github.com/PCSX2/pcsx2/releases/download/' + $tag + $name; "
+               "Write-Output $url\" > version.txt");
+
+         if (system(psCommand) != 0) {
+            printf("[LAUNCHER-ERROR]: Failed to fetch latest version, aborting.\n");
+            return false;
+         }
+
+         FILE *file = fopen("version.txt", "r");
+         if (file) {
+            fgets(url, sizeof(url), file);
+            fclose(file);
+            remove("version.txt");
+         } else {
+            printf("[LAUNCHER-ERROR]: Failed to read version file, aborting.\n");
+            return false;
+         }
+
+         url[strcspn(url, "\r\n")] = 0;
+
+         printf("[LAUNCHER-INFO]: Latest Xemu release URL: %s\n", url);
          
          char downloadCmd[MAX_PATH * 2] = {0};
          snprintf(downloadCmd, sizeof(downloadCmd),

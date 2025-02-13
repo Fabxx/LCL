@@ -26,7 +26,7 @@ So i've made these cores to facilitate the usage of emulators, and to use the up
 
 The core does the following:
 
-- Download the emulator files if it doesn't exist
+- Download the emulator files if it doesn't exist. It will always try to fetch the lastes release.
 - Setup thumbnail folders for boxarts, snaps and title images for the selected system
 - Create a `bios` folder under `retroarch/system/system name`
 - Reboots retroarch to let the user run the core, with BIOS (if supported) or with a game from playlist

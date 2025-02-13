@@ -44,10 +44,10 @@ void retro_set_controller_port_device(unsigned port, unsigned device)
 void retro_get_system_info(struct retro_system_info *info)
 {
    memset(info, 0, sizeof(*info));
-   info->library_name     = "mGBA Launcher";
+   info->library_name     = "xenia_canary Launcher";
    info->library_version  = "0.1a";
    info->need_fullpath    = true;
-   info->valid_extensions = "gba|gbc|gc";
+   info->valid_extensions = "iso|xex|zar";
 }
 
 static retro_video_refresh_t video_cb;
@@ -122,7 +122,7 @@ void retro_reset(void)
 /**
  * libretro callback; Called every game tick.
  *
- * Once the core has run, we will attempt to exit, since xemu is done.
+ * Once the core has run, we will attempt to exit, since xenia_canary is done.
  */
 void retro_run(void)
 {
@@ -130,7 +130,7 @@ void retro_run(void)
    unsigned stride = 320;
    video_cb(frame_buf, 320, 240, stride << 2);
 
-   // Shutdown the environment now that xemu has loaded and quit.
+   // Shutdown the environment now that xenia_canary has loaded and quit.
    environ_cb(RETRO_ENVIRONMENT_SHUTDOWN, NULL);
 }
 
@@ -151,13 +151,13 @@ bool retro_load_game(const struct retro_game_info *info)
 {
       WIN32_FIND_DATA findFileData;
       HANDLE hFind;
-      char emuPath[MAX_PATH] = "C:\\RetroArch-Win64\\system\\mGBA";
-      char biosPath[MAX_PATH] = "C:\\RetroArch-Win64\\system\\mGBA\\bios";
+      char emuPath[MAX_PATH] = "C:\\RetroArch-Win64\\system\\xenia_canary";
+      char biosPath[MAX_PATH] = "C:\\RetroArch-Win64\\system\\xenia_canary\\bios";
       char thumbnailsPath[MAX_PATH] = "C:\\RetroArch-Win64\\thumbnails";
       char executable[MAX_PATH] = {0};
       char searchPath[MAX_PATH] = {0};
-      const char *thumbDirs[] = {"\\Nintendo - Game Boy Advance", "\\Named_Boxarts", "\\Named_Snaps", "\\Named_Titles"};
-      const char *url = "https://github.com/mgba-emu/mgba/releases/download/0.10.4/mGBA-0.10.4-win64.7z";
+      const char *thumbDirs[] = {"\\Microsoft - Xbox 360", "\\Named_Boxarts", "\\Named_Snaps", "\\Named_Titles"};
+      const char *url = "https://github.com/xenia-canary/xenia-canary-releases/releases/download/fbacd3c/xenia_canary_windows.zip";
 
       // Create emulator folder if it doesn't exist
       if (GetFileAttributes(emuPath) == INVALID_FILE_ATTRIBUTES) {
@@ -188,7 +188,7 @@ bool retro_load_game(const struct retro_game_info *info)
       }
 
       // Search for binary executable
-      snprintf(searchPath, MAX_PATH, "%s\\mGBA-0.10.4-win64\\mGBA*.exe", emuPath);
+      snprintf(searchPath, MAX_PATH, "%s\\xenia_canary*.exe", emuPath);
       hFind = FindFirstFile(searchPath, &findFileData);
 
       if (hFind != INVALID_HANDLE_VALUE) {
@@ -200,7 +200,7 @@ bool retro_load_game(const struct retro_game_info *info)
          
          char downloadCmd[MAX_PATH * 2] = {0};
          snprintf(downloadCmd, sizeof(downloadCmd),
-          "powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\mGBA.zip'\"", url, emuPath);
+          "powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\xenia_canary.zip'\"", url, emuPath);
          
          if (system(downloadCmd) != 0) {
             printf("[LAUNCHER-ERROR]: Failed to download emulator, aborting.\n");
@@ -210,7 +210,7 @@ bool retro_load_game(const struct retro_game_info *info)
            
             char extractCmd[MAX_PATH * 2] = {0};
             snprintf(extractCmd, sizeof(extractCmd),
-             "powershell -Command \"Expand-Archive -Path '%s\\mGBA.zip' -DestinationPath '%s' -Force\"", emuPath, emuPath);
+             "powershell -Command \"Expand-Archive -Path '%s\\xenia_canary.zip' -DestinationPath '%s' -Force\"", emuPath, emuPath);
             
             if (system(extractCmd) != 0) {
                printf("[LAUNCHER-ERROR]: Failed to extract emulator, aborting.\n");
@@ -221,18 +221,22 @@ bool retro_load_game(const struct retro_game_info *info)
          }
       }
 
-      if (info != NULL && info->path != NULL) {
-          char args[256] = {0};
-          snprintf(args, sizeof(args), " -f \"%s\"", info->path);
-          strncat(executable, args, sizeof(executable)-1);
+      if (info == NULL || info->path == NULL) {
+            char *args[512] = {0};
+            snprintf(args, sizeof(args), " --fullscreen=true");
+            strncat(executable, args, sizeof(executable)-1);
+      } else {
+         char *args[512] = {0};
+         snprintf(args, sizeof(args), " --fullscreen=true \"%s\"", info->path);
+         strncat(executable, args, sizeof(executable)-1);
       } 
 
    if (system(executable) == 0) {
-      printf("[LAUNCHER-INFO]: Finished running mGBA.\n");
+      printf("[LAUNCHER-INFO]: Finished running xenia_canary.\n");
       return true;
    }
 
-   printf("[LAUNCHER-INFO]: Failed running mGBA.\n");
+   printf("[LAUNCHER-INFO]: Failed running xenia_canary.\n");
    return false;
 }
 

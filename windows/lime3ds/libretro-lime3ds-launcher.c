@@ -4,13 +4,8 @@
 #include <stdarg.h>
 #include <string.h>
 #include "libretro.h"
-#include <glob.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <fcntl.h>
-
-#define ELF_MAGIC "\x7F""ELF"
+#include <windows.h>
+#include <direct.h>
 
 static uint32_t *frame_buf;
 static struct retro_log_callback logging;
@@ -139,28 +134,14 @@ void retro_run(void)
    environ_cb(RETRO_ENVIRONMENT_SHUTDOWN, NULL);
 }
 
-static int is_elf_executable(const char *filename) {
-    
-    unsigned char magic[4];
-    int fd = open(filename, O_RDONLY);
-
-    if (fd < 0) {
-        return 0;
-    }
-
-    ssize_t read_bytes = read(fd, magic, 4);
-    close(fd);
-
-    return (read_bytes == 4 && memcmp(magic, ELF_MAGIC, 4) == 0);
-}
-
 /**
  * libretro callback; Called when a game is to be loaded.
- *  - Linux
- *        - resolve HOME path 
- *        - create dir for emulator files and bios
- *        - apply regex search with glob, filter by file and ELF executable
- *
+ *  
+ *  - Windows:
+ *       - create dir for emulator files and bios
+		 - setup folders
+ *       - search for .exe binary with name pattern.
+ *		
  * - Final Steps:
  *       - attach ROM absolute path from info->path in double quotes for system() function, avoids truncation.
  *       - if info->path has no ROM, fallback to bios file placed by the user.
@@ -168,145 +149,84 @@ static int is_elf_executable(const char *filename) {
  */
 bool retro_load_game(const struct retro_game_info *info)
 {
-
-      glob_t buf;
-      struct stat path_stat;
-      char executable[512] = {0};
-      char path[512] = {0};
-      const char *home = getenv("HOME");
-      const char *url = "https://github.com/Lime3DS/lime3ds-archive/releases/download/2119.1/lime3ds-2119.1-linux-appimage.tar.gz";
-
-
-      if (!home) {
-         return false;
-      }
-
-      /**
-       * Create thumbnail directories if they don't exist:
-
-         - System name directory
-         - Named_Boxart directory
-         - Named_Snaps directory
-         - Named_Titles
-       * 
-       */
-
-      snprintf(path, sizeof(path), "%s/.config/retroarch/thumbnails/Nintendo - 3DS", home);
-
-      if (stat(path, &path_stat) != 0) {
-         mkdir(path, 0755);
-         printf("[LAUNCHER-INFO]: thumbnail folder created in %s\n", path);
-      } else {
-         printf("[LAUNCHER-INFO]: thumbnail folder already exist\n");
-      }
-
-      snprintf(path, sizeof(path), "%s/.config/retroarch/thumbnails/Nintendo - 3DS/Named_Boxarts", home);
-
-      if (stat(path, &path_stat) != 0) {
-         mkdir(path, 0755);
-         printf("[LAUNCHER-INFO]: Boxart folder created in %s\n", path);
-      } else {
-         printf("[LAUNCHER-INFO]: Boxart folder already exist\n");
-      }
-
-      snprintf(path, sizeof(path), "%s/.config/retroarch/thumbnails/Nintendo - 3DS/Named_Snaps", home);
-
-      if (stat(path, &path_stat) != 0) {
-         mkdir(path, 0755);
-         printf("[LAUNCHER-INFO]: Snaps folder created in %s\n", path);
-      } else {
-         printf("[LAUNCHER-INFO]: Snaps folder already exist\n");
-      }
-
-      snprintf(path, sizeof(path), "%s/.config/retroarch/thumbnails/Nintendo - 3DS/Named_Titles", home);
-
-      if (stat(path, &path_stat) != 0) {
-         mkdir(path, 0755);
-         printf("[LAUNCHER-INFO]: Titles folder created in %s\n", path);
-      } else {
-         printf("[LAUNCHER-INFO]: Titles folder already exist\n");
-      }
+      WIN32_FIND_DATA findFileData;
+      HANDLE hFind;
+      char emuPath[MAX_PATH] = "C:\\RetroArch-Win64\\system\\lime3ds";
+      char biosPath[MAX_PATH] = "C:\\RetroArch-Win64\\system\\lime3ds\\bios";
+      char thumbnailsPath[MAX_PATH] = "C:\\RetroArch-Win64\\thumbnails";
+      char executable[MAX_PATH] = {0};
+      char searchPath[MAX_PATH] = {0};
+      const char *thumbDirs[] = {"\\Nintendo - 3DS", "\\Named_Boxarts", "\\Named_Snaps", "\\Named_Titles"};
+      const char *url = "https://github.com/Lime3DS/lime3ds-archive/releases/download/2119.1/lime3ds-2119.1-windows-msvc.zip";
 
       // Create emulator folder if it doesn't exist
-      snprintf(path, sizeof(path), "%s/.config/retroarch/system/lime3ds", home);
-      
-      if (stat(path, &path_stat) != 0) {
-         mkdir(path, 0755);
-         printf("[LAUNCHER-INFO]: Emulator folder created in %s\n", path);
+      if (GetFileAttributes(emuPath) == INVALID_FILE_ATTRIBUTES) {
+         _mkdir(emuPath);
+         printf("[LAUNCHER-INFO]: Emulator folder created in %s\n", emuPath);
       } else {
-         printf("[LAUNCHER-INFO]: Emulator folder already exist\n");
+         printf("[LAUNCHER-INFO]: Emulator folder already exists\n");
       }
 
-      // search for binary executable.
-      char emuList[512] = {0};
+      // Create BIOS folder if it doesn't exist
+      if (GetFileAttributes(biosPath) == INVALID_FILE_ATTRIBUTES) {
+         _mkdir(biosPath);
+         printf("[LAUNCHER-INFO]: BIOS folder created in %s\n", biosPath);
+      } else {
+         printf("[LAUNCHER-INFO]: BIOS folder already exists\n");
+      }
 
-      snprintf(emuList, sizeof(emuList), "%s/.config/retroarch/system/lime3ds/lime3ds*/lime3ds.AppImage", home);
-
-      if (glob(emuList, 0, NULL, &buf) == 0) {
-         for (size_t i = 0; i < buf.gl_pathc; i++) {
-            if (stat(buf.gl_pathv[i], &path_stat) == 0 && !S_ISDIR(path_stat.st_mode)) {
-                  if (is_elf_executable(buf.gl_pathv[i])) {
-                     snprintf(executable, sizeof(executable), "%s", buf.gl_pathv[i]);
-                     printf("[LAUNCHER-INFO]: Found emulator: %s\n", executable);
-                     break;
-               }
-            }
+      // Create Thumbnail directories
+      for (size_t i = 0; i < sizeof(thumbDirs)/sizeof(thumbDirs[0]); i++) {
+         char fullPath[MAX_PATH] = {0};
+         snprintf(fullPath, sizeof(fullPath), "%s%s", thumbnailsPath, thumbDirs[i]);
+         if (GetFileAttributes(fullPath) == INVALID_FILE_ATTRIBUTES) {
+            _mkdir(fullPath);
+            printf("[LAUNCHER-INFO]: %s folder created\n", fullPath);
+         } else {
+            printf("[LAUNCHER-INFO]: %s folder already exists\n", fullPath);
          }
-         globfree(&buf);
       }
 
-      // if no executable was found, download the emulator, extract it and make it executable, then close core.
-      if (strlen(executable) == 0) {
+      // Search for binary executable
+      snprintf(searchPath, MAX_PATH, "%s\\lime3ds-2119.1-windows-msvc\\lime3ds*.exe", emuPath);
+      hFind = FindFirstFile(searchPath, &findFileData);
+
+      if (hFind != INVALID_HANDLE_VALUE) {
+         snprintf(executable, MAX_PATH, "%s\\%s", emuPath, findFileData.cFileName);
+         FindClose(hFind);
+         printf("[LAUNCHER-INFO]: Found emulator: %s\n", executable);
+      } else {
          printf("[LAUNCHER-INFO]: No executable found, downloading emulator.\n");
-
-         char download[512] = {0};
-         snprintf(download, sizeof(download), "wget -O %s/lime3ds.tar.gz %s", path, url);
-
-         if (system(download) != 0) {
+         
+         char downloadCmd[MAX_PATH * 2] = {0};
+         snprintf(downloadCmd, sizeof(downloadCmd),
+          "powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\lime3ds.zip'\"", url, emuPath);
+         
+         if (system(downloadCmd) != 0) {
             printf("[LAUNCHER-ERROR]: Failed to download emulator, aborting.\n");
             return false;
          } else {
-            printf("[LAUNCHER-INFO]: extracting emulator archive.\n");
-         
-            char extraction[512] = {0};
-            snprintf(extraction, sizeof(extraction), "tar -xvzf %s/lime3ds.tar.gz -C %s && rm %s/lime3ds.tar.gz", path, path, path);
+            printf("[LAUNCHER-INFO]: Download successful, extracting emulator.\n");
+           
+            char extractCmd[MAX_PATH * 2] = {0};
+            snprintf(extractCmd, sizeof(extractCmd),
+             "powershell -Command \"Expand-Archive -Path '%s\\lime3ds.zip' -DestinationPath '%s' -Force\"", emuPath, emuPath);
             
-            if (system(extraction) != 0) {
-               printf("[LAUNCHER-ERROR]: Failed to extract archive, aborting.\n");
+            if (system(extractCmd) != 0) {
+               printf("[LAUNCHER-ERROR]: Failed to extract emulator, aborting.\n");
                return false;
-            } else {
-               char chmod[512] = {0};
-               snprintf(chmod, sizeof(chmod), "chmod +x %s/lime3ds*/lime3ds.AppImage", path);
-
-               printf("[LAUNCHER-INFO]: Setting execution permission on executable.\n");
-
-               if (system(chmod) != 0) {
-                  printf("[LAUNCHER-ERROR]: Failed to set executable permissions, aborting.\n");
-                  return false;
-               } else {
-                  printf("[LAUNCHER-INFO]: Success, rebooting retroarch...\n");
-                  return true;
-               }
             }
+            printf("[LAUNCHER-INFO]: Success, rebooting RetroArch...\n");
+            return false;
          }
       }
 
-      // Create bios folder if it doesn't exist
-      snprintf(path, sizeof(path), "%s/.config/retroarch/system/lime3ds/bios", home);
-
-      if (stat(path, &path_stat) != 0) {
-         mkdir(path, 0755);
-         printf("[LAUNCHER-INFO]: BIOS folder created in %s\n", path);
-      } else {
-         printf("[LAUNCHER-INFO]: BIOS folder already exist\n");
-      }
-
       if (info != NULL && info->path != NULL) {
-            char args[128] = {0};
-            snprintf(args, sizeof(args), " \"%s\"", info->path);
-            strncat(executable, args, sizeof(executable)-1);
-      }
-   
+          char args[256] = {0};
+          snprintf(args, sizeof(args), " \"%s\"", info->path);
+          strncat(executable, args, sizeof(executable)-1);
+      } 
+
    if (system(executable) == 0) {
       printf("[LAUNCHER-INFO]: Finished running lime3ds.\n");
       return true;

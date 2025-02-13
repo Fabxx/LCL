@@ -199,7 +199,8 @@ bool retro_load_game(const struct retro_game_info *info)
          printf("[LAUNCHER-INFO]: No executable found, downloading emulator.\n");
          
          char downloadCmd[MAX_PATH * 2] = {0};
-         snprintf(downloadCmd, sizeof(downloadCmd), "powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\duckstation.zip'\"", url, emuPath);
+         snprintf(downloadCmd, sizeof(downloadCmd),
+          "powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\duckstation.zip'\"", url, emuPath);
          
          if (system(downloadCmd) != 0) {
             printf("[LAUNCHER-ERROR]: Failed to download emulator, aborting.\n");
@@ -208,7 +209,8 @@ bool retro_load_game(const struct retro_game_info *info)
             printf("[LAUNCHER-INFO]: Download successful, extracting emulator.\n");
            
             char extractCmd[MAX_PATH * 2] = {0};
-            snprintf(extractCmd, sizeof(extractCmd), "powershell -Command \"Expand-Archive -Path '%s\\duckstation.zip' -DestinationPath '%s' -Force\"", emuPath, emuPath);
+            snprintf(extractCmd, sizeof(extractCmd),
+             "powershell -Command \"Expand-Archive -Path '%s\\duckstation.zip' -DestinationPath '%s' -Force\"", emuPath, emuPath);
             
             if (system(extractCmd) != 0) {
                printf("[LAUNCHER-ERROR]: Failed to extract emulator, aborting.\n");
@@ -220,19 +222,13 @@ bool retro_load_game(const struct retro_game_info *info)
       }
 
       if (info == NULL || info->path == NULL) {
-            const char *args[] = {" ", "-fullscreen ", "-bios"};
-            size_t size = sizeof(args)/sizeof(char*);
-            
-            for (size_t i = 0; i < size; i++) {
-               strncat(executable, args[i], strlen(args[i]));
-            }
+            char *args[512] = {0};
+            snprintf(args, sizeof(args), " -fullscreen -bios");
+            strncat(executable, args, sizeof(executable)-1);
       } else {
-         const char *args[] = {" ", "-fullscreen ", "\"", info->path, "\""};
-         size_t size = sizeof(args)/sizeof(char*);
-         
-         for (size_t i = 0; i < size; i++) {
-            strncat(executable, args[i], strlen(args[i]));
-         }
+            char *args[512] = {0};
+            snprintf(args, sizeof(args), " -fullscreen -bios \"%s\"", info->path);
+            strncat(executable, args, sizeof(executable)-1);
       }
 
    if (system(executable) == 0) {

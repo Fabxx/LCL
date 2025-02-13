@@ -200,6 +200,8 @@ bool retro_load_game(const struct retro_game_info *info)
          /**
           * Get lastes build from URL, in case of RPCS3 we need to sort the releases by the creation date
             the full URL is then formed by the base download URL with the tag and the release name
+            in RPCS3 The releases are treated as objects, we need to get the most recent release
+            at the first position
           * 
           */
       
@@ -208,8 +210,8 @@ bool retro_load_game(const struct retro_game_info *info)
          snprintf(psCommand, sizeof(psCommand),
     "powershell -Command \"$response = Invoke-WebRequest -Uri 'https://api.github.com/repos/RPCS3/rpcs3-binaries-win/releases' -Headers @{Accept='application/json'}; "
             "$release = @($response.Content | ConvertFrom-Json | Sort-Object -Property created_at -Descending)[0]; "
-            "$tag = $release.tag_name; "
-            "$name = $release.assets[0].name; "
+            "$tag = $release[0].tag_name; "
+            "$name = $release[0].assets[0].name; "
             "$url = 'https://github.com/RPCS3/rpcs3-binaries-win/releases/download/' + $tag + '/' + $name; "
             "Write-Output $url\" > version.txt; "
             "Write-Output 'Latest RPCS3 release URL: ' + $url\""); 

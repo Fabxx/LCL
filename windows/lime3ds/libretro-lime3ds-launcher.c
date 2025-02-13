@@ -188,7 +188,7 @@ bool retro_load_game(const struct retro_game_info *info)
       }
 
       // Search for binary executable
-      snprintf(searchPath, MAX_PATH, "%s\\lime3ds-2119.1-windows-msvc\\lime3ds*.exe", emuPath);
+      snprintf(searchPath, MAX_PATH, "%s\\lime3ds-2119.1-windows-msvc\\lime3ds.exe", emuPath);
       hFind = FindFirstFile(searchPath, &findFileData);
 
       if (hFind != INVALID_HANDLE_VALUE) {

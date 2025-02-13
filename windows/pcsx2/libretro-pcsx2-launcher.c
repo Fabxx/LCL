@@ -206,7 +206,7 @@ bool retro_load_game(const struct retro_game_info *info)
        "powershell -Command \"$response = (Invoke-WebRequest -Uri 'https://api.github.com/repos/PCSX2/pcsx2/releases/latest' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json | Select-Object -First 1; "
                "$tag = $response.tag_name;"
                "$name = $response.assets[5].name;"
-               "$url = 'https://github.com/PCSX2/pcsx2/releases/download/' + $tag + $name; "
+               "$url = 'https://github.com/PCSX2/pcsx2/releases/download/' + $tag + '/' + $name; "
                "Write-Output $url\" > version.txt");
 
          if (system(psCommand) != 0) {
@@ -226,7 +226,7 @@ bool retro_load_game(const struct retro_game_info *info)
 
          url[strcspn(url, "\r\n")] = 0;
 
-         printf("[LAUNCHER-INFO]: Latest Xemu release URL: %s\n", url);
+         printf("[LAUNCHER-INFO]: Latest pcsx2 release URL: %s\n", url);
          
          char downloadCmd[MAX_PATH * 2] = {0};
          snprintf(downloadCmd, sizeof(downloadCmd),

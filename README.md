@@ -5,6 +5,9 @@ Initially based on this repo: https://github.com/new-penguin/libretro-xemu-launc
 
 The code has been refactored to add support to windows/Linux in a more generic way.
 
+# DISCLAIMER
+The cores DO NOT integrate any emulator code. All they do is to download the official emulators from github sources, and then allow the user to use those from retroarch UI.
+
 # Default Paths
 
 - Windows: `C:\RetroArch-Win64\system`

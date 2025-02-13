@@ -210,7 +210,7 @@ bool retro_load_game(const struct retro_game_info *info)
            
             char extractCmd[MAX_PATH * 2] = {0};
             snprintf(extractCmd, sizeof(extractCmd),
-             "powershell -Command \"Expand-Archive -Path '%s\\lime3ds.zip' -DestinationPath '%s' -Force\"", emuPath, emuPath);
+             "powershell -Command \"Expand-Archive -Path '%s\\lime3ds.zip' -DestinationPath '%s' -Force; Remove-Item -Path '%s\\lime3ds.zip' -Force\"", emuPath, emuPath, emuPath);
             
             if (system(extractCmd) != 0) {
                printf("[LAUNCHER-ERROR]: Failed to extract emulator, aborting.\n");

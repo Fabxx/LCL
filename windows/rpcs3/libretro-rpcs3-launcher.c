@@ -206,7 +206,7 @@ bool retro_load_game(const struct retro_game_info *info)
             "$tag = $release[0].tag_name; "
             "$name = $release.assets[0].name; "
             "$url = 'https://github.com/RPCS3/rpcs3-binaries-win/releases/download/' + $tag + '/' + $name; "
-            "Write-Output $url | Out-File -Encoding utf8 version.txt; "
+            "Write-Output $url\" > version.txt; "
             "Write-Output 'Latest RPCS3 release URL: ' + $url\""); 
 
 

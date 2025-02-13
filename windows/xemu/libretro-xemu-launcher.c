@@ -157,7 +157,12 @@ bool retro_load_game(const struct retro_game_info *info)
       char executable[MAX_PATH] = {0};
       char searchPath[MAX_PATH] = {0};
       const char *thumbDirs[] = {"\\Microsoft - Xbox", "\\Named_Boxarts", "\\Named_Snaps", "\\Named_Titles"};
-      const char *url = "https://github.com/xemu-project/xemu/releases/download/v0.8.16/xemu-win-release.zip";
+      char url[MAX_PATH] = {0};
+      snprintf(url, sizeof(url),
+    "powershell -Command \"$tag = (Invoke-WebRequest -Uri 'https://api.github.com/repos/xemu-project/xemu/releases/latest' | ConvertFrom-Json).tag_name; "
+            "$url = 'https://github.com/xemu-project/xemu/releases/download/' + $tag + '/xemu-win-release.zip'; "
+            "Write-Output $url\"");
+
 
       // Create emulator folder if it doesn't exist
       if (GetFileAttributes(emuPath) == INVALID_FILE_ATTRIBUTES) {

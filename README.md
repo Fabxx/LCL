@@ -8,6 +8,12 @@ The code has been refactored to add support to windows/Linux in a more generic w
 # DISCLAIMER
 The cores DO NOT integrate any emulator code. All they do is to download the official emulators from github sources, and then allow the user to use those from retroarch UI.
 
+# Why?
+I find the XMB very comfortable. Unfortunately some emulators are not supported by retroarch, or some are supported, but they need some time to 
+catch up with the standalone releases, which is understandable considering the retroArch ecosystem.
+
+So i've made these cores to facilitate the usage of emulators, and to use the up-to-date releases.
+
 # Default Paths
 
 - Windows: `C:\RetroArch-Win64\system`

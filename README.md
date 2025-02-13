@@ -5,9 +5,7 @@ Initially based on this repo: https://github.com/new-penguin/libretro-xemu-launc
 
 The code has been refactored to add support to windows/Linux in a more generic way.
 
-# Setup
-
-The cores search automatically in the default path of retroarch.
+# Default Paths
 
 - Windows: `C:\RetroArch-Win64\system`
 
@@ -15,9 +13,15 @@ The cores search automatically in the default path of retroarch.
 
 - macOS: `~/Library/Application Support/RetroArch/system`
 
-Running a core will generate a folder with the name of the emulator to use.
+# Usage
 
-then download the emulator you want and drag & drop it in the respective created folder.
+The core does the following:
+
+- Download the emulator files if it doesn't exist
+- Setup thumbnail folders for boxarts, snaps and title images for the selected system
+- Create a `bios` folder under `retroarch/system/system name`
+- Reboots retroarch to let the user run the core, with BIOS (if supported) or with a game from playlist
+
 
 # Core installation
 
@@ -36,27 +40,27 @@ MacOS:
 
 for those console that don't have an icon, copy-paste the png from `thumbnails` inside the `thumbnails` folder of retroarch
 
-# Creating a playlist
+# Creating a playlist [Directory Scan]
 
-- You can use `directory` or `manual` scan. There is support for local covers, or downloaded box arts thanks to the rdb databases.
+- Retroarch will automatically detect the supported ROMs and with the rdb databases it will manage to download the corresponding
+  covers.
 
-  NOTE: Covers must be in `.png` and placed in `thumbnails/system name` folder of retroarch. Inside you will have:
+# Creating a Playlist [Manual Scan]
+
+- In manual scan you have to also give the system name, if no extensions are given they will be detected from the core.
+- The system will detect your local covers/artworks in this case.
+
+NOTE: Covers must be in `.png` and placed in `thumbnails/system name` folder of retroarch. Inside you will have:
 
   - `Named_Boxarts`
   - `Named_Snaps`
   - `Named_Titles`
- 
-  System name can be `Sony - Playstation` etc.
 
-If you don't have these folders you can create them.
 
-NOTE: 
+- Game names and covers must NOT have special characters like dash, ampersand, apostrophe etc
 
-    - Game names and covers must NOT have special characters like dash, ampersand, apostrophe etc
-    
-    - Game and cover names must be identical if using manual scan.
-    
-    - If using directory scan then you can download the covers from retroarch directly.
+- Game and cover names must be identical if using manual scan.
+
 
 # BIOS Notes
   - pcsx2 will run the configured BIOS through `run core` with `-bios` flag, but it must be configured first in pcsx2 GUI
@@ -84,8 +88,6 @@ NOTE:
 
 - Xenia canary requires wine and winetricks in order to run under `Linux`
 
-- Some emulators might have multiple exes with the same name (example: PPSSPPWindows.exe and PPSSPPWindows64.exe),
-  rename/move/delete the executable that you don't need.
 
 # Dev notes
 

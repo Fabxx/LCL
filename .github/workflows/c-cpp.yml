@@ -156,7 +156,7 @@ jobs:
       run: |
         mkdir -p cores
         mkdir -p info
-        for dir in */; do
+        for dir in windows/*/; do
           if [ -f "$dir/Makefile" ]; then
             echo "Building $dir"
             make -C "$dir"
@@ -194,7 +194,7 @@ jobs:
     - name: Build emulators for macOS
       run: |
         mkdir -p cores
-        for dir in duckstation pcsx2 rpcs3 PPSSPP mGBA lime3ds melonDS xemu; do
+        for dir in macOS/*/; do
           if [ -d "$dir" ] && [ -f "$dir/Makefile" ]; then
             echo "Building $dir"
             make -C "$dir"

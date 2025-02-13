@@ -161,8 +161,9 @@ bool retro_load_game(const struct retro_game_info *info)
       snprintf(url, sizeof(url),
     "powershell -ExecutionPolicy Bypass -NoProfile -Command "
             "\"$tag = (Invoke-RestMethod 'https://api.github.com/repos/xemu-project/xemu/releases/latest').tag_name; "
-            "$url = 'https://github.com/xemu-project/xemu/releases/download/' + $tag + '/xemu-win-release.zip'; "
-            "Write-Host $url\"");
+            "$downloadUrl = 'https://github.com/xemu-project/xemu/releases/download/' + $tag + '/xemu-win-release.zip'; "
+            "Invoke-WebRequest -Uri $downloadUrl -OutFile 'xemu-win-release.zip'\"");
+
 
 
       // Create emulator folder if it doesn't exist

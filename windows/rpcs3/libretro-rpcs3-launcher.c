@@ -222,7 +222,7 @@ bool retro_load_game(const struct retro_game_info *info)
       }
 
       if (info != NULL && info->path != NULL) {
-            char *args[512] = {0};
+            char args[512] = {0};
             snprintf(args, sizeof(args), " --no-gui \"%s\"", info->path);
             strncat(executable, args, sizeof(executable)-1);
       } 

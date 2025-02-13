@@ -226,7 +226,7 @@ bool retro_load_game(const struct retro_game_info *info)
 
          url[strcspn(url, "\r\n")] = 0;
 
-         printf("[LAUNCHER-INFO]: Latest Xemu release URL: %s\n", url);
+         printf("[LAUNCHER-INFO]: Latest mGBA release URL: %s\n", url);
          
          char downloadCmd[MAX_PATH * 2] = {0};
          snprintf(downloadCmd, sizeof(downloadCmd),

@@ -204,7 +204,7 @@ bool retro_load_game(const struct retro_game_info *info)
     "powershell -Command \"$response = Invoke-WebRequest -Uri 'https://api.github.com/repos/RPCS3/rpcs3-binaries-win/releases' -Headers @{Accept='application/json'}; "
             "$release = $response.Content | ConvertFrom-Json | Select-Object -First 1; "
             "$tag = $release.tag_name; "
-            "$name = ($release.assets | Select-Object -First 1).name; "
+            "$name = $release.assets[0].name "
             "$url = 'https://github.com/RPCS3/rpcs3-binaries-win/releases/download/' + $tag + '/' + $name; "
             "Write-Output $url\" > version.txt");
 

@@ -1,3 +1,4 @@
+#include <minwindef.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -157,16 +158,33 @@ bool retro_load_game(const struct retro_game_info *info)
       char executable[MAX_PATH] = {0};
       char searchPath[MAX_PATH] = {0};
       const char *thumbDirs[] = {"\\Microsoft - Xbox", "\\Named_Boxarts", "\\Named_Snaps", "\\Named_Titles"};
-      char url[MAX_PATH] = {0};
-      snprintf(url, sizeof(url),
-    "powershell -ExecutionPolicy Bypass -NoProfile -Command \""
-            "$tag = (Invoke-RestMethod 'https://api.github.com/repos/xemu-project/xemu/releases/latest').tag_name; "
-            "$url = 'https://github.com/xemu-project/xemu/releases/download/' + $tag + '/xemu-win-release.zip'; "
-            "(New-Object System.Net.WebClient).DownloadFile($url, 'xemu-win-release.zip')\""
-);
+      char url[MAX_PATH];
 
+      char psCommand[MAX_PATH * 3] = {0};
+      snprintf(psCommand, sizeof(psCommand),
+      "powershell -Command \"$tag = (Invoke-WebRequest -Uri 'https://api.github.com/repos/xemu-project/xemu/releases/latest' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json | Select-Object -ExpandProperty tag_name; "
+              "$url = 'https://github.com/xemu-project/xemu/releases/download/' + $tag + '/xemu-win-release.zip'; "
+              "Write-Output $url\" > version.txt");
 
+    if (system(psCommand) != 0) {
+        printf("[LAUNCHER-ERROR]: Failed to fetch latest version, aborting.\n");
+        return false;
+    }
 
+    FILE *file = fopen("version.txt", "r");
+    if (file) {
+        fgets(url, sizeof(url), file);
+        fclose(file);
+        remove("version.txt");
+    } else {
+        printf("[LAUNCHER-ERROR]: Failed to read version file, aborting.\n");
+        return false;
+    }
+
+    // Rimuovere eventuali caratteri di newline alla fine dell'URL
+    url[strcspn(url, "\r\n")] = 0;
+
+    printf("[LAUNCHER-INFO]: Latest Xemu release URL: %s\n", url);
 
       // Create emulator folder if it doesn't exist
       if (GetFileAttributes(emuPath) == INVALID_FILE_ATTRIBUTES) {

@@ -204,13 +204,11 @@ bool retro_load_game(const struct retro_game_info *info)
             char psCommand[MAX_PATH * 3] = {0};
 
             snprintf(psCommand, sizeof(psCommand),
-    "powershell -Command \"$release = (Invoke-WebRequest -Uri 'https://api.github.com/repos/xenia-canary/xenia-canary-releases/releases' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json; "
-            "$tag = $release.tag_name;"
-            "$name = $release.assets[1].name;"
+    "powershell -Command \"$response = (Invoke-WebRequest -Uri 'https://api.github.com/repos/xenia-canary/xenia-canary-releases/releases' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json | Select-Object -First 1; "
+            "$tag = $response.tag_name; "
+            "$name = $response.assets[1].name; "
             "$url = 'https://github.com/xenia-canary/xenia-canary-releases/releases/download/' + $tag + '/' + $name; "
             "Write-Output $url\" > version.txt");
-
-
 
          if (system(psCommand) != 0) {
             printf("[LAUNCHER-ERROR]: Failed to fetch latest version, aborting.\n");

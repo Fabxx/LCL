@@ -206,7 +206,8 @@ bool retro_load_game(const struct retro_game_info *info)
             snprintf(psCommand, sizeof(psCommand),
     "powershell -Command \"$release = (Invoke-WebRequest -Uri 'https://api.github.com/repos/xenia-canary/xenia-canary-releases/releases' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json; "
             "$tag = $release.tag_name;"
-            "$url = 'https://github.com/xenia-canary/xenia-canary-releases/releases/download/' + $tag + '/xenia_canary_windows.zip'; "
+            "$name = $release.assets[1].name"
+            "$url = 'https://github.com/xenia-canary/xenia-canary-releases/releases/download/' + $tag + '/' + $name; "
             "Write-Output $url\" > version.txt");
 
 

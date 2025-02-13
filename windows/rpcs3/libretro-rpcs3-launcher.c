@@ -157,7 +157,6 @@ bool retro_load_game(const struct retro_game_info *info)
       char executable[MAX_PATH] = {0};
       char searchPath[MAX_PATH] = {0};
       const char *thumbDirs[] = {"\\Sony - Playstation 3", "\\Named_Boxarts", "\\Named_Snaps", "\\Named_Titles"};
-      const char *url = "https://github.com/RPCS3/rpcs3-binaries-win/releases/download/build-cd87a646219024b136f7cc4d0ceeb1a19d5c43ad/rpcs3-v0.0.34-17473-cd87a646_win64.7z";
 
       // Create emulator folder if it doesn't exist
       if (GetFileAttributes(emuPath) == INVALID_FILE_ATTRIBUTES) {
@@ -197,6 +196,34 @@ bool retro_load_game(const struct retro_game_info *info)
          printf("[LAUNCHER-INFO]: Found emulator: %s\n", executable);
       } else {
          printf("[LAUNCHER-INFO]: No executable found, downloading emulator.\n");
+         // Get lastes release of the emulator from URL
+      
+         char url[MAX_PATH];
+         char psCommand[MAX_PATH * 3] = {0};
+         snprintf(psCommand, sizeof(psCommand),
+         "powershell -Command \"$tag = (Invoke-WebRequest -Uri 'https://api.github.com/repos/RPCS3/rpcs3-binaries-win/releases' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json | Select-Object -First 1 -ExpandProperty tag_name; "
+                 "powershell -Command \"$tag = (Invoke-WebRequest -Uri 'https://api.github.com/repos/RPCS3/rpcs3-binaries-win/releases' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json | Select-Object -First 1 -ExpandProperty assets.0.name; "
+                 "$url = 'https://github.com/RPCS3/rpcs3-binaries-win/releases/download/' + $tag + '/$name'; "
+                 "Write-Output $url\" > version.txt");
+
+         if (system(psCommand) != 0) {
+            printf("[LAUNCHER-ERROR]: Failed to fetch latest version, aborting.\n");
+            return false;
+         }
+
+         FILE *file = fopen("version.txt", "r");
+         if (file) {
+            fgets(url, sizeof(url), file);
+            fclose(file);
+            remove("version.txt");
+         } else {
+            printf("[LAUNCHER-ERROR]: Failed to read version file, aborting.\n");
+            return false;
+         }
+
+         url[strcspn(url, "\r\n")] = 0;
+
+         printf("[LAUNCHER-INFO]: Latest Rpcs3 release URL: %s\n", url);
          
          char downloadCmd[MAX_PATH * 2] = {0};
          snprintf(downloadCmd, sizeof(downloadCmd),

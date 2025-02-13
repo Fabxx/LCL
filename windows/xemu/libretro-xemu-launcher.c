@@ -159,7 +159,7 @@ bool retro_load_game(const struct retro_game_info *info)
       const char *thumbDirs[] = {"\\Microsoft - Xbox", "\\Named_Boxarts", "\\Named_Snaps", "\\Named_Titles"};
       char url[MAX_PATH] = {0};
       snprintf(url, sizeof(url),
-    "powershell -Command \"$tag = (Invoke-WebRequest -Uri 'https://api.github.com/repos/xemu-project/xemu/releases/latest' | ConvertFrom-Json).tag_name; "
+    "powershell -ExecutionPolicy Bypass -NoProfile -Command \"$tag = Invoke-RestMethod 'https://api.github.com/repos/xemu-project/xemu/releases/latest' | Select-Object -ExpandProperty tag_name; "
             "$url = 'https://github.com/xemu-project/xemu/releases/download/' + $tag + '/xemu-win-release.zip'; "
             "Write-Output $url\"");
 

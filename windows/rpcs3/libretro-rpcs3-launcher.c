@@ -203,8 +203,8 @@ bool retro_load_game(const struct retro_game_info *info)
          snprintf(psCommand, sizeof(psCommand),
     "powershell -Command \"$response = Invoke-WebRequest -Uri 'https://api.github.com/repos/RPCS3/rpcs3-binaries-win/releases' -Headers @{Accept='application/json'}; "
             "$release = $response.Content | ConvertFrom-Json | Select-Object -First 1; "
-            "$tag = $release.tag_name; "
-            "$name = $release.assets[0].name; "
+            "$tag = $release[0].tag_name; "
+            "$name = $release[0].assets[0].name; "
             "$url = 'https://github.com/RPCS3/rpcs3-binaries-win/releases/download/' + $tag + '/' + $name; "
             "Write-Output $url | Out-File -Encoding utf8 version.txt; "
             "Write-Output 'Latest RPCS3 release URL: ' + $url\""); 

@@ -82,14 +82,14 @@ jobs:
           if [ -f "$dir/Makefile" ]; then
             echo "Building $dir"
             make -C "$dir"
-            mkdir -p Linux
-            cp "$dir"/*.so "$dir"/*.info Linux
+            mkdir -p cores
+            cp "$dir"/*.so "$dir"/*.info cores
           fi
         done
 
     - name: Create ZIP archive for Linux
       run: |
-        zip -r LCL_linux_x86_64.zip Linux
+        zip -r LCL_linux_x86_64.zip cores
     
     - name: Upload Linux ZIP release
       uses: softprops/action-gh-release@v1

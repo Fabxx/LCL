@@ -22,6 +22,12 @@ So i've made these cores to facilitate the usage of emulators, and to use the up
 
 - macOS: `~/Library/Application Support/RetroArch/system`
 
+# Dependencies
+
+- `jq` JSON parser package for Linux
+- `bash` interpreter for Linux
+- `powershell` for Windows
+  
 # Usage
 
 The core does the following:

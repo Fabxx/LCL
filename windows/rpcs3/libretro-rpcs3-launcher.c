@@ -196,13 +196,18 @@ bool retro_load_game(const struct retro_game_info *info)
          printf("[LAUNCHER-INFO]: Found emulator: %s\n", executable);
       } else {
          printf("[LAUNCHER-INFO]: No executable found, downloading emulator.\n");
-         // Get lastes release of the emulator from URL
+         
+         /**
+          * Get lastes build from URL, in case of RPCS3 we need to sort the releases by the creation date
+            the full URL is then formed by the base download URL with the tag and the release name
+          * 
+          */
       
          char url[MAX_PATH];
          char psCommand[MAX_PATH * 3] = {0};
          snprintf(psCommand, sizeof(psCommand),
     "powershell -Command \"$response = Invoke-WebRequest -Uri 'https://api.github.com/repos/RPCS3/rpcs3-binaries-win/releases' -Headers @{Accept='application/json'}; "
-            "$release = $response.Content | ConvertFrom-Json | Sort-Object -Property created_at -Descending | Select-Object -First 1; "
+            "$release = @($response.Content | ConvertFrom-Json | Sort-Object -Property created_at -Descending)[0]; "
             "$tag = $release.tag_name; "
             "$name = $release.assets[0].name; "
             "$url = 'https://github.com/RPCS3/rpcs3-binaries-win/releases/download/' + $tag + '/' + $name; "

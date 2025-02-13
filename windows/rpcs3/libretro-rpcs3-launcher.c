@@ -201,10 +201,13 @@ bool retro_load_game(const struct retro_game_info *info)
          char url[MAX_PATH];
          char psCommand[MAX_PATH * 3] = {0};
          snprintf(psCommand, sizeof(psCommand),
-         "powershell -Command \"$tag = (Invoke-WebRequest -Uri 'https://api.github.com/repos/RPCS3/rpcs3-binaries-win/releases' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json | Select-Object -First 1 -ExpandProperty tag_name; "
-                 "powershell -Command \"$tag = (Invoke-WebRequest -Uri 'https://api.github.com/repos/RPCS3/rpcs3-binaries-win/releases' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json | Select-Object -First 1 -ExpandProperty assets.0.name; "
-                 "$url = 'https://github.com/RPCS3/rpcs3-binaries-win/releases/download/' + $tag + '/$name'; "
-                 "Write-Output $url\" > version.txt");
+    "powershell -Command \"$response = Invoke-WebRequest -Uri 'https://api.github.com/repos/RPCS3/rpcs3-binaries-win/releases' -Headers @{Accept='application/json'}; "
+            "$release = $response.Content | ConvertFrom-Json | Select-Object -First 1; "
+            "$tag = $release.tag_name; "
+            "$name = $release.assets[0].name; "
+            "$url = 'https://github.com/RPCS3/rpcs3-binaries-win/releases/download/' + $tag + '/' + $name; "
+            "Write-Output $url\" > version.txt");
+
 
          if (system(psCommand) != 0) {
             printf("[LAUNCHER-ERROR]: Failed to fetch latest version, aborting.\n");

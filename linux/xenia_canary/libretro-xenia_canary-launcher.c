@@ -176,8 +176,6 @@ bool retro_load_game(const struct retro_game_info *info)
       char executable[512] = {0};
       char path[512] = {0};
       const char *home = getenv("HOME");
-      const char *url = "https://github.com/xenia-canary/xenia-canary-releases/releases/download/fbacd3c/xenia_canary_windows.zip";
-
 
       if (!home) {
          return false;
@@ -268,6 +266,40 @@ bool retro_load_game(const struct retro_game_info *info)
       // if no executable was found, download the emulator and make it executable, then close core.
       if (strlen(executable) == 0) {
          printf("[LAUNCHER-INFO]: No executable found, downloading emulator.\n");
+
+         // Retreive lastes version from URL
+
+         char url[256] = {0};
+         char bashCommand[1024] = {0};
+
+         snprintf(bashCommand, sizeof(bashCommand),
+    "bash -c 'json_data=$(curl -s -H \"Accept: application/json\" \"https://api.github.com/repos/xenia-canary/xenia-canary-releases/releases\"); "
+            "tag=$(echo \"$json_data\" | jq -r \".[0].tag_name\"); "
+            "name=$(echo \"$json_data\" | jq -r \".[0].assets[1].name\"); "
+            "if [ -z \"$tag\" ] || [ -z \"$name\" ] || [ \"$tag\" = \"null\" ] || [ \"$name\" = \"null\" ]; then exit 1; fi; "
+            "url=\"https://github.com/xenia-canary/xenia-canary-releases/releases/download/$tag/$name\"; "
+            "echo \"$url\" > version.txt'");
+
+
+
+         if (system(bashCommand) != 0) {
+            printf("[LAUNCHER-ERROR]: Failed to fetch latest version, aborting.\n");
+            return 1;
+         }
+
+         FILE *file = fopen("version.txt", "r");
+         if (file) {
+            fgets(url, sizeof(url), file);
+            fclose(file);
+            remove("version.txt");
+         } else {
+            printf("[LAUNCHER-ERROR]: Failed to read version file, aborting.\n");
+            return false;
+         }
+
+         url[strcspn(url, "\r\n")] = 0;  // Rimuove newline
+
+         printf("[LAUNCHER-INFO]: Latest Xenia Canary release URL: %s\n", url);
 
          char download[256] = {0};
          snprintf(download, sizeof(download), "wget -O %s/xenia_canary.zip %s", path, url);

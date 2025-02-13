@@ -112,3 +112,11 @@ Launchers have their own log messages which can be `[LAUNCHER-INFO]` or `[LAUNCH
 
 You should create a issue with these messages, it will help to understand the issue.
 
+
+# Showcase
+
+Example when running xemu (BIOS Configured in xemu itself before launch)
+
+[xemu.webm](https://github.com/user-attachments/assets/453079a7-3145-401d-a71d-ccf4d97f3627)
+
+

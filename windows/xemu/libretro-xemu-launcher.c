@@ -162,7 +162,8 @@ bool retro_load_game(const struct retro_game_info *info)
     "powershell -ExecutionPolicy Bypass -NoProfile -Command "
             "\"$tag = (Invoke-RestMethod 'https://api.github.com/repos/xemu-project/xemu/releases/latest').tag_name; "
             "$downloadUrl = 'https://github.com/xemu-project/xemu/releases/download/' + $tag + '/xemu-win-release.zip'; "
-            "Invoke-WebRequest -Uri $downloadUrl -OutFile 'xemu-win-release.zip'\"");
+            "Start-BitsTransfer -Source $downloadUrl -Destination 'xemu-win-release.zip'\"");
+
 
 
 

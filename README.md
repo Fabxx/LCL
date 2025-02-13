@@ -95,3 +95,11 @@ Retroarch initializes `info` structure and `info->path` member to get the game t
 `info->path` can be passed as argument, both `info` and `info->path` must NOT be NULL.
 
 If no games are expected don't pass info->path, just string arguments.
+
+# Reporting Issues
+To check the error of a core, launch retroarch from terminal (linux) or enable console logging from windows.
+
+Launchers have their own log messages which can be `[LAUNCHER-INFO]` or `[LAUNCHER-ERROR]`
+
+You should create a issue with these messages, it will help to understand the issue.
+

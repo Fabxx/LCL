@@ -203,7 +203,7 @@ bool retro_load_game(const struct retro_game_info *info)
          char url[MAX_PATH];
          char psCommand[MAX_PATH * 3] = {0};
          snprintf(psCommand, sizeof(psCommand),
-       "powershell -Command \"$response = (Invoke-WebRequest -Uri 'https://api.github.com/repos/PCSX2/pcsx2/releases/latest' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json | Select-Object -First 1; "
+       "powershell -Command \"$response = (Invoke-WebRequest -Uri 'https://api.github.com/repos/PCSX2/pcsx2/releases/latest' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json; "
                "$tag = $response.tag_name;"
                "$name = $response.assets[5].name;"
                "$url = 'https://github.com/PCSX2/pcsx2/releases/download/' + $tag + '/' + $name; "

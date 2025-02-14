@@ -331,6 +331,7 @@ bool retro_load_game(const struct retro_game_info *info)
       } else {
          printf("[LAUNCHER-INFO]: BIOS folder already exist\n");
       }
+   }
 
       // Fallback to BIOS if "run core" is selected
 

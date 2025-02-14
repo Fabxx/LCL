@@ -102,7 +102,8 @@ NOTE: Covers must be in `.png` and placed in `thumbnails/system name` folder of 
 - RPCS3 Launcher is currently unusable. You can filter by `.bin` but that would find thousands of files,
   since RPCS3 requires you to decrypt and unpack the game files at the current state, and launch from `EBOOT.BIN`
 
-- Xenia canary requires wine and winetricks in order to run under `Linux`
+- Xenia canary requires wine and winetricks in order to run under `Linux`. This is handled by the Linux core by checking if
+  `wine` or `winetricks` commands fail. If they do, install them.
 
 
 # Dev notes
@@ -124,6 +125,6 @@ You should create a issue with these messages, it will help to understand the is
 
 Example when running xemu (BIOS Configured in xemu itself before launch)
 
-[xemu.webm](https://github.com/user-attachments/assets/453079a7-3145-401d-a71d-ccf4d97f3627)
+https://github.com/user-attachments/assets/eec0f0eb-acb3-4790-906f-57cd18cc122d
 
 

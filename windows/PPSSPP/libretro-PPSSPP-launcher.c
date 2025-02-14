@@ -203,12 +203,13 @@ bool retro_load_game(const struct retro_game_info *info)
          char url[MAX_PATH] = {0};
          char psCommand[MAX_PATH * 3] = {0};
          snprintf(psCommand, sizeof(psCommand),
-    "powershell -Command \"$response = (Invoke-WebRequest -Uri 'https://api.github.com/repos/hrydgard/ppsspp/releases/latest' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json;"
+    "powershell -Command \"$response = ((Invoke-WebRequest -Uri 'https://api.github.com/repos/hrydgard/ppsspp/releases/latest' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json);"
             "$tag = $response.tag_name;"
             "$baseUrl = 'https://builds.ppsspp.org/builds/v' + $tag + '-'; "
-            "$pageContent = (Invoke-WebRequest -Uri $baseUrl).Content; "
-            "$file = $pageContent -match '(ppsspp_win_v' + $tag + '-[\\d]+-g[0-9a-f]+\\.zip)'; "
-            "if ($file) { $url = $baseUrl + $matches[0]; Write-Output $url } else { Write-Output 'ERROR' }\" > version.txt");
+            "try { $pageContent = (Invoke-WebRequest -Uri 'https://builds.ppsspp.org/builds/' -ErrorAction Stop).Content; } catch { Write-Output 'ERROR'; exit } "
+            "$regex = 'v' + [regex]::Escape($tag) + '-[\\d]+-g[0-9a-f]+/ppsspp_win_v' + [regex]::Escape($tag) + '-[\\d]+-g[0-9a-f]+\\.zip';"
+            "if ($pageContent -match $regex) { $url = 'https://builds.ppsspp.org/builds/' + $matches[0]; Write-Output $url } else { Write-Output 'ERROR' }\" > version.txt");
+
 
          if (system(psCommand) != 0) {
             printf("[LAUNCHER-ERROR]: Failed to fetch latest version, aborting.\n");

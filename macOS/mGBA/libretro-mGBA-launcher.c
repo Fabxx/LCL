@@ -265,7 +265,7 @@ bool retro_load_game(const struct retro_game_info *info)
          snprintf(bashCommand, sizeof(bashCommand),
     "bash -c 'json_data=$(curl -s -H \"Accept: application/json\" \"https://api.github.com/repos/mgba-emu/mgba/releases/latest\"); "
             "tag=$(echo \"$json_data\" | jq -r \".tag_name\"); "
-            "name=$(echo \"$json_data\" | jq -r \".assets[2].name\"); "
+            "name=$(echo \"$json_data\" | jq -r \".assets[3].name\"); "
             "if [ -z \"$tag\" ] || [ -z \"$name\" ] || [ \"$tag\" = \"null\" ] || [ \"$name\" = \"null\" ]; then exit 1; fi; "
             "url=\"https://github.com/mgba-emu/mgba/releases/download/$tag/$name\"; "
             "echo \"$url\" > version.txt'");
@@ -287,29 +287,47 @@ bool retro_load_game(const struct retro_game_info *info)
 
          url[strcspn(url, "\r\n")] = 0;  // Rimuove newline
 
-         printf("[LAUNCHER-INFO]: Latest melonDS release URL: %s\n", url);
+         printf("[LAUNCHER-INFO]: Latest mGBA release URL: %s\n", url);
 
          char download[256] = {0};
-         snprintf(download, sizeof(download), "wget -O %s/mGBA.AppImage %s", path, url);
+         snprintf(download, sizeof(download), "wget -O %s/mGBA.dmg %s", path, url);
 
          if (system(download) != 0) {
             printf("[LAUNCHER-ERROR]: Failed to download emulator, aborting.\n");
             return false;
          } else {
-               char chmod[512] = {0};
-               snprintf(chmod, sizeof(chmod), "chmod +x %s/mGBA.AppImage", path);
+            printf("[LAUNCHER-INFO]: converting emulator DMG to ISO.\n");
 
-               printf("[LAUNCHER-INFO]: Setting execution permission on executable.\n");
+            char conversion[512] = {0};
+            snprintf(conversion, sizeof(conversion), "hdiutil %s/mgba.dmg -format UDTO -o %s/mgba.iso", path, path);
 
-               if (system(chmod) != 0) {
-                  printf("[LAUNCHER-ERROR]: Failed to set executable permissions, aborting.\n");
+            if (system(conversion) != 0) {
+               printf("[LAUNCHER-ERROR]: Failed to convert DMG to ISO, aborting.\n");
+               return false;
+            } else {
+               char extraction[512] = {0};
+               snprintf(extraction, sizeof(extraction), "unzip %s/mgba.iso -d %s && rm %s/mgba.dmg && rm %s/mgba.iso", path, path, path, path);
+               
+               if (system(extraction) != 0) {
+                  printf("[LAUNCHER-ERROR]: Failed to extract archive, aborting.\n");
                   return false;
                } else {
-                  printf("[LAUNCHER-INFO]: Success, rebooting retroarch...\n");
-                  return true;
+                  char chmod[512] = {0};
+                  snprintf(chmod, sizeof(chmod), "chmod +x %s/mGBA.App/Contents/MacOS/mGBA", path);
+
+                  printf("[LAUNCHER-INFO]: Setting execution permission on executable.\n");
+
+                  if (system(chmod) != 0) {
+                     printf("[LAUNCHER-ERROR]: Failed to set executable permissions, aborting.\n");
+                     return false;
+                  } else {
+                     printf("[LAUNCHER-INFO]: Success, rebooting retroarch...\n");
+                     return true;
+                  }
                }
             }
          }
+      }
 
       // Create bios folder if it doesn't exist
       snprintf(path, sizeof(path), "%s/Library/Application Support/RetroArch/system/mGBA/bios", home);

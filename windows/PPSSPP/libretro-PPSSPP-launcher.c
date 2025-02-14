@@ -205,14 +205,13 @@ bool retro_load_game(const struct retro_game_info *info)
          snprintf(psCommand, sizeof(psCommand),
         "powershell -Command \""
                "$release = (Invoke-WebRequest -Uri 'https://api.github.com/repos/hrydgard/ppsspp/releases/latest' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json; "
-               "$tag = $release.tag_name; "
-               "$commit = (Invoke-WebRequest -Uri ('https://api.github.com/repos/hrydgard/ppsspp/git/refs/tags/v' + $tag) -Headers @{Accept='application/json'}).Content | ConvertFrom-Json; "
-               "$commitHash = $commit.object.sha.Substring(0, 10); "
-               "$commitCount = ((Invoke-WebRequest -Uri 'https://api.github.com/repos/hrydgard/ppsspp/commits/master' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json).sha.Substring(0, 7); "
-               "$url = 'https://builds.ppsspp.org/builds/' + $tag + '-' + $commitCount + '-g' + $commitHash + '/ppsspp_win_v' + $tag + '-' + $commitCount + '-g' + $commitHash + '.zip'; "
+               "$tag = $release.tag_name;"
+               "$tags = (Invoke-WebRequest -Uri 'https://api.github.com/repos/hrydgard/ppsspp/tags' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json; "
+               "$commitHash = ($tags | Where-Object { $_.name -eq ($tag) }).commit.sha.Substring(0, 10); "
+               "$commitCount = ((Invoke-WebRequest -Uri 'https://api.github.com/repos/hrydgard/ppsspp' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json).open_issues_count; "
+               "$url = 'https://builds.ppsspp.org/builds/' + $tag + '-' + $commitCount + '-g' + $commitHash + '/ppsspp_win_' + $tag + '-' + $commitCount + '-g' + $commitHash + '.zip'; "
                "Invoke-WebRequest -Uri $url -OutFile 'PPSSPP.zip'\""
-    );
-
+            );
 
          if (system(psCommand) != 0) {
             printf("[LAUNCHER-ERROR]: Failed to fetch latest version, aborting.\n");

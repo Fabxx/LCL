@@ -216,6 +216,9 @@ bool retro_load_game(const struct retro_game_info *info)
            Build the new download URL with the new tag if any.
            
            If the IDs are different use the new fetched URL to download
+
+           This is needed because on duckstation the rolling releases are on the same tag 
+           called "latest", so if you try to compare the URLs those will be always equal.
           */ 
          char currentId[MAX_PATH] = {0};
          char newId[MAX_PATH] = {0};
@@ -287,7 +290,7 @@ bool retro_load_game(const struct retro_game_info *info)
       } else {
          printf("[LAUNCHER-INFO]: No executable found, downloading emulator.\n");
 
-         /* If not emulator was downloaded before, download directly from last available URL 
+         /* If no emulator was downloaded before, download directly from last available URL 
             Retreiving the release URL ID to check if the release has changed for the updater.
             Each release generates a different ID for the same URL.
          */

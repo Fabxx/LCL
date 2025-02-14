@@ -214,7 +214,7 @@ bool retro_load_game(const struct retro_game_info *info)
                "$tag = $response.tag_name;"
                "$name = $response.assets[5].name;"
                "$url = 'https://github.com/stenzek/duckstation/releases/download/' + $tag + '/' + $name; "
-               "Write-Output $url\" > '%s\\update.txt'", emuPath);
+               "Write-Output $url\" > \"%s\\update.txt\"", emuPath);
           
          FILE *currentVersion = fopen("version.txt", "r");
          FILE *newVersion = fopen("update.txt", "r");
@@ -273,7 +273,7 @@ bool retro_load_game(const struct retro_game_info *info)
                "$tag = $response.tag_name;"
                "$name = $response.assets[5].name;"
                "$url = 'https://github.com/stenzek/duckstation/releases/download/' + $tag + '/' + $name; "
-               "Write-Output $url\" > '%s\\version.txt'", emuPath);
+               "Write-Output $url\" > \"%s\\version.txt\"", emuPath);
 
          if (system(psCommand) != 0) {
             printf("[LAUNCHER-ERROR]: Failed to fetch latest version, aborting.\n");

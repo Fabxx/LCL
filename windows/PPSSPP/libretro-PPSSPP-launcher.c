@@ -230,7 +230,7 @@ bool retro_load_game(const struct retro_game_info *info)
          
          char downloadCmd[MAX_PATH * 2] = {0};
          snprintf(downloadCmd, sizeof(downloadCmd),
-          "powershell -Command \"Invoke-WebRequest -Uri '%s' -Headers @{User-Agent='Mozilla/5.0'} -MaximumRedirection 5 -OutFile '%s\\PPSSPP.zip'\"", url, emuPath);
+          "powershell -Command \"Invoke-WebRequest -Uri '%s' -Headers \\\"@{'User-Agent'='Mozilla/5.0'}\\\" -MaximumRedirection 5 -OutFile '%s\\PPSSPP.zip'\"", url, emuPath);
 
           printf("DOWNLOAD COMMAND: %s\n", downloadCmd);
          

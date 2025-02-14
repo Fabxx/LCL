@@ -200,7 +200,38 @@ bool retro_load_game(const struct retro_game_info *info)
             NOTE: PPSSPP Website makes redirects on download, so on PS we follow the redirects in order
             to download the zip we need*/
       
-         char url[MAX_PATH] = "https://builds.ppsspp.org/builds/v1.18.1-1076-g87cf0be961/ppsspp_win_v1.18.1-1076-g87cf0be961.zip";
+         char url[MAX_PATH] = {0};
+         char psCommand[MAX_PATH * 3] = {0};
+         snprintf(psCommand, sizeof(psCommand),
+        "powershell -Command \""
+               "$release = (Invoke-WebRequest -Uri 'https://api.github.com/repos/hrydgard/ppsspp/releases/latest' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json; "
+               "$tag = $release.tag_name; "
+               "$commit = (Invoke-WebRequest -Uri ('https://api.github.com/repos/hrydgard/ppsspp/git/refs/tags/v' + $tag) -Headers @{Accept='application/json'}).Content | ConvertFrom-Json; "
+               "$commitHash = $commit.object.sha.Substring(0, 10); "
+               "$commitCount = ((Invoke-WebRequest -Uri 'https://api.github.com/repos/hrydgard/ppsspp/commits/master' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json).sha.Substring(0, 7); "
+               "$url = 'https://builds.ppsspp.org/builds/' + $tag + '-' + $commitCount + '-g' + $commitHash + '/ppsspp_win_v' + $tag + '-' + $commitCount + '-g' + $commitHash + '.zip'; "
+               "Invoke-WebRequest -Uri $url -OutFile 'PPSSPP.zip'\""
+    );
+
+
+         if (system(psCommand) != 0) {
+            printf("[LAUNCHER-ERROR]: Failed to fetch latest version, aborting.\n");
+            return false;
+         }
+
+         FILE *file = fopen("version.txt", "r");
+         if (file) {
+            fgets(url, sizeof(url), file);
+            fclose(file);
+            remove("version.txt");
+         } else {
+            printf("[LAUNCHER-ERROR]: Failed to read version file, aborting.\n");
+            return false;
+         }
+
+         url[strcspn(url, "\r\n")] = 0;
+
+         printf("[LAUNCHER-INFO]: Latest PPSSPP release URL: %s\n", url);
          
          char downloadCmd[MAX_PATH * 2] = {0};
          snprintf(downloadCmd, sizeof(downloadCmd),

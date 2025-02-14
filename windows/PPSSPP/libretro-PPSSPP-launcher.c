@@ -205,7 +205,7 @@ bool retro_load_game(const struct retro_game_info *info)
          snprintf(psCommand, sizeof(psCommand),
     "powershell -Command \"$response = ((Invoke-WebRequest -Uri 'https://api.github.com/repos/hrydgard/ppsspp/releases/latest' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json);"
             "$tag = $response.tag_name;"
-            "$baseUrl = 'https://builds.ppsspp.org/builds/v' + $tag + '/'; "
+            "$baseUrl = 'https://builds.ppsspp.org/builds/v' + $tag + '-'; "
             "$pageContent = (Invoke-WebRequest -Uri $baseUrl).Content; "
             "$file = $pageContent -match '(ppsspp_win_v' + $tag + '-[\\d]+-g[0-9a-f]+\\.zip)'; "
             "if ($file) { $url = $baseUrl + $matches[0]; Write-Output $url } else { Write-Output 'ERROR' }\" > version.txt");

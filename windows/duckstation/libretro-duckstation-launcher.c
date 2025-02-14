@@ -160,6 +160,10 @@ bool retro_load_game(const struct retro_game_info *info)
       char currentVersionLocation[512] = {0};
       char newVersionLocation[512] = {0};
 
+      // Initialize paths for updater and downloader.
+      snprintf(currentVersionLocation, sizeof(currentVersionLocation), "%s\\version.txt", emuPath);
+      snprintf(newVersionLocation, sizeof(newVersionLocation), "%s\\update.txt", emuPath);
+
       // Create emulator folder if it doesn't exist
       if (GetFileAttributes(emuPath) == INVALID_FILE_ATTRIBUTES) {
          _mkdir(emuPath);
@@ -217,9 +221,6 @@ bool retro_load_game(const struct retro_game_info *info)
                "$name = $response.assets[5].name;"
                "$url = 'https://github.com/stenzek/duckstation/releases/download/' + $tag + '/' + $name; "
                "Write-Output $url\" > \"%s\\update.txt\"", emuPath);
-
-         snprintf(currentVersionLocation, sizeof(currentVersionLocation), "%s\\version.txt", emuPath);
-         snprintf(newVersionLocation, sizeof(newVersionLocation), "%s\\update.txt", emuPath);
           
          FILE *currentVersion = fopen(currentVersionLocation, "r");
          FILE *newVersion = fopen(newVersionLocation, "r");

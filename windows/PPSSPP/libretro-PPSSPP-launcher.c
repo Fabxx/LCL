@@ -187,7 +187,7 @@ bool retro_load_game(const struct retro_game_info *info)
       }
 
       // Search for binary executable
-      snprintf(searchPath, MAX_PATH, "%s\\PPSSPP*.exe", emuPath);
+      snprintf(searchPath, MAX_PATH, "%s\\PPSSPPWindows.exe", emuPath);
       hFind = FindFirstFile(searchPath, &findFileData);
 
       if (hFind != INVALID_HANDLE_VALUE) {
@@ -237,7 +237,8 @@ bool retro_load_game(const struct retro_game_info *info)
            
             char extractCmd[MAX_PATH * 2] = {0};
             snprintf(extractCmd, sizeof(extractCmd),
-             "powershell -Command \"Expand-Archive -Path '%s\\PPSSPP.zip' -DestinationPath '%s' -Force; Remove-Item -Path '%s\\PPSSPP.zip' -Force\"", emuPath, emuPath, emuPath);
+             "powershell -Command \"Expand-Archive -Path '%s\\PPSSPP.zip' -DestinationPath '%s' -Force;\"", 
+                     emuPath, emuPath, emuPath);
             
             if (system(extractCmd) != 0) {
                printf("[LAUNCHER-ERROR]: Failed to extract emulator, aborting.\n");

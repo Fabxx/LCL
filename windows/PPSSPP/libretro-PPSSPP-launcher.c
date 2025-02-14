@@ -200,10 +200,10 @@ bool retro_load_game(const struct retro_game_info *info)
          char url[MAX_PATH] = {0};
          char psCommand[MAX_PATH * 3] = {0};
          snprintf(psCommand, sizeof(psCommand),
-       "powershell -Command \"$response = (Invoke-WebRequest -Uri 'https://api.github.com/repos/PPSSPP/PPSSPP/releases/latest' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json; "
+       "powershell -Command \"$response = (Invoke-WebRequest -Uri 'https://api.github.com/repos/hrydgard/ppsspp/releases/latest' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json; "
                "$tag = $response.tag_name;"
                "$name = ppsspp_win.zip;"
-               "$url = 'https://github.com/PPSSPP/PPSSPP/releases/download/' + $tag + '/' + $name; "
+               "$url = 'https://github.com/hrydgard/ppsspp/releases/download/' + $tag + '/' + $name; "
                "Write-Output $url\" > version.txt");
 
          if (system(psCommand) != 0) {

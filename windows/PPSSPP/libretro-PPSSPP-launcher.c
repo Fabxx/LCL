@@ -229,6 +229,8 @@ bool retro_load_game(const struct retro_game_info *info)
          char downloadCmd[MAX_PATH * 2] = {0};
          snprintf(downloadCmd, sizeof(downloadCmd),
           "powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\PPSSPP.zip'\"", url, emuPath);
+
+          printf("DOWNLOAD COMMAND: %s\n", downloadCmd);
          
          if (system(downloadCmd) != 0) {
             printf("[LAUNCHER-ERROR]: Failed to download emulator, aborting.\n");

@@ -203,7 +203,7 @@ bool retro_load_game(const struct retro_game_info *info)
        "powershell -Command \"$response = (Invoke-WebRequest -Uri 'https://api.github.com/repos/hrydgard/ppsspp/releases/latest' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json; "
                "$tag = $response.tag_name -replace '\\.', '_';"
                "$name = 'ppsspp_win.zip';"
-               "$url = 'https://github.com/hrydgard/ppsspp/releases/download/' + $tag + '/' + $name; "
+               "$url = 'https://www.ppsspp.org/files/' + $tag + '/' + $name; "
                "Write-Output $url\" > version.txt");
 
          if (system(psCommand) != 0) {

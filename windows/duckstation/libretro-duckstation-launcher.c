@@ -1,3 +1,4 @@
+#include <minwindef.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -159,10 +160,12 @@ bool retro_load_game(const struct retro_game_info *info)
       const char *thumbDirs[] = {"\\Named_Boxarts", "\\Named_Snaps", "\\Named_Titles"};
       char currentVersionLocation[512] = {0};
       char newVersionLocation[512] = {0};
+      char urlLocation[512] = {0};
 
       // Initialize paths for updater and downloader.
-      snprintf(currentVersionLocation, sizeof(currentVersionLocation), "%s\\version.txt", emuPath);
-      snprintf(newVersionLocation, sizeof(newVersionLocation), "%s\\update.txt", emuPath);
+      snprintf(currentVersionLocation, sizeof(currentVersionLocation), "%s\\currentId.txt", emuPath);
+      snprintf(newVersionLocation, sizeof(newVersionLocation), "%s\\newId.txt", emuPath);
+      snprintf(urlLocation, sizeof(urlLocation), "%s\\url.txt", emuPath);
 
       // Create emulator folder if it doesn't exist
       if (GetFileAttributes(emuPath) == INVALID_FILE_ATTRIBUTES) {
@@ -209,9 +212,14 @@ bool retro_load_game(const struct retro_game_info *info)
          FindClose(hFind);
          printf("[LAUNCHER-INFO]: Found emulator: %s\n", executable);
 
-         // If executable was found, check for updates by comparing current URL with the last saved URL.
-         char currentUrl[MAX_PATH] = {0};
-         char newUrl[MAX_PATH] = {0};
+         /*If executable was found, check for updates by comparing current URL ID with the last saved URL ID. 
+           Build the new download URL with the new tag if any.
+           
+           If the IDs are different use the new fetched URL to download
+          */ 
+         char currentId[MAX_PATH] = {0};
+         char newId[MAX_PATH] = {0};
+         char urlString[MAX_PATH];
          char psCommand[MAX_PATH * 3] = {0};
 
          snprintf(psCommand, sizeof(psCommand),
@@ -219,7 +227,9 @@ bool retro_load_game(const struct retro_game_info *info)
                "$tag = $response.tag_name;"
                "$name = $response.assets[5].name;"
                "$url = 'https://github.com/stenzek/duckstation/releases/download/' + $tag + '/' + $name; "
-               "Write-Output $url\" > \"%s\"", newVersionLocation);
+               "$id  = $response.assets[5].id;"
+               "Write-Output $url\"  > \"%s\";"
+               "Write-Output $id\"   >  \"%s\"", urlLocation, newVersionLocation);
 
          if (system(psCommand) != 0) {
             printf("[LAUNCHER-ERROR]: Failed to fetch new version, aborting.\n");
@@ -228,27 +238,30 @@ bool retro_load_game(const struct retro_game_info *info)
           
          FILE *currentVersion = fopen(currentVersionLocation, "r");
          FILE *newVersion = fopen(newVersionLocation, "r");
+         FILE *url = fopen(urlLocation, "r");
          
-         if (currentVersion && newVersion) {
-            fgets(currentUrl, sizeof(currentUrl), currentVersion);
-            fgets(newUrl, sizeof(newUrl), newVersion);
+         if (currentVersion && newVersion && url) {
+            fgets(currentId, sizeof(currentId), currentVersion);
+            fgets(newId, sizeof(newId), newVersion);
+            fgets(urlString, sizeof(urlString), url);
             fclose(currentVersion);
             fclose(newVersion);
+            fclose(url);
          } else {
             printf("[LAUNCHER-ERROR]: Failed to fetch update, aborting.\n");
             return false;
          }
 
-         currentUrl[strcspn(currentUrl, "\r\n")] = 0;
-         newUrl[strcspn(newUrl, "\r\n")] = 0;
+         currentId[strcspn(currentId, "\r\n")] = 0;
+         newId[strcspn(newId, "\r\n")] = 0;
 
-         if (strcmp(currentUrl, newUrl) != 0) {
-             printf("[LAUNCHER-INFO]: duckstation update Found: %s\n", newUrl);
-             printf("[LAUNCHER-INFO]: current duckstation version: %s\n", currentUrl);
+         if (strcmp(currentId, newId) != 0) {
+             printf("[LAUNCHER-INFO]: duckstation update Found, new URL ID: %s\n", newId);
+             printf("[LAUNCHER-INFO]: current duckstation URL ID: %s\n", currentId);
 
              char downloadCmd[MAX_PATH * 2] = {0};
              snprintf(downloadCmd, sizeof(downloadCmd),
-          "powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\duckstation.zip'\"", newUrl, emuPath);
+          "powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\duckstation.zip'\"", urlString, emuPath);
          
          if (system(downloadCmd) != 0) {
             printf("[LAUNCHER-ERROR]: Failed to download emulator, aborting.\n");
@@ -274,23 +287,28 @@ bool retro_load_game(const struct retro_game_info *info)
       } else {
          printf("[LAUNCHER-INFO]: No executable found, downloading emulator.\n");
 
-         // Get lastes release of the emulator from URL
-      
+         /* If not emulator was downloaded before, download directly from last available URL 
+            Retreiving the release URL ID to check if the release has changed for the updater.
+            Each release generates a different ID for the same URL.
+         */
+
          char url[MAX_PATH];
          char psCommand[MAX_PATH * 3] = {0};
          snprintf(psCommand, sizeof(psCommand),
          "powershell -Command \"$response = (Invoke-WebRequest -Uri 'https://api.github.com/repos/stenzek/duckstation/releases/latest' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json; "
                "$tag = $response.tag_name;"
                "$name = $response.assets[5].name;"
+               "$id = $response.assets[5].id;"
                "$url = 'https://github.com/stenzek/duckstation/releases/download/' + $tag + '/' + $name; "
-               "Write-Output $url\" > \"%s\"", currentVersionLocation);
+               "Write-Output $url\" > \"%s\";"
+               "Write-Output $id\" > \"%s\"", urlLocation, currentVersionLocation);
 
          if (system(psCommand) != 0) {
             printf("[LAUNCHER-ERROR]: Failed to fetch latest version, aborting.\n");
             return false;
          }
 
-         FILE *file = fopen(currentVersionLocation, "r");
+         FILE *file = fopen(urlLocation, "r");
          if (file) {
             fgets(url, sizeof(url), file);
             fclose(file);

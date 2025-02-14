@@ -230,17 +230,29 @@ bool retro_load_game(const struct retro_game_info *info)
          
          char downloadCmd[MAX_PATH * 2] = {0};
          snprintf(downloadCmd, sizeof(downloadCmd),
-          "powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\pcsx2.zip'\"", url, emuPath);
+          "powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\pcsx2.7z'\"", url, emuPath);
          
          if (system(downloadCmd) != 0) {
             printf("[LAUNCHER-ERROR]: Failed to download emulator, aborting.\n");
             return false;
          } else {
             printf("[LAUNCHER-INFO]: Download successful, extracting emulator.\n");
+
+            // Install 7z4Powershell module, needed to extract 7z
+
+            char Psmodule[MAX_PATH * 2] = {0};
+            snprintf(Psmodule, sizeof(Psmodule),
+          "powershell -Command \"Install-Module -Name 7Zip4PowerShell -Force\"");
+         
+         if (system(Psmodule) != 0) {
+            printf("[LAUNCHER-ERROR]: Failed to install 7z module, aborting.\n");
+            return false;
+         } else {
+            printf("[LAUNCHER-INFO]: 7z module installed, extracting emulator.\n");
            
             char extractCmd[MAX_PATH * 2] = {0};
             snprintf(extractCmd, sizeof(extractCmd),
-             "powershell -Command \"Expand-Archive -Path '%s\\pcsx2.zip' -DestinationPath '%s' -Force; Remove-Item -Path '%s\\pcsx2.zip' -Force\"", emuPath, emuPath, emuPath);
+             "powershell -Command \"Expand-7zip -ArchiveFileName '%s\\pcsx2.7z' -TargetPath '%s' -Force; Remove-Item -Path '%s\\pcsx2.7z' -Force\"", emuPath, emuPath, emuPath);
             
             if (system(extractCmd) != 0) {
                printf("[LAUNCHER-ERROR]: Failed to extract emulator, aborting.\n");
@@ -250,6 +262,7 @@ bool retro_load_game(const struct retro_game_info *info)
             return false;
          }
       }
+   }
 
       if (info == NULL || info->path == NULL) {
             char args[512] = {0};

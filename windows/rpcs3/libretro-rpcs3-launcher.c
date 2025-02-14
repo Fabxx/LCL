@@ -195,7 +195,32 @@ bool retro_load_game(const struct retro_game_info *info)
          FindClose(hFind);
          printf("[LAUNCHER-INFO]: Found emulator: %s\n", executable);
       } else {
-         printf("[LAUNCHER-INFO]: No executable found, downloading emulator.\n");
+         printf("[LAUNCHER-INFO]: No executable found, looking for 7z4Powershell module.\n");
+
+         //check if module is installed
+
+         char SZ4Powershell[MAX_PATH * 2] = {0};
+         snprintf(SZ4Powershell, sizeof(SZ4Powershell), "powershell -Command \"Get-Module -ListAvailable -Name 7Zip4PowerShell\"");
+
+         if (system(SZ4Powershell) == 0) {
+            printf("[LAUNCHER-INFO]: Found 7z4Powershell module, skipping installation.\n");
+         } else {
+            
+            // Install 7z4Powershell module, needed to extract 7z
+
+            char Psmodule[MAX_PATH * 2] = {0};
+            snprintf(Psmodule, sizeof(Psmodule),
+       "powershell -Command \"Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Scope CurrentUser; "
+               "Set-PSRepository -Name 'PSGallery' -InstallationPolicy Trusted; "
+               "Install-Module -Name 7Zip4PowerShell -Force -Scope CurrentUser\"");
+
+             if (system(Psmodule) != 0) {
+               printf("[LAUNCHER-ERROR]: Failed to install 7z module, aborting.\n");
+               return false;
+            } else {
+               printf("[LAUNCHER-INFO]: 7z module installed, downloading emulator.\n");
+            }
+         }
          
          /**
           * Get lastes build from URL, in case of RPCS3 we need to sort the releases by the creation date

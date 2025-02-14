@@ -234,7 +234,6 @@ bool retro_load_game(const struct retro_game_info *info)
             printf("[LAUNCHER-ERROR]: Failed to download emulator, aborting.\n");
             return false;
          } else {
-            sleep(3);
             printf("[LAUNCHER-INFO]: Download successful, extracting emulator.\n");
            
             char extractCmd[MAX_PATH * 2] = {0};

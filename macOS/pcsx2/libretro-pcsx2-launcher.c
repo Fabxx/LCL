@@ -238,7 +238,7 @@ bool retro_load_game(const struct retro_game_info *info)
       // search for binary executable.
       char emuList[512] = {0};
 
-      snprintf(emuList, sizeof(emuList), "%s/Library/Application Support/RetroArch/system/pcsx2/PCSX2*/Contens/MacOS/PCSX2", home);
+      snprintf(emuList, sizeof(emuList), "%s/Library/Application Support/RetroArch/system/pcsx2/PCSX2*/Contents/MacOS/PCSX2", home);
 
       if (glob(emuList, 0, NULL, &buf) == 0) {
          for (size_t i = 0; i < buf.gl_pathc; i++) {
@@ -331,6 +331,7 @@ bool retro_load_game(const struct retro_game_info *info)
       } else {
          printf("[LAUNCHER-INFO]: BIOS folder already exist\n");
       }
+   }
 
       // Fallback to BIOS if "run core" is selected
 

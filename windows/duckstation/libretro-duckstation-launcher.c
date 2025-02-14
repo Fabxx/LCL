@@ -202,6 +202,65 @@ bool retro_load_game(const struct retro_game_info *info)
          snprintf(executable, MAX_PATH, "%s\\%s", emuPath, findFileData.cFileName);
          FindClose(hFind);
          printf("[LAUNCHER-INFO]: Found emulator: %s\n", executable);
+
+         // If executable was found, check for updates by comparing current URL with the last saved URL.
+         char currentUrl[MAX_PATH] = {0};
+         char newUrl[MAX_PATH] = {0};
+         char psCommand[MAX_PATH * 3] = {0};
+         bool updateAvailable = false;
+
+         snprintf(psCommand, sizeof(psCommand),
+         "powershell -Command \"$response = (Invoke-WebRequest -Uri 'https://api.github.com/repos/stenzek/duckstation/releases/latest' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json; "
+               "$tag = $response.tag_name;"
+               "$name = $response.assets[5].name;"
+               "$url = 'https://github.com/stenzek/duckstation/releases/download/' + $tag + '/' + $name; "
+               "Write-Output $url\" > update.txt");
+          
+         FILE *currentVersion = fopen("version.txt", "r");
+         FILE *newVersion = fopen("update.txt", "r");
+         
+         if (currentVersion && newVersion) {
+            fgets(currentUrl, sizeof(currentUrl), currentVersion);
+            fgets(newUrl, sizeof(newUrl), newVersion);
+            fclose(currentVersion);
+            fclose(newVersion);
+         } else {
+            printf("[LAUNCHER-ERROR]: Failed to read version file, aborting.\n");
+            return false;
+         }
+
+         currentUrl[strcspn(currentUrl, "\r\n")] = 0;
+         newUrl[strcspn(newUrl, "\r\n")] = 0;
+
+         if (strcmp(currentUrl, newUrl) != 0) {
+             printf("[LAUNCHER-INFO]: duckstation update Found: %s\n", newUrl);
+             printf("[LAUNCHER-INFO]: current duckstation version: %s\n", currentUrl);
+
+             char downloadCmd[MAX_PATH * 2] = {0};
+             snprintf(downloadCmd, sizeof(downloadCmd),
+          "powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\duckstation.zip'\"", newUrl, emuPath);
+         
+         if (system(downloadCmd) != 0) {
+            printf("[LAUNCHER-ERROR]: Failed to download emulator, aborting.\n");
+            return false;
+         } else {
+            printf("[LAUNCHER-INFO]: Download successful, extracting emulator.\n");
+           
+            char extractCmd[MAX_PATH * 2] = {0};
+            snprintf(extractCmd, sizeof(extractCmd),
+             "powershell -Command \"Expand-Archive -Path '%s\\duckstation.zip' -DestinationPath '%s' -Force; Remove-Item -Path '%s\\duckstation.zip' -Force\"", emuPath, emuPath, emuPath);
+            
+            if (system(extractCmd) != 0) {
+               printf("[LAUNCHER-ERROR]: Failed to extract emulator, aborting.\n");
+               return false;
+            }
+            printf("[LAUNCHER-INFO]: Success, rebooting RetroArch...\n");
+            return false;
+         }
+         } else {
+            printf("[LAUNCHER-INFO]: No duckstation updates found.\n");
+         }
+
       } else {
          printf("[LAUNCHER-INFO]: No executable found, downloading emulator.\n");
 
@@ -225,7 +284,6 @@ bool retro_load_game(const struct retro_game_info *info)
          if (file) {
             fgets(url, sizeof(url), file);
             fclose(file);
-            remove("version.txt");
          } else {
             printf("[LAUNCHER-ERROR]: Failed to read version file, aborting.\n");
             return false;

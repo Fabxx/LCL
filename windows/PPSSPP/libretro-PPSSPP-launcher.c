@@ -203,11 +203,12 @@ bool retro_load_game(const struct retro_game_info *info)
          char url[MAX_PATH] = {0};
          char psCommand[MAX_PATH * 3] = {0};
          snprintf(psCommand, sizeof(psCommand),
-       "powershell -Command \"$response = (Invoke-WebRequest -Uri 'https://api.github.com/repos/hrydgard/ppsspp/releases/latest' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json; "
-               "$tag = $response.tag_name -replace '\\.', '_';"
-               "$name = 'ppsspp_win.zip';"
-               "$url = 'https://www.ppsspp.org/files/' + $tag + '/' + $name; "
-               "Write-Output $url\" > version.txt");
+    "powershell -Command \"$response = ((Invoke-WebRequest -Uri 'https://api.github.com/repos/hrydgard/ppsspp/releases/latest' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json);"
+            "$tag = $response.tag_name;"
+            "$baseUrl = 'https://builds.ppsspp.org/builds/v' + $tag + '/'; "
+            "$pageContent = (Invoke-WebRequest -Uri $baseUrl).Content; "
+            "$file = $pageContent -match '(ppsspp_win_v' + $tag + '-[\\d]+-g[0-9a-f]+\\.zip)'; "
+            "if ($file) { $url = $baseUrl + $matches[0]; Write-Output $url } else { Write-Output 'ERROR' }\" > version.txt");
 
          if (system(psCommand) != 0) {
             printf("[LAUNCHER-ERROR]: Failed to fetch latest version, aborting.\n");
@@ -230,7 +231,7 @@ bool retro_load_game(const struct retro_game_info *info)
          
          char downloadCmd[MAX_PATH * 2] = {0};
          snprintf(downloadCmd, sizeof(downloadCmd),
-          "powershell -Command \"Invoke-WebRequest -Uri '%s' -UseBasicParsing -OutFile '%s\\PPSSPP.zip'\"", url, emuPath);
+          "powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\PPSSPP.zip'\"", url, emuPath);
 
           printf("DOWNLOAD COMMAND: %s\n", downloadCmd);
          

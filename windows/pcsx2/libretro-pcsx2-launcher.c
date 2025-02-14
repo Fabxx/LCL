@@ -289,7 +289,7 @@ bool retro_load_game(const struct retro_game_info *info)
             strncat(executable, args, sizeof(executable)-1);
       } else {
             char args[512] = {0};
-            snprintf(args, sizeof(args), " -fullscreen -bios \"%s\"", info->path);
+            snprintf(args, sizeof(args), " -fullscreen \"%s\"", info->path);
             strncat(executable, args, sizeof(executable)-1);
       }
 

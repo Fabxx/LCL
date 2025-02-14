@@ -4,6 +4,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include "libretro.h"
+#include <unistd.h>
 #include <windows.h>
 #include <direct.h>
 
@@ -233,11 +234,12 @@ bool retro_load_game(const struct retro_game_info *info)
             printf("[LAUNCHER-ERROR]: Failed to download emulator, aborting.\n");
             return false;
          } else {
+            sleep(3);
             printf("[LAUNCHER-INFO]: Download successful, extracting emulator.\n");
            
             char extractCmd[MAX_PATH * 2] = {0};
             snprintf(extractCmd, sizeof(extractCmd),
-             "powershell -Command \"Expand-Archive -Path '%s\\PPSSPP.zip' -DestinationPath '%s' -Force;\"", 
+             "powershell -Command \"Expand-Archive -Path '%s\\PPSSPP.zip' -DestinationPath '%s' -Force; Remove-Item -Path '%s\\PPSSPP.zip' -Force\"", 
                      emuPath, emuPath, emuPath);
             
             if (system(extractCmd) != 0) {

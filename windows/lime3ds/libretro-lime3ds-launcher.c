@@ -174,6 +174,14 @@ bool retro_load_game(const struct retro_game_info *info)
          printf("[LAUNCHER-INFO]: BIOS folder already exists\n");
       }
 
+      // Create thumnbnails folder if it doesn't exist
+      if (GetFileAttributes(thumbnailsPath) == INVALID_FILE_ATTRIBUTES) {
+         _mkdir(thumbnailsPath);
+         printf("[LAUNCHER-INFO]: Thumbnails folder created in %s\n", thumbnailsPath);
+      } else {
+         printf("[LAUNCHER-INFO]: Thumbanils folder already exists\n");
+      }
+
       // Create Thumbnail directories
       for (size_t i = 0; i < sizeof(thumbDirs)/sizeof(thumbDirs[0]); i++) {
          char fullPath[MAX_PATH] = {0};

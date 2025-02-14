@@ -157,6 +157,8 @@ bool retro_load_game(const struct retro_game_info *info)
       char executable[MAX_PATH] = {0};
       char searchPath[MAX_PATH] = {0};
       const char *thumbDirs[] = {"\\Named_Boxarts", "\\Named_Snaps", "\\Named_Titles"};
+      char currentVersionLocation[512] = {0};
+      char newVersionLocation[512] = {0};
 
       // Create emulator folder if it doesn't exist
       if (GetFileAttributes(emuPath) == INVALID_FILE_ATTRIBUTES) {
@@ -215,9 +217,12 @@ bool retro_load_game(const struct retro_game_info *info)
                "$name = $response.assets[5].name;"
                "$url = 'https://github.com/stenzek/duckstation/releases/download/' + $tag + '/' + $name; "
                "Write-Output $url\" > \"%s\\update.txt\"", emuPath);
+
+         snprintf(currentVersionLocation, sizeof(currentVersionLocation), "%s\\version.txt", emuPath);
+         snprintf(newVersionLocation, sizeof(newVersionLocation), "%s\\update.txt", emuPath);
           
-         FILE *currentVersion = fopen("version.txt", "r");
-         FILE *newVersion = fopen("update.txt", "r");
+         FILE *currentVersion = fopen(currentVersionLocation, "r");
+         FILE *newVersion = fopen(newVersionLocation, "r");
          
          if (currentVersion && newVersion) {
             fgets(currentUrl, sizeof(currentUrl), currentVersion);
@@ -280,7 +285,7 @@ bool retro_load_game(const struct retro_game_info *info)
             return false;
          }
 
-         FILE *file = fopen("version.txt", "r");
+         FILE *file = fopen(currentVersionLocation, "r");
          if (file) {
             fgets(url, sizeof(url), file);
             fclose(file);

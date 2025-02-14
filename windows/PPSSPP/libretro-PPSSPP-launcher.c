@@ -196,7 +196,9 @@ bool retro_load_game(const struct retro_game_info *info)
          FindClose(hFind);
          printf("[LAUNCHER-INFO]: Found emulator: %s\n", executable);
       } else {
-         // Get lastes release of the emulator from URL. tag_name for windows release contains _ instead of .
+         /* Get lastes release of the emulator from URL. tag_name for windows release contains _ instead of 
+            NOTE: PPSSPP Website makes redirects on download, so on PS we follow the redirects in order
+            to download the zip we need*/
       
          char url[MAX_PATH] = {0};
          char psCommand[MAX_PATH * 3] = {0};
@@ -228,7 +230,7 @@ bool retro_load_game(const struct retro_game_info *info)
          
          char downloadCmd[MAX_PATH * 2] = {0};
          snprintf(downloadCmd, sizeof(downloadCmd),
-          "powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\PPSSPP.zip'\"", url, emuPath);
+          "powershell -Command \"Invoke-WebRequest -AllowInsecureRedirect -Uri '%s' -MaximumRedirection 2 -OutFile '%s\\PPSSPP.zip'\" -", url, emuPath);
 
           printf("DOWNLOAD COMMAND: %s\n", downloadCmd);
          

@@ -220,6 +220,11 @@ bool retro_load_game(const struct retro_game_info *info)
                "$name = $response.assets[5].name;"
                "$url = 'https://github.com/stenzek/duckstation/releases/download/' + $tag + '/' + $name; "
                "Write-Output $url\" > \"%s\"", newVersionLocation);
+
+         if (system(psCommand) != 0) {
+            printf("[LAUNCHER-ERROR]: Failed to fetch new version, aborting.\n");
+            return false;
+         }
           
          FILE *currentVersion = fopen(currentVersionLocation, "r");
          FILE *newVersion = fopen(newVersionLocation, "r");

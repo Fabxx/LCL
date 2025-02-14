@@ -199,13 +199,14 @@ bool retro_load_game(const struct retro_game_info *info)
          printf("[LAUNCHER-INFO]: No executable found, looking for 7z4Powershell module.\n");
 
          //check if module is installed
-         
+
          char SZ4Powershell[MAX_PATH * 2] = {0};
-         snprintf(SZ4Powershell, sizeof(SZ4Powershell), "powershell -Command \"Expand-7zip\"");
+         snprintf(SZ4Powershell, sizeof(SZ4Powershell), "powershell -Command \"Get-Module -ListAvailable -Name 7Zip4PowerShell\"");
 
          if (system(SZ4Powershell) == 0) {
             printf("[LAUNCHER-INFO]: Found 7z4Powershell module, skipping installation.");
          } else {
+            
             // Install 7z4Powershell module, needed to extract 7z
 
             char Psmodule[MAX_PATH * 2] = {0};

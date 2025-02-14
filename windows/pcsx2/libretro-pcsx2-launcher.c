@@ -242,7 +242,7 @@ bool retro_load_game(const struct retro_game_info *info)
 
             char Psmodule[MAX_PATH * 2] = {0};
             snprintf(Psmodule, sizeof(Psmodule),
-          "powershell -Command \"Install-Module -Name 7Zip4PowerShell -Force\"");
+          "powershell -Command \"Install-Module -Name 7Zip4PowerShell -Force -Scope CurrentUser\"");
          
          if (system(Psmodule) != 0) {
             printf("[LAUNCHER-ERROR]: Failed to install 7z module, aborting.\n");

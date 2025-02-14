@@ -213,7 +213,6 @@ bool retro_load_game(const struct retro_game_info *info)
          char currentUrl[MAX_PATH] = {0};
          char newUrl[MAX_PATH] = {0};
          char psCommand[MAX_PATH * 3] = {0};
-         bool updateAvailable = false;
 
          snprintf(psCommand, sizeof(psCommand),
          "powershell -Command \"$response = (Invoke-WebRequest -Uri 'https://api.github.com/repos/stenzek/duckstation/releases/latest' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json; "
@@ -231,7 +230,7 @@ bool retro_load_game(const struct retro_game_info *info)
             fclose(currentVersion);
             fclose(newVersion);
          } else {
-            printf("[LAUNCHER-ERROR]: Failed to read version file, aborting.\n");
+            printf("[LAUNCHER-ERROR]: Failed to fetch update, aborting.\n");
             return false;
          }
 

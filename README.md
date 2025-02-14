@@ -102,7 +102,8 @@ NOTE: Covers must be in `.png` and placed in `thumbnails/system name` folder of 
 - RPCS3 Launcher is currently unusable. You can filter by `.bin` but that would find thousands of files,
   since RPCS3 requires you to decrypt and unpack the game files at the current state, and launch from `EBOOT.BIN`
 
-- Xenia canary requires wine and winetricks in order to run under `Linux`
+- Xenia canary requires wine and winetricks in order to run under `Linux`. This is handled by the Linux core by checking if
+  `wine` or `winetricks` commands fail. If they do, install them.
 
 
 # Dev notes

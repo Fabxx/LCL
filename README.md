@@ -124,6 +124,6 @@ You should create a issue with these messages, it will help to understand the is
 
 Example when running xemu (BIOS Configured in xemu itself before launch)
 
-[xemu.webm](https://github.com/user-attachments/assets/453079a7-3145-401d-a71d-ccf4d97f3627)
+https://github.com/user-attachments/assets/eec0f0eb-acb3-4790-906f-57cd18cc122d
 
 

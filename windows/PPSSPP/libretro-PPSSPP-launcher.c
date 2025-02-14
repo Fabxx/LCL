@@ -196,9 +196,10 @@ bool retro_load_game(const struct retro_game_info *info)
          FindClose(hFind);
          printf("[LAUNCHER-INFO]: Found emulator: %s\n", executable);
       } else {
-         /* Get lastes release of the emulator from URL. tag_name for windows release contains _ instead of 
-            NOTE: PPSSPP Website makes redirects on download, so on PS we follow the redirects in order
-            to download the zip we need*/
+         /* Get lastes release LINK from the official website. GitHub artifacts for windows are not available
+            a direct approach is to parse all available Links, and select the most recent one which contains
+            the lastes build
+         */
       
          char url[MAX_PATH] = {0};
          char psCommand[MAX_PATH * 3] = {0};

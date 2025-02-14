@@ -196,7 +196,22 @@ bool retro_load_game(const struct retro_game_info *info)
          FindClose(hFind);
          printf("[LAUNCHER-INFO]: Found emulator: %s\n", executable);
       } else {
-         printf("[LAUNCHER-INFO]: No executable found, downloading emulator.\n");
+         printf("[LAUNCHER-INFO]: No executable found, installing 7z module.\n");
+
+         // Install 7z4Powershell module, needed to extract 7z
+
+            char Psmodule[MAX_PATH * 2] = {0};
+            snprintf(Psmodule, sizeof(Psmodule),
+    "powershell -Command \"Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Scope CurrentUser; "
+            "Set-PSRepository -Name 'PSGallery' -InstallationPolicy Trusted; "
+            "Install-Module -Name 7Zip4PowerShell -Force -Scope CurrentUser\"");
+
+             if (system(Psmodule) != 0) {
+               printf("[LAUNCHER-ERROR]: Failed to install 7z module, aborting.\n");
+               return false;
+            } else {
+               printf("[LAUNCHER-INFO]: 7z module installed, downloading emulator.\n");
+            }
 
          // Get lastes release of the emulator from URL
       
@@ -237,26 +252,10 @@ bool retro_load_game(const struct retro_game_info *info)
             return false;
          } else {
             printf("[LAUNCHER-INFO]: Download successful, extracting emulator.\n");
-
-            // Install 7z4Powershell module, needed to extract 7z
-
-            char Psmodule[MAX_PATH * 2] = {0};
-            snprintf(Psmodule, sizeof(Psmodule),
-    "powershell -Command \"Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Scope CurrentUser; "
-            "Set-PSRepository -Name 'PSGallery' -InstallationPolicy Trusted; "
-            "Install-Module -Name 7Zip4PowerShell -Force -Scope CurrentUser\"");
-
-
-         
-         if (system(Psmodule) != 0) {
-            printf("[LAUNCHER-ERROR]: Failed to install 7z module, aborting.\n");
-            return false;
-         } else {
-            printf("[LAUNCHER-INFO]: 7z module installed, extracting emulator.\n");
            
             char extractCmd[MAX_PATH * 2] = {0};
             snprintf(extractCmd, sizeof(extractCmd),
-             "powershell -Command \"Expand-7zip -ArchiveFileName '%s\\pcsx2.7z' -TargetPath '%s' -Force; Remove-Item -Path '%s\\pcsx2.7z' -Force\"", emuPath, emuPath, emuPath);
+             "powershell -Command \"Expand-7zip -ArchiveFileName '%s\\pcsx2.7z' -TargetPath '%s'; Remove-Item -Path '%s\\pcsx2.7z' -Force\"", emuPath, emuPath, emuPath);
             
             if (system(extractCmd) != 0) {
                printf("[LAUNCHER-ERROR]: Failed to extract emulator, aborting.\n");
@@ -266,7 +265,6 @@ bool retro_load_game(const struct retro_game_info *info)
             return false;
          }
       }
-   }
 
       if (info == NULL || info->path == NULL) {
             char args[512] = {0};

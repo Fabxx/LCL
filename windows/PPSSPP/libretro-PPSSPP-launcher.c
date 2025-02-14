@@ -203,7 +203,7 @@ bool retro_load_game(const struct retro_game_info *info)
          char url[MAX_PATH] = {0};
          char psCommand[MAX_PATH * 3] = {0};
          snprintf(psCommand, sizeof(psCommand),
-    "powershell -Command \"$response = ((Invoke-WebRequest -Uri 'https://api.github.com/repos/hrydgard/ppsspp/releases/latest' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json);"
+    "powershell -Command \"$response = (Invoke-WebRequest -Uri 'https://api.github.com/repos/hrydgard/ppsspp/releases/latest' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json;"
             "$tag = $response.tag_name;"
             "$baseUrl = 'https://builds.ppsspp.org/builds/v' + $tag + '-'; "
             "$pageContent = (Invoke-WebRequest -Uri $baseUrl).Content; "

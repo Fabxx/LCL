@@ -153,11 +153,10 @@ bool retro_load_game(const struct retro_game_info *info)
       HANDLE hFind;
       char emuPath[MAX_PATH] = "C:\\RetroArch-Win64\\system\\mGBA";
       char biosPath[MAX_PATH] = "C:\\RetroArch-Win64\\system\\mGBA\\bios";
-      char thumbnailsPath[MAX_PATH] = "C:\\RetroArch-Win64\\thumbnails";
+      char thumbnailsPath[MAX_PATH] = "C:\\RetroArch-Win64\\thumbnails\\Nintendo - Game Boy Advance";
       char executable[MAX_PATH] = {0};
       char searchPath[MAX_PATH] = {0};
-      const char *thumbDirs[] = {"\\Nintendo - Game Boy Advance", "\\Named_Boxarts", "\\Named_Snaps", "\\Named_Titles"};
-      const char *url = "https://github.com/mgba-emu/mgba/releases/download/0.10.4/mGBA-0.10.4-win64.7z";
+      const char *thumbDirs[] = {"\\Named_Boxarts", "\\Named_Snaps", "\\Named_Titles"};
 
       // Create emulator folder if it doesn't exist
       if (GetFileAttributes(emuPath) == INVALID_FILE_ATTRIBUTES) {

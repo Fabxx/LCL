@@ -153,11 +153,10 @@ bool retro_load_game(const struct retro_game_info *info)
       HANDLE hFind;
       char emuPath[MAX_PATH] = "C:\\RetroArch-Win64\\system\\lime3ds";
       char biosPath[MAX_PATH] = "C:\\RetroArch-Win64\\system\\lime3ds\\bios";
-      char thumbnailsPath[MAX_PATH] = "C:\\RetroArch-Win64\\thumbnails";
+      char thumbnailsPath[MAX_PATH] = "C:\\RetroArch-Win64\\thumbnails\\Nintendo - 3DS";
       char executable[MAX_PATH] = {0};
       char searchPath[MAX_PATH] = {0};
-      const char *thumbDirs[] = {"\\Nintendo - 3DS", "\\Named_Boxarts", "\\Named_Snaps", "\\Named_Titles"};
-      const char *url = "https://github.com/Lime3DS/lime3ds-archive/releases/download/2119.1/lime3ds-2119.1-windows-msvc.zip";
+      const char *thumbDirs[] = {"\\Named_Boxarts", "\\Named_Snaps", "\\Named_Titles"};
 
       // Create emulator folder if it doesn't exist
       if (GetFileAttributes(emuPath) == INVALID_FILE_ATTRIBUTES) {

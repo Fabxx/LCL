@@ -153,10 +153,10 @@ bool retro_load_game(const struct retro_game_info *info)
       HANDLE hFind;
       char emuPath[MAX_PATH] = "C:\\RetroArch-Win64\\system\\PPSSPP";
       char biosPath[MAX_PATH] = "C:\\RetroArch-Win64\\system\\PPSSPP\\bios";
-      char thumbnailsPath[MAX_PATH] = "C:\\RetroArch-Win64\\thumbnails";
+      char thumbnailsPath[MAX_PATH] = "C:\\RetroArch-Win64\\thumbnails\\Sony - Playstation Portable";
       char executable[MAX_PATH] = {0};
       char searchPath[MAX_PATH] = {0};
-      const char *thumbDirs[] = {"\\Sony - Playstation Portable", "\\Named_Boxarts", "\\Named_Snaps", "\\Named_Titles"};
+      const char *thumbDirs[] = {"\\Named_Boxarts", "\\Named_Snaps", "\\Named_Titles"};
 
       // Create emulator folder if it doesn't exist
       if (GetFileAttributes(emuPath) == INVALID_FILE_ATTRIBUTES) {

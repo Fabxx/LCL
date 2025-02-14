@@ -335,13 +335,9 @@ bool retro_load_game(const struct retro_game_info *info)
 
       // Fallback to BIOS if "run core" is selected
 
-      if (info == NULL || info->path == NULL) {
-            char args[128] = {0};
-            snprintf(args, sizeof(args), " -fullscreen -bios");
-            strncat(executable, args, sizeof(executable)-1);
-      } else {
+      if (info != NULL && info->path != NULL) {
          char args[256] = {0};
-         snprintf(args, sizeof(args), " -fullscreen \"%s\"", info->path);
+         snprintf(args, sizeof(args), " --fullscreen \"%s\"", info->path);
          strncat(executable, args, sizeof(executable)-1);
       }
 

@@ -195,13 +195,13 @@ bool retro_load_game(const struct retro_game_info *info)
          FindClose(hFind);
          printf("[LAUNCHER-INFO]: Found emulator: %s\n", executable);
       } else {
-         // Get lastes release of the emulator from URL
+         // Get lastes release of the emulator from URL. tag_name for windows release contains _ instead of .
       
          char url[MAX_PATH] = {0};
          char psCommand[MAX_PATH * 3] = {0};
          snprintf(psCommand, sizeof(psCommand),
        "powershell -Command \"$response = (Invoke-WebRequest -Uri 'https://api.github.com/repos/hrydgard/ppsspp/releases/latest' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json; "
-               "$tag = $response.tag_name;"
+               "$tag = $response.tag_name -replace '\\.', '_';"
                "$name = 'ppsspp_win.zip';"
                "$url = 'https://github.com/hrydgard/ppsspp/releases/download/' + $tag + '/' + $name; "
                "Write-Output $url\" > version.txt");

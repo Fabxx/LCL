@@ -202,16 +202,13 @@ bool retro_load_game(const struct retro_game_info *info)
       
          char url[MAX_PATH] = {0};
          char psCommand[MAX_PATH * 3] = {0};
-         snprintf(psCommand, sizeof(psCommand),
-        "powershell -Command \""
-               "$release = (Invoke-WebRequest -Uri 'https://api.github.com/repos/hrydgard/ppsspp/releases/latest' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json; "
-               "$tag = $release.tag_name;"
-               "$tags = (Invoke-WebRequest -Uri 'https://api.github.com/repos/hrydgard/ppsspp/tags' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json; "
-               "$commitHash = ($tags | Where-Object { $_.name -eq ($tag) }).commit.sha.Substring(0, 10); "
-               "$commitCount = ((Invoke-WebRequest -Uri 'https://api.github.com/repos/hrydgard/ppsspp' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json).open_issues_count; "
-               "$url = 'https://builds.ppsspp.org/builds/' + $tag + '-' + $commitCount + '-g' + $commitHash + '/ppsspp_win_' + $tag + '-' + $commitCount + '-g' + $commitHash + '.zip'; "
-               "Invoke-WebRequest -Uri $url -OutFile 'PPSSPP.zip'\""
-            );
+        snprintf(psCommand, sizeof(psCommand),
+     "powershell -Command \""
+            "$release = Invoke-WebRequest -Uri 'https://www.ppsspp.org/download/' -UseBasicParsing; "
+            "$downloadLinks = $release.Links | Where-Object { $_.href -match 'files/.*/ppsspp_win.zip' } | Select-Object -ExpandProperty href; "
+            "$latestLink = $downloadLinks | Sort-Object -Descending | Select-Object -First 1; "
+            "if ($latestLink -and $latestLink -notmatch '^https?://') { $latestLink = 'https://www.ppsspp.org' + $latestLink }; "
+            "Write-Output $latestLink\" > version.txt");
 
          if (system(psCommand) != 0) {
             printf("[LAUNCHER-ERROR]: Failed to fetch latest version, aborting.\n");

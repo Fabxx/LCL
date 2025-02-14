@@ -200,35 +200,7 @@ bool retro_load_game(const struct retro_game_info *info)
             NOTE: PPSSPP Website makes redirects on download, so on PS we follow the redirects in order
             to download the zip we need*/
       
-         char url[MAX_PATH] = {0};
-         char psCommand[MAX_PATH * 3] = {0};
-         snprintf(psCommand, sizeof(psCommand),
-    "powershell -Command \"$response = ((Invoke-WebRequest -Uri 'https://api.github.com/repos/hrydgard/ppsspp/releases/latest' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json);"
-            "$tag = $response.tag_name;"
-            "$baseUrl = 'https://builds.ppsspp.org/builds/v' + $tag + '-'; "
-            "try { $pageContent = (Invoke-WebRequest -Uri 'https://builds.ppsspp.org/builds/' -ErrorAction Stop).Content; } catch { Write-Output 'ERROR'; exit } "
-            "$regex = 'v' + [regex]::Escape($tag) + '-[\\d]+-g[0-9a-f]+/ppsspp_win_v' + [regex]::Escape($tag) + '-[\\d]+-g[0-9a-f]+\\.zip';"
-            "if ($pageContent -match $regex) { $url = 'https://builds.ppsspp.org/builds/' + $matches[0]; Write-Output $url } else { Write-Output 'ERROR' }\" > version.txt");
-
-
-         if (system(psCommand) != 0) {
-            printf("[LAUNCHER-ERROR]: Failed to fetch latest version, aborting.\n");
-            return false;
-         }
-
-         FILE *file = fopen("version.txt", "r");
-         if (file) {
-            fgets(url, sizeof(url), file);
-            fclose(file);
-            remove("version.txt");
-         } else {
-            printf("[LAUNCHER-ERROR]: Failed to read version file, aborting.\n");
-            return false;
-         }
-
-         url[strcspn(url, "\r\n")] = 0;
-
-         printf("[LAUNCHER-INFO]: Latest PPSSPP release URL: %s\n", url);
+         char url[MAX_PATH] = "https://builds.ppsspp.org/builds/v1.18.1-1076-g87cf0be961/ppsspp_win_v1.18.1-1076-g87cf0be961.zip";
          
          char downloadCmd[MAX_PATH * 2] = {0};
          snprintf(downloadCmd, sizeof(downloadCmd),

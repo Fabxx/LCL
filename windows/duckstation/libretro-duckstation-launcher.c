@@ -220,10 +220,8 @@ bool retro_load_game(const struct retro_game_info *info)
            This is needed because on duckstation the rolling releases are on the same tag 
            called "latest", so if you try to compare the URLs those will be always equal.
           */ 
-         int currentId = 0;
-         int newId = 0;
-         char urlString[MAX_PATH];
-         char psCommand[MAX_PATH * 3] = {0};
+         int currentId = 0, newId = 0;
+         char currentIdStr[32], newIdStr[32], urlString[MAX_PATH], psCommand[MAX_PATH * 3] = {0};
 
          snprintf(psCommand, sizeof(psCommand),
          "powershell -Command \"$response = (Invoke-WebRequest -Uri 'https://api.github.com/repos/stenzek/duckstation/releases/latest' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json; "
@@ -244,12 +242,14 @@ bool retro_load_game(const struct retro_game_info *info)
          FILE *url = fopen(urlLocation, "r");
          
          if (currentVersion && newVersion && url) {
-            fread(&currentId, sizeof(currentId), 1, currentVersion);
-            fread(&newId, sizeof(newId), 1, newVersion);
+            fgets(currentIdStr, sizeof(currentIdStr), currentVersion);
+            fgets(newIdStr, sizeof(newIdStr), newVersion);
             fgets(urlString, sizeof(urlString), url);
             fclose(currentVersion);
             fclose(newVersion);
             fclose(url);
+            currentId = atoi(currentIdStr);
+            newId = atoi(newIdStr);
          } else {
             printf("[LAUNCHER-ERROR]: Failed to fetch update, aborting.\n");
             return false;

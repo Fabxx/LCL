@@ -1,3 +1,4 @@
+#include <minwindef.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -134,178 +135,251 @@ void retro_run(void)
    environ_cb(RETRO_ENVIRONMENT_SHUTDOWN, NULL);
 }
 
-/**
- * libretro callback; Called when a game is to be loaded.
- *  
- *  - Windows:
- *       - create dir for emulator files and bios
-		 - setup folders
- *       - search for .exe binary with name pattern.
- *		
- * - Final Steps:
- *       - attach ROM absolute path from info->path in double quotes for system() function, avoids truncation.
- *       - if info->path has no ROM, fallback to bios file placed by the user.
-         NOTE: info structure must be checked when is not null
- */
-bool retro_load_game(const struct retro_game_info *info)
+
+// Setup emulator dirs and try to find executable.
+static char *setup(char **Paths, size_t numPaths, char *executable)
 {
-      WIN32_FIND_DATA findFileData;
-      HANDLE hFind;
-      char emuPath[MAX_PATH] = "C:\\RetroArch-Win64\\system\\rpcs3";
-      char biosPath[MAX_PATH] = "C:\\RetroArch-Win64\\system\\rpcs3\\bios";
-      char thumbnailsPath[MAX_PATH] = "C:\\RetroArch-Win64\\thumbnails\\Sony - Playstation 3";
-      char executable[MAX_PATH] = {0};
-      char searchPath[MAX_PATH] = {0};
-      const char *thumbDirs[] = {"\\Named_Boxarts", "\\Named_Snaps", "\\Named_Titles"};
+   WIN32_FIND_DATA findFileData;
+   HANDLE hFind;
+   char searchPath[MAX_PATH] = {0};
 
-      // Create emulator folder if it doesn't exist
-      if (GetFileAttributes(emuPath) == INVALID_FILE_ATTRIBUTES) {
-         _mkdir(emuPath);
-         printf("[LAUNCHER-INFO]: Emulator folder created in %s\n", emuPath);
+   log_cb(RETRO_LOG_INFO, "SIZE: %llu\n", Paths);
+
+   // Create Default Dirs if they don't exist.
+   for (size_t i = 0; i < numPaths; i++) {
+      if (GetFileAttributes(Paths[i]) == INVALID_FILE_ATTRIBUTES) {
+         _mkdir(Paths[i]);
+         log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: created folder in %s\n", Paths[i]);
       } else {
-         printf("[LAUNCHER-INFO]: Emulator folder already exists\n");
+         log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: %s folder already exists\n", Paths[i]);
       }
+   }
 
-      // Create BIOS folder if it doesn't exist
-      if (GetFileAttributes(biosPath) == INVALID_FILE_ATTRIBUTES) {
-         _mkdir(biosPath);
-         printf("[LAUNCHER-INFO]: BIOS folder created in %s\n", biosPath);
-      } else {
-         printf("[LAUNCHER-INFO]: BIOS folder already exists\n");
-      }
+   // Lookup for Emulator Executable inside Emulator folder. hFind resolves wildcard.
+   snprintf(searchPath, MAX_PATH, "%s\\rpcs3*.exe", Paths[0]);
+   hFind = FindFirstFile(searchPath, &findFileData);
 
-      // Create thumnbnails folder if it doesn't exist
-      if (GetFileAttributes(thumbnailsPath) == INVALID_FILE_ATTRIBUTES) {
-         _mkdir(thumbnailsPath);
-         printf("[LAUNCHER-INFO]: Thumbnails folder created in %s\n", thumbnailsPath);
-      } else {
-         printf("[LAUNCHER-INFO]: Thumbanils folder already exists\n");
-      }
-
-      // Create Thumbnail directories
-      for (size_t i = 0; i < sizeof(thumbDirs)/sizeof(thumbDirs[0]); i++) {
-         char fullPath[MAX_PATH] = {0};
-         snprintf(fullPath, sizeof(fullPath), "%s%s", thumbnailsPath, thumbDirs[i]);
-         if (GetFileAttributes(fullPath) == INVALID_FILE_ATTRIBUTES) {
-            _mkdir(fullPath);
-            printf("[LAUNCHER-INFO]: %s folder created\n", fullPath);
-         } else {
-            printf("[LAUNCHER-INFO]: %s folder already exists\n", fullPath);
-         }
-      }
-
-      // Search for binary executable
-      snprintf(searchPath, MAX_PATH, "%s\\rpcs3*.exe", emuPath);
-      hFind = FindFirstFile(searchPath, &findFileData);
-
-      if (hFind != INVALID_HANDLE_VALUE) {
-         snprintf(executable, MAX_PATH, "%s\\%s", emuPath, findFileData.cFileName);
+   if (hFind != INVALID_HANDLE_VALUE) {
+         snprintf(executable, MAX_PATH+1, "%s\\%s", Paths[0], findFileData.cFileName);
          FindClose(hFind);
-         printf("[LAUNCHER-INFO]: Found emulator: %s\n", executable);
-      } else {
-         printf("[LAUNCHER-INFO]: No executable found, looking for 7z4Powershell module.\n");
+         log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Found emulator: %s\n", executable);
+         return executable;
+   } else {
+      log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Downloading emulator.\n");
+      executable = "";
+      return executable;
+   }
+}
 
-         //check if module is installed
+/* in case of rpcs3, we get lastes release LINK from the official website. GitHub artifacts for windows are not available
+   a direct approach is to parse all available Links, and select the most recent one which contains
+   the lastes build
+*/
+static bool downloader(char **dirs, char **downloaderDirs, char **githubUrls, char *executable, size_t numPaths)
+{
 
-         char SZ4Powershell[MAX_PATH * 2] = {0};
-         snprintf(SZ4Powershell, sizeof(SZ4Powershell), "powershell -Command \"Get-Module -ListAvailable -Name 7Zip4PowerShell\"");
+   char url[260] = {0}, currentUrl[260] = {0};
+   char psCommand[MAX_PATH * 3] = {0}, downloadCmd[MAX_PATH * 2] = {0}; 
 
-         if (system(SZ4Powershell) == 0) {
-            printf("[LAUNCHER-INFO]: Found 7z4Powershell module, skipping installation.\n");
-         } else {
-            
-            // Install 7z4Powershell module, needed to extract 7z
+   setup(dirs, numPaths, executable);
 
-            char Psmodule[MAX_PATH * 2] = {0};
-            snprintf(Psmodule, sizeof(Psmodule),
-       "powershell -Command \"Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Scope CurrentUser; "
-               "Set-PSRepository -Name 'PSGallery' -InstallationPolicy Trusted; "
-               "Install-Module -Name 7Zip4PowerShell -Force -Scope CurrentUser\"");
-
-             if (system(Psmodule) != 0) {
-               printf("[LAUNCHER-ERROR]: Failed to install 7z module, aborting.\n");
-               return false;
-            } else {
-               printf("[LAUNCHER-INFO]: 7z module installed, downloading emulator.\n");
-            }
-         }
-         
-         /**
-          * Get lastes build from URL, in case of RPCS3 we need to sort the releases by the creation date
-            the full URL is then formed by the base download URL with the tag and the release name
-            in RPCS3 The releases are treated as objects, we need to get the most recent release
-            at the first position
-          * 
-          */
-      
-         char url[MAX_PATH];
-         char psCommand[MAX_PATH * 3] = {0};
+   if (strlen(executable) == 0) {
          snprintf(psCommand, sizeof(psCommand),
-    "powershell -Command \"$response = Invoke-WebRequest -Uri 'https://api.github.com/repos/RPCS3/rpcs3-binaries-win/releases' -Headers @{Accept='application/json'}; "
-            "$release = $response.Content | ConvertFrom-Json | Sort-Object -Property created_at -Descending; "
-            "$tag = $release[0].tag_name; "
-            "$name = $release[0].assets[0].name; "
-            "$url = 'https://github.com/RPCS3/rpcs3-binaries-win/releases/download/' + $tag + '/' + $name; "
-            "Write-Output $url\" > version.txt; "
-            "Write-Output 'Latest RPCS3 release URL: ' + $url\""); 
+            "powershell -Command \"$response = Invoke-WebRequest -Uri '%s' -Headers @{Accept='application/json'}; "
+                  "$release = $response.Content | ConvertFrom-Json | Sort-Object -Property created_at -Descending; "
+                  "$tag = $release[0].tag_name; "
+                  "$name = $release[0].assets[0].name; "
+                  "$url = '%s' + $tag + '/' + $name; "
+                  "[System.IO.File]::WriteAllText('%s', $url, [System.Text.Encoding]::ASCII)\"", 
+                  githubUrls[0], githubUrls[1], downloaderDirs[0]); 
 
-
-
-
-         if (system(psCommand) != 0) {
-            printf("[LAUNCHER-ERROR]: Failed to fetch latest version, aborting.\n");
+      
+      if (system(psCommand) != 0) {
+            log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed to fetch download URL, aborting.\n");
             return false;
+         } else { // If it's first download, extract only URL for download. Current version is already saved by powershell.
+               FILE *urlFile = fopen(downloaderDirs[0], "r");
+
+               if (!urlFile) {
+                  log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Powershell failed to export ID of download URL. Aborting.\n");
+                  return false;
+               } else {
+                   fgets(url, sizeof(url), urlFile);
+                   fclose(urlFile);
+               }
          }
-
-         FILE *file = fopen("version.txt", "r");
-         if (file) {
-            fgets(url, sizeof(url), file);
-            fclose(file);
-            remove("version.txt");
-         } else {
-            printf("[LAUNCHER-ERROR]: Failed to read version file, aborting.\n");
-            return false;
-         }
-
-         url[strcspn(url, "\r\n")] = 0;
-
-         printf("[LAUNCHER-INFO]: Latest Rpcs3 release URL: %s\n", url);
          
-         char downloadCmd[MAX_PATH * 2] = {0};
          snprintf(downloadCmd, sizeof(downloadCmd),
-          "powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\rpcs3.zip'\"", url, emuPath);
+          "powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\rpcs3.7z'\"", url, dirs[0]);
          
          if (system(downloadCmd) != 0) {
-            printf("[LAUNCHER-ERROR]: Failed to download emulator, aborting.\n");
+            log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed to download emulator, aborting.\n");
             return false;
          } else {
-            printf("[LAUNCHER-INFO]: Download successful, extracting emulator.\n");
-           
-            char extractCmd[MAX_PATH * 2] = {0};
-            snprintf(extractCmd, sizeof(extractCmd),
-             "powershell -Command \"Expand-Archive -Path '%s\\rpcs3.zip' -DestinationPath '%s' -Force; Remove-Item -Path '%s\\rpcs3.zip' -Force\"", emuPath, emuPath, emuPath);
-            
-            if (system(extractCmd) != 0) {
-               printf("[LAUNCHER-ERROR]: Failed to extract emulator, aborting.\n");
-               return false;
-            }
-            printf("[LAUNCHER-INFO]: Success, rebooting RetroArch...\n");
-            return false;
+            log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Download successful, extracting emulator.\n");
+            return true;
          }
-      }
+      } else { // If it's not the first download, fetch Link URL.
+            snprintf(psCommand, sizeof(psCommand),
+             "powershell -Command \"$response = Invoke-WebRequest -Uri '%s' -Headers @{Accept='application/json'}; "
+                     "$release = $response.Content | ConvertFrom-Json | Sort-Object -Property created_at -Descending; "
+                     "$tag = $release[0].tag_name; "
+                     "$name = $release[0].assets[0].name; "
+                     "$url = '%s' + $tag + '/' + $name; "
+                     "[System.IO.File]::WriteAllText('%s', $url, [System.Text.Encoding]::ASCII)\"", 
+                     githubUrls[0], githubUrls[1], downloaderDirs[1]); 
+      
+      if (system(psCommand) != 0) {
+            log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed to fetch update, aborting.\n");
+            return false;
+         } else { // Extract URL, currentID and newID for comparison
+               FILE *urlFile = fopen(downloaderDirs[0], "r");
+               FILE *currentVersionFile = fopen(downloaderDirs[1], "r");
+   
+               if (!urlFile && !currentVersionFile) {
+                   log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Metadata files not found. Aborting.\n");
+                   return false;
+               }
 
-      if (info != NULL && info->path != NULL) {
-            char args[512] = {0};
-            snprintf(args, sizeof(args), " --no-gui \"%s\"", info->path);
-            strncat(executable, args, sizeof(executable)-1);
-      } 
+               fgets(url, sizeof(url), urlFile);
+               fgets(currentUrl, sizeof(currentUrl), currentVersionFile);
+
+               fclose(urlFile);
+               fclose(currentVersionFile);
+                
+               if (strcmp(url, currentUrl) != 0) {
+                  log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Update found. Downloading Update\n");
+                  snprintf(downloadCmd, sizeof(downloadCmd),
+                  "powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\rpcs3.7z'\"", url, dirs[0]);
+            
+               if (system(downloadCmd) != 0) {
+                  log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed to download update, aborting.\n");
+                  return false;
+               } else {
+                  // Overwrite Current url.txt file with new download Link if download was successfull.
+                  snprintf(psCommand, sizeof(psCommand),
+             "powershell -Command \"$response = Invoke-WebRequest -Uri '%s' -Headers @{Accept='application/json'}; "
+                     "$release = $response.Content | ConvertFrom-Json | Sort-Object -Property created_at -Descending; "
+                     "$tag = $release[0].tag_name; "
+                     "$name = $release[0].assets[0].name; "
+                     "$url = '%s' + $tag + '/' + $name; "
+                     "[System.IO.File]::WriteAllText('%s', $url, [System.Text.Encoding]::ASCII)\"", 
+                     githubUrls[0], githubUrls[1], downloaderDirs[0]); 
+                  
+                  if (system(psCommand) != 0) {
+                     log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed to update current version file. Aborting.\n");
+                     return false;
+                  }
+                  log_cb(RETRO_LOG_ERROR, "[LAUNCHER-INFO]: Download successful, extracting update.\n");
+                  return true;
+               }
+         } 
+      }
+   }
+   log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: No update found.\n");
+   return false;
+}
+   
+
+static bool extractor(char **dirs)
+{
+   // check if 7z module is installed
+
+   char SZ4Powershell[MAX_PATH * 2] = {0};
+   snprintf(SZ4Powershell, sizeof(SZ4Powershell), "powershell -Command \"Get-Module -ListAvailable -Name 7Zip4PowerShell\"");
+
+   if (system(SZ4Powershell) == 0) {
+      log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Found 7z4Powershell module, skipping installation.\n");
+   } else {
+      // Install 7z4Powershell module, needed to extract 7z
+      char Psmodule[MAX_PATH * 2] = {0};
+      snprintf(Psmodule, sizeof(Psmodule),
+   "powershell -Command \"Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Scope CurrentUser; "
+          "Set-PSRepository -Name 'PSGallery' -InstallationPolicy Trusted; "
+          "Install-Module -Name 7Zip4PowerShell -Force -Scope CurrentUser\"");
+
+         if (system(Psmodule) != 0) {
+         log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed to install 7z module, aborting.\n");
+         return false;
+      } else {
+         log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: 7z module installed, downloading emulator.\n");
+      }
+   }
+
+   char extractCmd[MAX_PATH * 2] = {0};
+   snprintf(extractCmd, sizeof(extractCmd),
+            "powershell -Command \"Expand-7zip -ArchiveFileName '%s\\rpcs3.7z' -TargetPath '%s'; Remove-Item -Path '%s\\rpcs3.7z' -Force\"", 
+            dirs[0], dirs[0], dirs[0]);
+            
+   if (system(extractCmd) != 0) {
+      log_cb(RETRO_LOG_ERROR,"[LAUNCHER-ERROR]: Failed to extract emulator, aborting.\n");
+      return false;
+   } else {
+      log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Success, running emulator.\n");
+      return true; // if false will close core.
+   }
+}
+
+
+/**
+ * libretro callback; Called when a game is to be loaded. 
+  - attach ROM absolute path from info->path in double quotes for system() function, avoids truncation.
+  - if info->path has no ROM, fallback to bios file placed by the user.
+  NOTE: info structure must be checked when is not null
+ */
+
+bool retro_load_game(const struct retro_game_info *info)
+{
+
+   // Default Emulator Paths
+   char *dirs[] = {
+         "C:\\RetroArch-Win64\\system\\rpcs3",
+         "C:\\RetroArch-Win64\\system\\rpcs3\\bios",
+         "C:\\RetroArch-Win64\\thumbnails\\Sony - Playstation 3",
+         "C:\\RetroArch-Win64\\thumbnails\\Sony - Playstation 3\\Named_Boxarts",
+         "C:\\RetroArch-Win64\\thumbnails\\Sony - Playstation 3\\Named_Snaps",
+         "C:\\RetroArch-Win64\\thumbnails\\Sony - Playstation 3\\Named_Titles"
+      };
+
+   size_t numPaths = sizeof(dirs)/sizeof(char*);
+
+   // Emulator build versions and URL to download. Content is generated from powershell cmds
+   char *downloaderDirs[] = {
+      "C:\\RetroArch-Win64\\system\\rpcs3\\0.Url.txt",
+      "C:\\RetroArch-Win64\\system\\rpcs3\\1.CurrentVersion.txt",
+      "C:\\RetroArch-Win64\\system\\rpcs3\\2.NewVersion.txt",
+      
+   };
+
+   char *githubUrls[] = {
+      "https://api.github.com/repos/RPCS3/rpcs3-binaries-win/releases",
+      "https://github.com/RPCS3/rpcs3-binaries-win/releases/download"
+   };
+
+   char executable[513] = {0};
+
+   setup(dirs, numPaths, executable);
+   
+   if (downloader(dirs, downloaderDirs, githubUrls, executable, numPaths)) {
+      extractor(dirs);
+   }
+   
+   if (info == NULL || info->path == NULL) {
+         char args[512] = {0};
+         snprintf(args, sizeof(args), " --no-gui");
+         strncat(executable, args, sizeof(executable)-1);
+   } else {
+         char args[512] = {0};
+         snprintf(args, sizeof(args), " --no-gui \"%s\"", info->path);
+         strncat(executable, args, sizeof(executable)-1);
+   }
 
    if (system(executable) == 0) {
-      printf("[LAUNCHER-INFO]: Finished running rpcs3.\n");
+      log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Finished running rpcs3.\n");
       return true;
    }
 
-   printf("[LAUNCHER-INFO]: Failed running rpcs3.\n");
+   log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed running rpcs3.\n");
    return false;
 }
 

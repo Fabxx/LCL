@@ -211,7 +211,7 @@ static bool downloader(char **dirs, char **downloaderDirs, char **githubUrls, ch
          }
          
          snprintf(downloadCmd, sizeof(downloadCmd),
-          "powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\mGBA.zip'\"", url, dirs[0]);
+          "powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\mGBA.7z'\"", url, dirs[0]);
          
          if (system(downloadCmd) != 0) {
             log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed to download emulator, aborting.\n");
@@ -255,7 +255,7 @@ static bool downloader(char **dirs, char **downloaderDirs, char **githubUrls, ch
                if (strcmp(currentVersion, newVersion) != 0) {
                   log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Update found. Downloading Update\n");
                   snprintf(downloadCmd, sizeof(downloadCmd),
-                  "powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\mGBA.zip'\"", url, dirs[0]);
+                  "powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\mGBA.7z'\"", url, dirs[0]);
             
                if (system(downloadCmd) != 0) {
                   log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed to download update, aborting.\n");
@@ -285,23 +285,45 @@ static bool downloader(char **dirs, char **downloaderDirs, char **githubUrls, ch
 
 static bool extractor(char **dirs)
 {
+   // check if 7z module is installed
+
+   char SZ4Powershell[MAX_PATH * 2] = {0};
+   snprintf(SZ4Powershell, sizeof(SZ4Powershell), "powershell -Command \"Get-Module -ListAvailable -Name 7Zip4PowerShell\"");
+
+   if (system(SZ4Powershell) == 0) {
+      log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Found 7z4Powershell module, skipping installation.\n");
+   } else {
+      // Install 7z4Powershell module, needed to extract 7z
+      char Psmodule[MAX_PATH * 2] = {0};
+      snprintf(Psmodule, sizeof(Psmodule),
+   "powershell -Command \"Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Scope CurrentUser; "
+          "Set-PSRepository -Name 'PSGallery' -InstallationPolicy Trusted; "
+          "Install-Module -Name 7Zip4PowerShell -Force -Scope CurrentUser\"");
+
+         if (system(Psmodule) != 0) {
+         log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed to install 7z module, aborting.\n");
+         return false;
+      } else {
+         log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: 7z module installed, downloading emulator.\n");
+      }
+   }
+
    char extractCmd[MAX_PATH * 2] = {0};
    snprintf(extractCmd, sizeof(extractCmd),
-       "powershell -Command \""
-               "$tempDir = '%s\\temp_extract'; "
-               "Expand-Archive -Path '%s\\mGBA.zip' -DestinationPath $tempDir -Force; "
-               "Move-Item -Path $tempDir\\mGBA*\\* -Destination '%s' -Force; "
-               "Remove-Item -Path $tempDir -Recurse -Force; "
-               "Remove-Item -Path '%s\\mGBA.zip' -Force\"",
-               dirs[0], dirs[0], dirs[0], dirs[0]);
-
+     "powershell -Command \""
+            "$tempDir = '%s\\temp_extract'; "
+            "Expand-7zip -ArchiveFileName '%s\\mGBA.7z' -TargetPath $tempDir; "
+            "Move-Item -Path $tempDir\\mGBA*\\* -Destination '%s' -Force; "
+            "Remove-Item -Path $tempDir -Recurse -Force; "
+            "Remove-Item -Path '%s\\mGBA.7z' -Force\"",
+            dirs[0], dirs[0], dirs[0], dirs[0]);
             
    if (system(extractCmd) != 0) {
       log_cb(RETRO_LOG_ERROR,"[LAUNCHER-ERROR]: Failed to extract emulator, aborting.\n");
       return false;
    } else {
       log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Success, running emulator.\n");
-      return true;
+      return true; // if false will close core.
    }
 }
 

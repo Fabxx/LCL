@@ -220,8 +220,8 @@ bool retro_load_game(const struct retro_game_info *info)
            This is needed because on duckstation the rolling releases are on the same tag 
            called "latest", so if you try to compare the URLs those will be always equal.
           */ 
-         char currentId[MAX_PATH] = {0};
-         char newId[MAX_PATH] = {0};
+         int currentId = 0;
+         int newId = 0;
          char urlString[MAX_PATH];
          char psCommand[MAX_PATH * 3] = {0};
 
@@ -244,8 +244,8 @@ bool retro_load_game(const struct retro_game_info *info)
          FILE *url = fopen(urlLocation, "r");
          
          if (currentVersion && newVersion && url) {
-            fgets(currentId, sizeof(currentId), currentVersion);
-            fgets(newId, sizeof(newId), newVersion);
+            fread(&currentId, sizeof(currentId), 1, currentVersion);
+            fread(&newId, sizeof(newId), 1, newVersion);
             fgets(urlString, sizeof(urlString), url);
             fclose(currentVersion);
             fclose(newVersion);
@@ -255,12 +255,9 @@ bool retro_load_game(const struct retro_game_info *info)
             return false;
          }
 
-         currentId[strcspn(currentId, "\r\n")] = 0;
-         newId[strcspn(newId, "\r\n")] = 0;
-
-         if (strcmp(currentId, newId) != 0) {
-             printf("[LAUNCHER-INFO]: duckstation update Found, new URL ID: %s\n", newId);
-             printf("[LAUNCHER-INFO]: current duckstation URL ID: %s\n", currentId);
+         if (currentId != newId) {
+             printf("[LAUNCHER-INFO]: duckstation update Found, new URL ID: %d\n", newId);
+             printf("[LAUNCHER-INFO]: current duckstation URL ID: %d\n", currentId);
 
              char downloadCmd[MAX_PATH * 2] = {0};
              snprintf(downloadCmd, sizeof(downloadCmd),

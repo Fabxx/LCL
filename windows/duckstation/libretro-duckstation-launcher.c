@@ -219,6 +219,8 @@ bool retro_load_game(const struct retro_game_info *info)
 
            This is needed because on duckstation the rolling releases are on the same tag 
            called "latest", so if you try to compare the URLs those will be always equal.
+
+           Write TXT files containing IDs in UTF-8 to avoid issues
           */ 
          int currentId = 0, newId = 0;
          char currentIdStr[32] = {0}, newIdStr[32] = {0}, urlString[MAX_PATH] = {0}, psCommand[MAX_PATH * 3] = {0};
@@ -229,8 +231,8 @@ bool retro_load_game(const struct retro_game_info *info)
                "$name = $response.assets[5].name;"
                "$url = 'https://github.com/stenzek/duckstation/releases/download/' + $tag + '/' + $name; "
                "$id  = $response.assets[5].id;"
-               "Write-Output $url\"  > \"%s\";"
-               "Write-Output $id\"   >  \"%s\"", urlLocation, newVersionLocation);
+               "$url | Set-Content -Path '%s' -Encoding utf8; "
+               "$id | Set-Content -Path '%s' -Encoding utf8; \"", urlLocation, newVersionLocation);
 
          if (system(psCommand) != 0) {
             printf("[LAUNCHER-ERROR]: Failed to fetch new version, aborting.\n");
@@ -304,8 +306,8 @@ bool retro_load_game(const struct retro_game_info *info)
                "$name = $response.assets[5].name;"
                "$id = $response.assets[5].id;"
                "$url = 'https://github.com/stenzek/duckstation/releases/download/' + $tag + '/' + $name; "
-               "Write-Output $url\" > \"%s\";"
-               "Write-Output $id\" > \"%s\"", urlLocation, currentVersionLocation);
+               "$url | Set-Content -Path '%s' -Encoding utf8; "
+               "$id | Set-Content -Path '%s' -Encoding utf8; \"", urlLocation, currentVersionLocation);
 
          if (system(psCommand) != 0) {
             printf("[LAUNCHER-ERROR]: Failed to fetch latest version, aborting.\n");

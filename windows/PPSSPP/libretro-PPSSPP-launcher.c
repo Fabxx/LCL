@@ -1,10 +1,10 @@
+#include <minwindef.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
 #include "libretro.h"
-#include <unistd.h>
 #include <windows.h>
 #include <direct.h>
 
@@ -135,147 +135,224 @@ void retro_run(void)
    environ_cb(RETRO_ENVIRONMENT_SHUTDOWN, NULL);
 }
 
-/**
- * libretro callback; Called when a game is to be loaded.
- *  
- *  - Windows:
- *       - create dir for emulator files and bios
-		 - setup folders
- *       - search for .exe binary with name pattern.
- *		
- * - Final Steps:
- *       - attach ROM absolute path from info->path in double quotes for system() function, avoids truncation.
- *       - if info->path has no ROM, fallback to bios file placed by the user.
-         NOTE: info structure must be checked when is not null
- */
-bool retro_load_game(const struct retro_game_info *info)
+
+// Setup emulator dirs and try to find executable.
+static char *setup(char **Paths, size_t numPaths, char *executable)
 {
-      WIN32_FIND_DATA findFileData;
-      HANDLE hFind;
-      char emuPath[MAX_PATH] = "C:\\RetroArch-Win64\\system\\PPSSPP";
-      char biosPath[MAX_PATH] = "C:\\RetroArch-Win64\\system\\PPSSPP\\bios";
-      char thumbnailsPath[MAX_PATH] = "C:\\RetroArch-Win64\\thumbnails\\Sony - Playstation Portable";
-      char executable[MAX_PATH] = {0};
-      char searchPath[MAX_PATH] = {0};
-      const char *thumbDirs[] = {"\\Named_Boxarts", "\\Named_Snaps", "\\Named_Titles"};
+   WIN32_FIND_DATA findFileData;
+   HANDLE hFind;
+   char searchPath[MAX_PATH] = {0};
 
-      // Create emulator folder if it doesn't exist
-      if (GetFileAttributes(emuPath) == INVALID_FILE_ATTRIBUTES) {
-         _mkdir(emuPath);
-         printf("[LAUNCHER-INFO]: Emulator folder created in %s\n", emuPath);
+   log_cb(RETRO_LOG_INFO, "SIZE: %llu\n", Paths);
+
+   // Create Default Dirs if they don't exist.
+   for (size_t i = 0; i < numPaths; i++) {
+      if (GetFileAttributes(Paths[i]) == INVALID_FILE_ATTRIBUTES) {
+         _mkdir(Paths[i]);
+         log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: created folder in %s\n", Paths[i]);
       } else {
-         printf("[LAUNCHER-INFO]: Emulator folder already exists\n");
+         log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: %s folder already exists\n", Paths[i]);
       }
+   }
 
-      // Create BIOS folder if it doesn't exist
-      if (GetFileAttributes(biosPath) == INVALID_FILE_ATTRIBUTES) {
-         _mkdir(biosPath);
-         printf("[LAUNCHER-INFO]: BIOS folder created in %s\n", biosPath);
-      } else {
-         printf("[LAUNCHER-INFO]: BIOS folder already exists\n");
-      }
+   // Lookup for Emulator Executable inside Emulator folder. hFind resolves wildcard.
+   snprintf(searchPath, MAX_PATH, "%s\\PPSSPPWindows.exe", Paths[0]);
+   hFind = FindFirstFile(searchPath, &findFileData);
 
-      // Create thumnbnails folder if it doesn't exist
-      if (GetFileAttributes(thumbnailsPath) == INVALID_FILE_ATTRIBUTES) {
-         _mkdir(thumbnailsPath);
-         printf("[LAUNCHER-INFO]: Thumbnails folder created in %s\n", thumbnailsPath);
-      } else {
-         printf("[LAUNCHER-INFO]: Thumbanils folder already exists\n");
-      }
-
-      // Create Thumbnail directories
-      for (size_t i = 0; i < sizeof(thumbDirs)/sizeof(thumbDirs[0]); i++) {
-         char fullPath[MAX_PATH] = {0};
-         snprintf(fullPath, sizeof(fullPath), "%s%s", thumbnailsPath, thumbDirs[i]);
-         if (GetFileAttributes(fullPath) == INVALID_FILE_ATTRIBUTES) {
-            _mkdir(fullPath);
-            printf("[LAUNCHER-INFO]: %s folder created\n", fullPath);
-         } else {
-            printf("[LAUNCHER-INFO]: %s folder already exists\n", fullPath);
-         }
-      }
-
-      // Search for binary executable
-      snprintf(searchPath, MAX_PATH, "%s\\PPSSPPWindows.exe", emuPath);
-      hFind = FindFirstFile(searchPath, &findFileData);
-
-      if (hFind != INVALID_HANDLE_VALUE) {
-         snprintf(executable, MAX_PATH, "%s\\%s", emuPath, findFileData.cFileName);
+   if (hFind != INVALID_HANDLE_VALUE) {
+         snprintf(executable, MAX_PATH+1, "%s\\%s", Paths[0], findFileData.cFileName);
          FindClose(hFind);
-         printf("[LAUNCHER-INFO]: Found emulator: %s\n", executable);
-      } else {
-         /* Get lastes release LINK from the official website. GitHub artifacts for windows are not available
-            a direct approach is to parse all available Links, and select the most recent one which contains
-            the lastes build
-         */
-      
-         char url[MAX_PATH] = {0};
-         char psCommand[MAX_PATH * 3] = {0};
-        snprintf(psCommand, sizeof(psCommand),
+         log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Found emulator: %s\n", executable);
+         return executable;
+   } else {
+      log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Downloading emulator.\n");
+      executable = "";
+      return executable;
+   }
+}
+
+/* in case of PPSSPP, we get lastes release LINK from the official website. GitHub artifacts for windows are not available
+   a direct approach is to parse all available Links, and select the most recent one which contains
+   the lastes build
+*/
+static bool downloader(char **dirs, char **downloaderDirs, char **githubUrls, char *executable, size_t numPaths)
+{
+
+   char url[260] = {0}, currentUrl[260] = {0};
+   char psCommand[MAX_PATH * 3] = {0}, downloadCmd[MAX_PATH * 2] = {0}; 
+
+   setup(dirs, numPaths, executable);
+
+   if (strlen(executable) == 0) {
+         snprintf(psCommand, sizeof(psCommand),
      "powershell -Command \""
             "$release = Invoke-WebRequest -Uri 'https://www.ppsspp.org/download/' -UseBasicParsing; "
             "$downloadLinks = $release.Links | Where-Object { $_.href -match 'files/.*/ppsspp_win.zip' } | Select-Object -ExpandProperty href; "
             "$latestLink = $downloadLinks | Sort-Object -Descending | Select-Object -First 1; "
             "if ($latestLink -and $latestLink -notmatch '^https?://') { $latestLink = 'https://www.ppsspp.org' + $latestLink }; "
-            "Write-Output $latestLink\" > version.txt");
-
-         if (system(psCommand) != 0) {
-            printf("[LAUNCHER-ERROR]: Failed to fetch latest version, aborting.\n");
+            "[System.IO.File]::WriteAllText('%s', $latestLink, [System.Text.Encoding]::ASCII)", downloaderDirs[0]);
+      
+      if (system(psCommand) != 0) {
+            log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed to fetch download URL, aborting.\n");
             return false;
+         } else { // If it's first download, extract only URL for download. Current version is already saved by powershell.
+               FILE *urlFile = fopen(downloaderDirs[0], "r");
+
+               if (!urlFile) {
+                  log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Powershell failed to export ID of download URL. Aborting.\n");
+                  return false;
+               } else {
+                   fgets(url, sizeof(url), urlFile);
+                   fclose(urlFile);
+               }
          }
-
-         FILE *file = fopen("version.txt", "r");
-         if (file) {
-            fgets(url, sizeof(url), file);
-            fclose(file);
-            remove("version.txt");
-         } else {
-            printf("[LAUNCHER-ERROR]: Failed to read version file, aborting.\n");
-            return false;
-         }
-
-         url[strcspn(url, "\r\n")] = 0;
-
-         printf("[LAUNCHER-INFO]: Latest PPSSPP release URL: %s\n", url);
          
-         char downloadCmd[MAX_PATH * 2] = {0};
          snprintf(downloadCmd, sizeof(downloadCmd),
-          "powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\PPSSPP.zip'\"", url, emuPath);
-
-          printf("DOWNLOAD COMMAND: %s\n", downloadCmd);
+          "powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\PPSSPP.zip'\"", url, dirs[0]);
          
          if (system(downloadCmd) != 0) {
-            printf("[LAUNCHER-ERROR]: Failed to download emulator, aborting.\n");
+            log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed to download emulator, aborting.\n");
             return false;
          } else {
-            printf("[LAUNCHER-INFO]: Download successful, extracting emulator.\n");
-           
-            char extractCmd[MAX_PATH * 2] = {0};
-            snprintf(extractCmd, sizeof(extractCmd),
-             "powershell -Command \"Expand-Archive -Path '%s\\PPSSPP.zip' -DestinationPath '%s' -Force; Remove-Item -Path '%s\\PPSSPP.zip' -Force\"", 
-                     emuPath, emuPath, emuPath);
-            
-            if (system(extractCmd) != 0) {
-               printf("[LAUNCHER-ERROR]: Failed to extract emulator, aborting.\n");
-               return false;
-            }
-            printf("[LAUNCHER-INFO]: Success, rebooting RetroArch...\n");
-            return false;
+            log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Download successful, extracting emulator.\n");
+            return true;
          }
-      }
+      } else { // If it's not the first download, fetch Link URL.
+            snprintf(psCommand, sizeof(psCommand),
+             "powershell -Command \""
+                     "$release = Invoke-WebRequest -Uri 'https://www.ppsspp.org/download/' -UseBasicParsing; "
+                     "$downloadLinks = $release.Links | Where-Object { $_.href -match 'files/.*/ppsspp_win.zip' } | Select-Object -ExpandProperty href; "
+                     "$latestLink = $downloadLinks | Sort-Object -Descending | Select-Object -First 1; "
+                     "if ($latestLink -and $latestLink -notmatch '^https?://') { $latestLink = 'https://www.ppsspp.org' + $latestLink }; "
+                     "[System.IO.File]::WriteAllText('%s', $latestLink, [System.Text.Encoding]::ASCII)", downloaderDirs[1]);
+      
+      if (system(psCommand) != 0) {
+            log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed to fetch update, aborting.\n");
+            return false;
+         } else { // Extract URL, currentID and newID for comparison
+               FILE *urlFile = fopen(downloaderDirs[0], "r");
+               FILE *currentVersionFile = fopen(downloaderDirs[1], "r");
+   
+               if (!urlFile && !currentVersionFile) {
+                   log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Metadata files not found. Aborting.\n");
+                   return false;
+               }
 
-      if (info != NULL && info->path != NULL) {
-            char args[512] = {0};
-            snprintf(args, sizeof(args), " --fullscreen \"%s\"", info->path);
-            strncat(executable, args, sizeof(executable)-1);
+               fgets(url, sizeof(url), urlFile);
+               fgets(currentUrl, sizeof(currentUrl), currentVersionFile);
+
+               fclose(urlFile);
+               fclose(currentVersionFile);
+                
+               if (strcmp(url, currentUrl) != 0) {
+                  log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Update found. Downloading Update\n");
+                  snprintf(downloadCmd, sizeof(downloadCmd),
+                  "powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\PPSSPP.zip'\"", url, dirs[0]);
+            
+               if (system(downloadCmd) != 0) {
+                  log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed to download update, aborting.\n");
+                  return false;
+               } else {
+                  // Overwrite Current url.txt file with new download Link if download was successfull.
+                  snprintf(psCommand, sizeof(psCommand),
+             "powershell -Command \""
+                     "$release = Invoke-WebRequest -Uri 'https://www.ppsspp.org/download/' -UseBasicParsing; "
+                     "$downloadLinks = $release.Links | Where-Object { $_.href -match 'files/.*/ppsspp_win.zip' } | Select-Object -ExpandProperty href; "
+                     "$latestLink = $downloadLinks | Sort-Object -Descending | Select-Object -First 1; "
+                     "if ($latestLink -and $latestLink -notmatch '^https?://') { $latestLink = 'https://www.ppsspp.org' + $latestLink }; "
+                     "[System.IO.File]::WriteAllText('%s', $latestLink, [System.Text.Encoding]::ASCII)", downloaderDirs[0]);
+                  
+                  if (system(psCommand) != 0) {
+                     log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed to update current version file. Aborting.\n");
+                     return false;
+                  }
+                  log_cb(RETRO_LOG_ERROR, "[LAUNCHER-INFO]: Download successful, extracting update.\n");
+                  return true;
+               }
+         } 
       }
+   }
+   log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: No update found.\n");
+   return false;
+}
+   
+
+static bool extractor(char **dirs)
+{
+   char extractCmd[MAX_PATH * 2] = {0};
+   snprintf(extractCmd, sizeof(extractCmd),
+            "powershell -Command \"Expand-Archive -Path '%s\\PPSSPP.zip' -DestinationPath '%s' -Force; Remove-Item -Path '%s\\PPSSPP.zip' -Force\"", 
+            dirs[0], dirs[0], dirs[0]);
+            
+   if (system(extractCmd) != 0) {
+      log_cb(RETRO_LOG_ERROR,"[LAUNCHER-ERROR]: Failed to extract emulator, aborting.\n");
+      return false;
+   } else {
+      log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Success, running emulator.\n");
+      return true; // if false will close core.
+   }
+}
+
+
+/**
+ * libretro callback; Called when a game is to be loaded. 
+  - attach ROM absolute path from info->path in double quotes for system() function, avoids truncation.
+  - if info->path has no ROM, fallback to bios file placed by the user.
+  NOTE: info structure must be checked when is not null
+ */
+
+bool retro_load_game(const struct retro_game_info *info)
+{
+
+   // Default Emulator Paths
+   char *dirs[] = {
+         "C:\\RetroArch-Win64\\system\\PPSSPP",
+         "C:\\RetroArch-Win64\\system\\PPSSPP\\bios",
+         "C:\\RetroArch-Win64\\thumbnails\\Sony - Playstation Portable",
+         "C:\\RetroArch-Win64\\thumbnails\\Sony - Playstation Portable\\Named_Boxarts",
+         "C:\\RetroArch-Win64\\thumbnails\\Sony - Playstation Portable\\Named_Snaps",
+         "C:\\RetroArch-Win64\\thumbnails\\Sony - Playstation Portable\\Named_Titles"
+      };
+
+   size_t numPaths = sizeof(dirs)/sizeof(char*);
+
+   // Emulator build versions and URL to download. Content is generated from powershell cmds
+   char *downloaderDirs[] = {
+      "C:\\RetroArch-Win64\\system\\PPSSPP\\0.Url.txt",
+      "C:\\RetroArch-Win64\\system\\PPSSPP\\1.CurrentVersion.txt",
+      "C:\\RetroArch-Win64\\system\\PPSSPP\\2.NewVersion.txt",
+      
+   };
+
+   char *githubUrls[] = {
+      "https://www.ppsspp.org/download/",
+      "https://www.ppsspp.org"
+   };
+
+   char executable[513] = {0};
+
+   setup(dirs, numPaths, executable);
+   
+   if (downloader(dirs, downloaderDirs, githubUrls, executable, numPaths)) {
+      extractor(dirs);
+   }
+   
+   if (info == NULL || info->path == NULL) {
+         char args[512] = {0};
+         snprintf(args, sizeof(args), " --fullscreen");
+         strncat(executable, args, sizeof(executable)-1);
+   } else {
+         char args[512] = {0};
+         snprintf(args, sizeof(args), " -fullscreen \"%s\"", info->path);
+         strncat(executable, args, sizeof(executable)-1);
+   }
 
    if (system(executable) == 0) {
-      printf("[LAUNCHER-INFO]: Finished running PPSSPP.\n");
+      log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Finished running PPSSPP.\n");
       return true;
    }
 
-   printf("[LAUNCHER-INFO]: Failed running PPSSPP.\n");
+   log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed running PPSSPP.\n");
    return false;
 }
 

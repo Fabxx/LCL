@@ -1,6 +1,6 @@
 display_name         = "Nintendo - Nintendo DS (melonDS Launcher)"
 authors              = "Team melonDS"
-supported_extensions = "nds|ids|nds"
+supported_extensions = "nds|ids|dsi"
 corename             = "melonDS Launcher"
 manufacturer         = "Nintendo"
 categories           = "Emulator"

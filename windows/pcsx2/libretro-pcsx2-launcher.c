@@ -1,3 +1,4 @@
+#include <minwindef.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -134,171 +135,232 @@ void retro_run(void)
    environ_cb(RETRO_ENVIRONMENT_SHUTDOWN, NULL);
 }
 
-/**
- * libretro callback; Called when a game is to be loaded.
- *  
- *  - Windows:
- *       - create dir for emulator files and bios
-		 - setup folders
- *       - search for .exe binary with name pattern.
- *		
- * - Final Steps:
- *       - attach ROM absolute path from info->path in double quotes for system() function, avoids truncation.
- *       - if info->path has no ROM, fallback to bios file placed by the user.
-         NOTE: info structure must be checked when is not null
- */
-bool retro_load_game(const struct retro_game_info *info)
+
+// Setup emulator dirs and try to find executable.
+static char *setup(char **Paths, size_t numPaths, char *executable)
 {
-      WIN32_FIND_DATA findFileData;
-      HANDLE hFind;
-      char emuPath[MAX_PATH] = "C:\\RetroArch-Win64\\system\\pcsx2";
-      char biosPath[MAX_PATH] = "C:\\RetroArch-Win64\\system\\pcsx2\\bios";
-      char thumbnailsPath[MAX_PATH] = "C:\\RetroArch-Win64\\thumbnails\\Sony - Playstation 2";
-      char executable[MAX_PATH] = {0};
-      char searchPath[MAX_PATH] = {0};
-      const char *thumbDirs[] = {"\\Named_Boxarts", "\\Named_Snaps", "\\Named_Titles"};
+   WIN32_FIND_DATA findFileData;
+   HANDLE hFind;
+   char searchPath[MAX_PATH] = {0};
 
-      // Create emulator folder if it doesn't exist
-      if (GetFileAttributes(emuPath) == INVALID_FILE_ATTRIBUTES) {
-         _mkdir(emuPath);
-         printf("[LAUNCHER-INFO]: Emulator folder created in %s\n", emuPath);
+   log_cb(RETRO_LOG_INFO, "SIZE: %llu\n", Paths);
+
+   // Create Default Dirs if they don't exist.
+   for (size_t i = 0; i < numPaths; i++) {
+      if (GetFileAttributes(Paths[i]) == INVALID_FILE_ATTRIBUTES) {
+         _mkdir(Paths[i]);
+         log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: created folder in %s\n", Paths[i]);
       } else {
-         printf("[LAUNCHER-INFO]: Emulator folder already exists\n");
+         log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: %s folder already exists\n", Paths[i]);
       }
+   }
 
-      // Create BIOS folder if it doesn't exist
-      if (GetFileAttributes(biosPath) == INVALID_FILE_ATTRIBUTES) {
-         _mkdir(biosPath);
-         printf("[LAUNCHER-INFO]: BIOS folder created in %s\n", biosPath);
-      } else {
-         printf("[LAUNCHER-INFO]: BIOS folder already exists\n");
-      }
+   // Lookup for Emulator Executable inside Emulator folder. hFind resolves wildcard.
+   snprintf(searchPath, MAX_PATH, "%s\\pcsx2*.exe", Paths[0]);
+   hFind = FindFirstFile(searchPath, &findFileData);
 
-      // Create thumnbnails folder if it doesn't exist
-      if (GetFileAttributes(thumbnailsPath) == INVALID_FILE_ATTRIBUTES) {
-         _mkdir(thumbnailsPath);
-         printf("[LAUNCHER-INFO]: Thumbnails folder created in %s\n", thumbnailsPath);
-      } else {
-         printf("[LAUNCHER-INFO]: Thumbanils folder already exists\n");
-      }
-
-      // Create Thumbnail directories
-      for (size_t i = 0; i < sizeof(thumbDirs)/sizeof(thumbDirs[0]); i++) {
-         char fullPath[MAX_PATH] = {0};
-         snprintf(fullPath, sizeof(fullPath), "%s%s", thumbnailsPath, thumbDirs[i]);
-         if (GetFileAttributes(fullPath) == INVALID_FILE_ATTRIBUTES) {
-            _mkdir(fullPath);
-            printf("[LAUNCHER-INFO]: %s folder created\n", fullPath);
-         } else {
-            printf("[LAUNCHER-INFO]: %s folder already exists\n", fullPath);
-         }
-      }
-
-      // Search for binary executable
-      snprintf(searchPath, MAX_PATH, "%s\\pcsx2*.exe", emuPath);
-      hFind = FindFirstFile(searchPath, &findFileData);
-
-      if (hFind != INVALID_HANDLE_VALUE) {
-         snprintf(executable, MAX_PATH, "%s\\%s", emuPath, findFileData.cFileName);
+   if (hFind != INVALID_HANDLE_VALUE) {
+         snprintf(executable, MAX_PATH+1, "%s\\%s", Paths[0], findFileData.cFileName);
          FindClose(hFind);
-         printf("[LAUNCHER-INFO]: Found emulator: %s\n", executable);
-      } else {
-         printf("[LAUNCHER-INFO]: No executable found, looking for 7z4Powershell module.\n");
+         log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Found emulator: %s\n", executable);
+         return executable;
+   } else {
+      log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Downloading emulator.\n");
+      executable = "";
+      return executable;
+   }
+}
 
-         //check if module is installed
+/* If no emulator was found, download it. ID number must be saved in UTF-8 Like docoument to extract with atoi()
+      If emulator is found, retreive new URL ID and compare it with previously saved ID. If they don't match
+      download the new version.
 
-         char SZ4Powershell[MAX_PATH * 2] = {0};
-         snprintf(SZ4Powershell, sizeof(SZ4Powershell), "powershell -Command \"Get-Module -ListAvailable -Name 7Zip4PowerShell\"");
+      NOTE: Files must be opened with FILE pointer AFTER powershell created them, not before, or the process
+            will lock the files and PS won't be able to read from them.
+   */
+static bool downloader(char **dirs, char **downloaderDirs, char **githubUrls, char *executable, size_t numPaths)
+{
 
-         if (system(SZ4Powershell) == 0) {
-            printf("[LAUNCHER-INFO]: Found 7z4Powershell module, skipping installation.\n");
-         } else {
-            
-            // Install 7z4Powershell module, needed to extract 7z
+   char url[260] = {0}, currentVersion[32] = {0}, newVersion[32] = {0};
+   char psCommand[MAX_PATH * 3] = {0}, downloadCmd[MAX_PATH * 2] = {0}; 
 
-            char Psmodule[MAX_PATH * 2] = {0};
-            snprintf(Psmodule, sizeof(Psmodule),
-       "powershell -Command \"Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Scope CurrentUser; "
-               "Set-PSRepository -Name 'PSGallery' -InstallationPolicy Trusted; "
-               "Install-Module -Name 7Zip4PowerShell -Force -Scope CurrentUser\"");
+   setup(dirs, numPaths, executable);
 
-             if (system(Psmodule) != 0) {
-               printf("[LAUNCHER-ERROR]: Failed to install 7z module, aborting.\n");
-               return false;
-            } else {
-               printf("[LAUNCHER-INFO]: 7z module installed, downloading emulator.\n");
-            }
-         }
-
-         // Get lastes release of the emulator from URL
-      
-         char url[MAX_PATH];
-         char psCommand[MAX_PATH * 3] = {0};
+   if (strlen(executable) == 0) {
          snprintf(psCommand, sizeof(psCommand),
-       "powershell -Command \"$response = (Invoke-WebRequest -Uri 'https://api.github.com/repos/PCSX2/pcsx2/releases/latest' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json; "
-               "$tag = $response.tag_name;"
+       "powershell -Command \"$response = (Invoke-WebRequest -Uri '%s' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json; "
+               "$tag  = $response.tag_name;"
                "$name = $response.assets[5].name;"
-               "$url = 'https://github.com/PCSX2/pcsx2/releases/download/' + $tag + '/' + $name; "
-               "Write-Output $url\" > version.txt");
-
-         if (system(psCommand) != 0) {
-            printf("[LAUNCHER-ERROR]: Failed to fetch latest version, aborting.\n");
+               "$id   = $response.assets[5].id;"
+               "$url  = '%s' + $tag + '/' + $name; "
+               "[System.IO.File]::WriteAllText('%s', $url, [System.Text.Encoding]::ASCII); "
+               "[System.IO.File]::WriteAllText('%s', $id , [System.Text.Encoding]::ASCII); \"", 
+               githubUrls[0], githubUrls[1], downloaderDirs[0], downloaderDirs[1]);
+      
+      if (system(psCommand) != 0) {
+            log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed to fetch download URL, aborting.\n");
             return false;
+         } else { // If it's first download, extract only URL for download. Current version is already saved by powershell.
+               FILE *urlFile = fopen(downloaderDirs[0], "r");
+
+               if (!urlFile) {
+                  log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Powershell failed to export ID of download URL. Aborting.\n");
+                  return false;
+               } else {
+                   fgets(url, sizeof(url), urlFile);
+                   fclose(urlFile);
+               }
          }
-
-         FILE *file = fopen("version.txt", "r");
-         if (file) {
-            fgets(url, sizeof(url), file);
-            fclose(file);
-            remove("version.txt");
-         } else {
-            printf("[LAUNCHER-ERROR]: Failed to read version file, aborting.\n");
-            return false;
-         }
-
-         url[strcspn(url, "\r\n")] = 0;
-
-         printf("[LAUNCHER-INFO]: Latest pcsx2 release URL: %s\n", url);
          
-         char downloadCmd[MAX_PATH * 2] = {0};
          snprintf(downloadCmd, sizeof(downloadCmd),
-          "powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\pcsx2.7z'\"", url, emuPath);
+          "powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\pcsx2.zip'\"", url, dirs[0]);
          
          if (system(downloadCmd) != 0) {
-            printf("[LAUNCHER-ERROR]: Failed to download emulator, aborting.\n");
+            log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed to download emulator, aborting.\n");
             return false;
          } else {
-            printf("[LAUNCHER-INFO]: Download successful, extracting emulator.\n");
-           
-            char extractCmd[MAX_PATH * 2] = {0};
-            snprintf(extractCmd, sizeof(extractCmd),
-             "powershell -Command \"Expand-7zip -ArchiveFileName '%s\\pcsx2.7z' -TargetPath '%s'; Remove-Item -Path '%s\\pcsx2.7z' -Force\"", emuPath, emuPath, emuPath);
-            
-            if (system(extractCmd) != 0) {
-               printf("[LAUNCHER-ERROR]: Failed to extract emulator, aborting.\n");
-               return false;
-            }
-            printf("[LAUNCHER-INFO]: Success, rebooting RetroArch...\n");
-            return false;
+            log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Download successful, extracting emulator.\n");
+            return true;
          }
-      }
+      } else { // If it's not the first download, fetch newVersion ID.
+            snprintf(psCommand, sizeof(psCommand),
+       "powershell -Command \"$response = (Invoke-WebRequest -Uri '%s' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json; "
+               "$tag  = $response.tag_name;"
+               "$name = $response.assets[5].name;"
+               "$id   = $response.assets[5].id;"
+               "$url  = '%s' + $tag + '/' + $name; "
+               "[System.IO.File]::WriteAllText('%s', $url, [System.Text.Encoding]::ASCII); "
+               "[System.IO.File]::WriteAllText('%s', $id, [System.Text.Encoding]::ASCII); \"", 
+               githubUrls[0], githubUrls[1], downloaderDirs[0], downloaderDirs[2]);
+      
+      if (system(psCommand) != 0) {
+            log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed to fetch update, aborting.\n");
+            return false;
+         } else { // Extract URL, currentID and newID for comparison
+               FILE *urlFile = fopen(downloaderDirs[0], "r");
+               FILE *currentVersionFile = fopen(downloaderDirs[1], "r");
+               FILE *newVersionFile = fopen(downloaderDirs[2], "r"); 
+   
+               if (!newVersionFile && !urlFile && !currentVersionFile) {
+                   log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Metadata files not found. Aborting.\n");
+                   return false;
+               }
 
-      if (info == NULL || info->path == NULL) {
-            char args[512] = {0};
-            snprintf(args, sizeof(args), " -fullscreen -bios");
-            strncat(executable, args, sizeof(executable)-1);
-      } else {
-            char args[512] = {0};
-            snprintf(args, sizeof(args), " -fullscreen \"%s\"", info->path);
-            strncat(executable, args, sizeof(executable)-1);
+               fgets(url, sizeof(url), urlFile);
+               fgets(currentVersion, sizeof(currentVersion), currentVersionFile);
+               fgets(newVersion, sizeof(newVersion), newVersionFile);
+               
+               fclose(urlFile);
+               fclose(currentVersionFile);
+               fclose(newVersionFile);
+                
+               if (strcmp(currentVersion, newVersion) != 0) {
+                  log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Update found. Downloading Update\n");
+                  snprintf(downloadCmd, sizeof(downloadCmd),
+                  "powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\pcsx2.zip'\"", url, dirs[0]);
+            
+               if (system(downloadCmd) != 0) {
+                  log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed to download update, aborting.\n");
+                  return false;
+               } else {
+                  // Overwrite Current version.txt file with new ID if download was successfull.
+                   snprintf(psCommand, sizeof(psCommand),
+                  "powershell -Command \"$response = (Invoke-WebRequest -Uri '%s' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json; "
+                           "$id   = $response.assets[5].id;"
+                           "[System.IO.File]::WriteAllText('%s', $id, [System.Text.Encoding]::ASCII); \"", 
+                           githubUrls[0], downloaderDirs[1]);
+                  
+                  if (system(psCommand) != 0) {
+                     log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed to update current version file. Aborting.\n");
+                     return false;
+                  }
+                  log_cb(RETRO_LOG_ERROR, "[LAUNCHER-INFO]: Download successful, extracting update.\n");
+                  return true;
+               }
+         } 
       }
+   }
+   log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: No update found.\n");
+   return false;
+}
+   
+
+static bool extractor(char **dirs)
+{
+   char extractCmd[MAX_PATH * 2] = {0};
+   snprintf(extractCmd, sizeof(extractCmd),
+            "powershell -Command \"Expand-Archive -Path '%s\\pcsx2.zip' -DestinationPath '%s' -Force; Remove-Item -Path '%s\\pcsx2.zip' -Force\"", 
+            dirs[0], dirs[0], dirs[0]);
+            
+   if (system(extractCmd) != 0) {
+      log_cb(RETRO_LOG_ERROR,"[LAUNCHER-ERROR]: Failed to extract emulator, aborting.\n");
+      return false;
+   } else {
+      log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Success, running emulator.\n");
+      return true; // if false will close core.
+   }
+}
+
+
+/**
+ * libretro callback; Called when a game is to be loaded. 
+  - attach ROM absolute path from info->path in double quotes for system() function, avoids truncation.
+  - if info->path has no ROM, fallback to bios file placed by the user.
+  NOTE: info structure must be checked when is not null
+ */
+
+bool retro_load_game(const struct retro_game_info *info)
+{
+
+   // Default Emulator Paths
+   char *dirs[] = {
+         "C:\\RetroArch-Win64\\system\\pcsx2",
+         "C:\\RetroArch-Win64\\system\\pcsx2\\bios",
+         "C:\\RetroArch-Win64\\thumbnails\\Sony - Playstation 2",
+         "C:\\RetroArch-Win64\\thumbnails\\Sony - Playstation 2\\Named_Boxarts",
+         "C:\\RetroArch-Win64\\thumbnails\\Sony - Playstation 2\\Named_Snaps",
+         "C:\\RetroArch-Win64\\thumbnails\\Sony - Playstation 2\\Named_Titles"
+      };
+
+   size_t numPaths = sizeof(dirs)/sizeof(char*);
+
+   // Emulator build versions and URL to download. Content is generated from powershell cmds
+   char *downloaderDirs[] = {
+      "C:\\RetroArch-Win64\\system\\pcsx2\\0.Url.txt",
+      "C:\\RetroArch-Win64\\system\\pcsx2\\1.CurrentVersion.txt",
+      "C:\\RetroArch-Win64\\system\\pcsx2\\2.NewVersion.txt",
+      
+   };
+
+   char *githubUrls[] = {
+      "https://api.github.com/repos/PCSX2/pcsx2/releases/latest",
+      "https://github.com/PCSX2/pcsx2/releases/download/"
+   };
+
+   char executable[513] = {0};
+
+   setup(dirs, numPaths, executable);
+   
+   if (downloader(dirs, downloaderDirs, githubUrls, executable, numPaths)) {
+      extractor(dirs);
+   }
+   
+   if (info == NULL || info->path == NULL) {
+         char args[512] = {0};
+         snprintf(args, sizeof(args), " -fullscreen -bios");
+         strncat(executable, args, sizeof(executable)-1);
+   } else {
+         char args[512] = {0};
+         snprintf(args, sizeof(args), " -fullscreen -bios \"%s\"", info->path);
+         strncat(executable, args, sizeof(executable)-1);
+   }
 
    if (system(executable) == 0) {
-      printf("[LAUNCHER-INFO]: Finished running pcsx2.\n");
+      log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Finished running pcsx2.\n");
       return true;
    }
 
-   printf("[LAUNCHER-INFO]: Failed running pcsx2.\n");
+   log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed running pcsx2.\n");
    return false;
 }
 

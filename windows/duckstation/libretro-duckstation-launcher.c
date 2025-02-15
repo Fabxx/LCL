@@ -137,15 +137,16 @@ void retro_run(void)
 
 
 // Setup emulator dirs and try to find executable.
-static char *setup(char **Paths, char *executable)
+static char *setup(char **Paths, size_t numPaths, char *executable)
 {
    WIN32_FIND_DATA findFileData;
    HANDLE hFind;
-   size_t size = (sizeof(Paths)/sizeof(char**));
    char searchPath[MAX_PATH] = {0};
 
+   log_cb(RETRO_LOG_INFO, "SIZE: %llu\n", Paths);
+
    // Create Default Dirs if they don't exist.
-   for (size_t i = 0; i < size; i++) {
+   for (size_t i = 0; i < numPaths; i++) {
       if (GetFileAttributes(Paths[i]) == INVALID_FILE_ATTRIBUTES) {
          _mkdir(Paths[i]);
          log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: created folder in %s\n", Paths[i]);
@@ -154,7 +155,7 @@ static char *setup(char **Paths, char *executable)
       }
    }
 
-   // Lookup for Emulator Executable inside Emulator folder
+   // Lookup for Emulator Executable inside Emulator folder. hFind resolves wildcard.
    snprintf(searchPath, MAX_PATH, "%s\\duckstation*.exe", Paths[0]);
    hFind = FindFirstFile(searchPath, &findFileData);
 
@@ -170,24 +171,21 @@ static char *setup(char **Paths, char *executable)
    }
 }
 
+/* If no emulator was found, download it. ID number must be saved in UTF-8 Like docoument to extract with atoi()
+      If emulator is found, retreive new URL ID and compare it with previously saved ID. If they don't match
+      download the new version.
 
-static bool downloader(char **dirs, char **downloaderDirs, char **githubUrls, char *executable)
+      NOTE: Files must be opened with FILE pointer AFTER powershell created them, not before, or the process
+            will lock the files and PS won't be able to read from them.
+   */
+static bool downloader(char **dirs, char **downloaderDirs, char **githubUrls, char *executable, size_t numPaths)
 {
 
    char url[260] = {0}, currentVersion[32] = {0}, newVersion[32] = {0};
+   char psCommand[MAX_PATH * 3] = {0}, downloadCmd[MAX_PATH * 2] = {0}; 
 
-   char psCommand[MAX_PATH * 3] = {0}, downloadCmd[MAX_PATH * 2] = {0};
+   setup(dirs, numPaths, executable);
 
-   FILE *urlFile                = fopen(downloaderDirs[0], "r"); 
-   FILE *currentVersionFile     = fopen(downloaderDirs[1], "r"); 
-   FILE *newVersionFile         = fopen(downloaderDirs[2], "r");
-
-   setup(dirs, executable);
-
-   /* If no emulator was found, download it. ID number must be saved in UTF-8 Like docoument to extract with atoi()
-      If emulator is found, retreive new URL ID and compare it with previously saved ID. If they don't match
-      download the new version.
-   */
    if (strlen(executable) == 0) {
          snprintf(psCommand, sizeof(psCommand),
        "powershell -Command \"$response = (Invoke-WebRequest -Uri '%s' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json; "
@@ -202,9 +200,16 @@ static bool downloader(char **dirs, char **downloaderDirs, char **githubUrls, ch
       if (system(psCommand) != 0) {
             log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed to fetch download URL, aborting.\n");
             return false;
-         } else { // If it's first download, extract only URL for download. Current version is already saved.
-               fgets(url, sizeof(url), urlFile);
-               fclose(urlFile);
+         } else { // If it's first download, extract only URL for download. Current version is already saved by powershell.
+               FILE *urlFile = fopen(downloaderDirs[0], "r");
+
+               if (!urlFile) {
+                  log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Powershell failed to export ID of download URL. Aborting.\n");
+                  return false;
+               } else {
+                   fgets(url, sizeof(url), urlFile);
+                   fclose(urlFile);
+               }
          }
          
          snprintf(downloadCmd, sizeof(downloadCmd),
@@ -232,6 +237,15 @@ static bool downloader(char **dirs, char **downloaderDirs, char **githubUrls, ch
             log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed to fetch update, aborting.\n");
             return false;
          } else { // Extract URL, currentID and newID for comparison
+               FILE *urlFile = fopen(downloaderDirs[0], "r");
+               FILE *currentVersionFile = fopen(downloaderDirs[1], "r");
+               FILE *newVersionFile = fopen(downloaderDirs[2], "r"); 
+   
+               if (!newVersionFile && !urlFile && !currentVersionFile) {
+                   log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Metadata files not found. Aborting.\n");
+                   return false;
+               }
+
                fgets(url, sizeof(url), urlFile);
                fgets(currentVersion, sizeof(currentVersion), currentVersionFile);
                fgets(newVersion, sizeof(newVersion), newVersionFile);
@@ -249,6 +263,17 @@ static bool downloader(char **dirs, char **downloaderDirs, char **githubUrls, ch
                   log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed to download update, aborting.\n");
                   return false;
                } else {
+                  // Overwrite Current version.txt file with new ID if download was successfull.
+                   snprintf(psCommand, sizeof(psCommand),
+                  "powershell -Command \"$response = (Invoke-WebRequest -Uri '%s' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json; "
+                           "$id   = $response.assets[5].id;"
+                           "[System.IO.File]::WriteAllText('%s', $id, [System.Text.Encoding]::ASCII); \"", 
+                           githubUrls[0], downloaderDirs[1]);
+                  
+                  if (system(psCommand) != 0) {
+                     log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed to update current version file. Aborting.\n");
+                     return false;
+                  }
                   log_cb(RETRO_LOG_ERROR, "[LAUNCHER-INFO]: Download successful, extracting update.\n");
                   return true;
                }
@@ -271,8 +296,8 @@ static bool extractor(char **dirs)
       log_cb(RETRO_LOG_ERROR,"[LAUNCHER-ERROR]: Failed to extract emulator, aborting.\n");
       return false;
    } else {
-      log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Success, rebooting RetroArch...\n");
-      return true;
+      log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Success, running emulator.\n");
+      return true; // if false will close core.
    }
 }
 
@@ -297,6 +322,8 @@ bool retro_load_game(const struct retro_game_info *info)
          "C:\\RetroArch-Win64\\thumbnails\\Sony - Playstation\\Named_Titles"
       };
 
+   size_t numPaths = sizeof(dirs)/sizeof(char*);
+
    // Emulator build versions and URL to download. Content is generated from powershell cmds
    char *downloaderDirs[] = {
       "C:\\RetroArch-Win64\\system\\duckstation\\0.Url.txt",
@@ -312,9 +339,9 @@ bool retro_load_game(const struct retro_game_info *info)
 
    char executable[513] = {0};
 
-   setup(dirs, executable);
+   setup(dirs, numPaths, executable);
    
-   if (downloader(dirs, downloaderDirs, githubUrls, executable)) {
+   if (downloader(dirs, downloaderDirs, githubUrls, executable, numPaths)) {
       extractor(dirs);
    }
    

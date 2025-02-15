@@ -37,7 +37,8 @@ The core does the following:
 - Setup thumbnail folders for boxarts, snaps and title images for the selected system
 - Create a `bios` folder under `retroarch/system/system name`
 - Reboots retroarch to let the user run the core, with BIOS (if supported) or with a game from playlist
-
+- On next boot will check if an update is available by comparing the current and new URL ids used to fetch
+  the release, if they are different it means that a new release with a new url is out, and it will be downloaded.
 
 # Core installation
 

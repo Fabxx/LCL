@@ -184,7 +184,7 @@ static bool downloader(char **dirs, char **downloaderDirs, char **githubUrls, ch
 
    setup(dirs, executable);
 
-   /* If no emulator was found, download it. ID number must be saved in UTF-8 Like docoument to extract with atoi()
+   /* If no emulator was found, download it. ID number must be saved in ASCII to avoid BOM bytes.
       If emulator is found, retreive new URL ID and compare it with previously saved ID. If they don't match
       download the new version.
    */

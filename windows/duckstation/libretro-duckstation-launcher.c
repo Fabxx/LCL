@@ -255,6 +255,8 @@ bool retro_load_game(const struct retro_game_info *info)
             return false;
          }
 
+         printf("CURRENT ID: %d\nNEW ID: %d\n", currentId, newId);
+
          if (currentId != newId) {
              printf("[LAUNCHER-INFO]: duckstation update Found, new URL ID: %d\n", newId);
              printf("[LAUNCHER-INFO]: current duckstation URL ID: %d\n", currentId);

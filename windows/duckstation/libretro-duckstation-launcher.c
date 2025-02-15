@@ -231,8 +231,8 @@ bool retro_load_game(const struct retro_game_info *info)
                "$name = $response.assets[5].name;"
                "$url = 'https://github.com/stenzek/duckstation/releases/download/' + $tag + '/' + $name; "
                "$id  = $response.assets[5].id;"
-               "$url | Set-Content -Path '%s' -Encoding utf8; "
-               "$id | Set-Content -Path '%s' -Encoding utf8; \"", urlLocation, newVersionLocation);
+               "$url | Set-Content -Path '%s' -Encoding utf8NoBOM; "
+               "$id | Set-Content -Path '%s' -Encoding utf8NoBOM; \"", urlLocation, newVersionLocation);
 
          if (system(psCommand) != 0) {
             printf("[LAUNCHER-ERROR]: Failed to fetch new version, aborting.\n");
@@ -306,8 +306,8 @@ bool retro_load_game(const struct retro_game_info *info)
                "$name = $response.assets[5].name;"
                "$id = $response.assets[5].id;"
                "$url = 'https://github.com/stenzek/duckstation/releases/download/' + $tag + '/' + $name; "
-               "$url | Set-Content -Path '%s' -Encoding utf8; "
-               "$id | Set-Content -Path '%s' -Encoding utf8; \"", urlLocation, currentVersionLocation);
+               "$url | Set-Content -Path '%s' -Encoding utf8NoBOM; "
+               "$id | Set-Content -Path '%s' -Encoding utf8NoBOM; \"", urlLocation, currentVersionLocation);
 
          if (system(psCommand) != 0) {
             printf("[LAUNCHER-ERROR]: Failed to fetch latest version, aborting.\n");

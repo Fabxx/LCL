@@ -135,237 +135,205 @@ void retro_run(void)
    environ_cb(RETRO_ENVIRONMENT_SHUTDOWN, NULL);
 }
 
+
+// Setup emulator dirs and try to find executable.
+static char *setup(char **Paths, char *executable)
+{
+   WIN32_FIND_DATA findFileData;
+   HANDLE hFind;
+   size_t size = (sizeof(Paths)/sizeof(char**));
+   char searchPath[MAX_PATH] = {0};
+
+   // Create Default Dirs if they don't exist.
+   for (size_t i = 0; i < size; i++) {
+      if (GetFileAttributes(Paths[i]) == INVALID_FILE_ATTRIBUTES) {
+         _mkdir(Paths[i]);
+         log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: created folder in %s\n", Paths[i]);
+      } else {
+         log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: %s folder already exists\n", Paths[i]);
+      }
+   }
+
+   // Lookup for Emulator Executable inside Emulator folder
+   snprintf(searchPath, MAX_PATH, "%s\\duckstation*.exe", Paths[0]);
+   hFind = FindFirstFile(searchPath, &findFileData);
+
+   if (hFind != INVALID_HANDLE_VALUE) {
+         snprintf(executable, MAX_PATH+1, "%s\\%s", Paths[0], findFileData.cFileName);
+         FindClose(hFind);
+         log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Found emulator: %s\n", executable);
+         return executable;
+   } else {
+      log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Downloading emulator.\n");
+      executable = "";
+      return executable;
+   }
+}
+
+
+static bool downloader(char **dirs, char **downloaderDirs, char **githubUrls, char *executable)
+{
+
+   char url[260] = {0}, currentVersion[32] = {0}, newVersion[32] = {0};
+
+   char psCommand[MAX_PATH * 3] = {0}, downloadCmd[MAX_PATH * 2] = {0};
+
+   FILE *urlFile                = fopen(downloaderDirs[0], "r"); 
+   FILE *currentVersionFile     = fopen(downloaderDirs[1], "r"); 
+   FILE *newVersionFile         = fopen(downloaderDirs[2], "r");
+
+   setup(dirs, executable);
+
+   /* If no emulator was found, download it. ID number must be saved in UTF-8 Like docoument to extract with atoi()
+      If emulator is found, retreive new URL ID and compare it with previously saved ID. If they don't match
+      download the new version.
+   */
+   if (strlen(executable) == 0) {
+         snprintf(psCommand, sizeof(psCommand),
+       "powershell -Command \"$response = (Invoke-WebRequest -Uri '%s' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json; "
+               "$tag  = $response.tag_name;"
+               "$name = $response.assets[5].name;"
+               "$id   = $response.assets[5].id;"
+               "$url  = '%s' + $tag + '/' + $name; "
+               "[System.IO.File]::WriteAllText('%s', $url, [System.Text.Encoding]::ASCII); "
+               "[System.IO.File]::WriteAllText('%s', $id , [System.Text.Encoding]::ASCII); \"", 
+               githubUrls[0], githubUrls[1], downloaderDirs[0], downloaderDirs[1]);
+      
+      if (system(psCommand) != 0) {
+            log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed to fetch download URL, aborting.\n");
+            return false;
+         } else { // If it's first download, extract only URL for download. Current version is already saved.
+               fgets(url, sizeof(url), urlFile);
+               fclose(urlFile);
+         }
+         
+         snprintf(downloadCmd, sizeof(downloadCmd),
+          "powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\duckstation.zip'\"", url, dirs[0]);
+         
+         if (system(downloadCmd) != 0) {
+            log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed to download emulator, aborting.\n");
+            return false;
+         } else {
+            log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Download successful, extracting emulator.\n");
+            return true;
+         }
+      } else { // If it's not the first download, fetch newVersion ID.
+            snprintf(psCommand, sizeof(psCommand),
+       "powershell -Command \"$response = (Invoke-WebRequest -Uri '%s' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json; "
+               "$tag  = $response.tag_name;"
+               "$name = $response.assets[5].name;"
+               "$id   = $response.assets[5].id;"
+               "$url  = '%s' + $tag + '/' + $name; "
+               "[System.IO.File]::WriteAllText('%s', $url, [System.Text.Encoding]::ASCII); "
+               "[System.IO.File]::WriteAllText('%s', $id, [System.Text.Encoding]::ASCII); \"", 
+               githubUrls[0], githubUrls[1], downloaderDirs[0], downloaderDirs[2]);
+      
+      if (system(psCommand) != 0) {
+            log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed to fetch update, aborting.\n");
+            return false;
+         } else { // Extract URL, currentID and newID for comparison
+               fgets(url, sizeof(url), urlFile);
+               fgets(currentVersion, sizeof(currentVersion), currentVersionFile);
+               fgets(newVersion, sizeof(newVersion), newVersionFile);
+               
+               fclose(urlFile);
+               fclose(currentVersionFile);
+               fclose(newVersionFile);
+                
+               if (strcmp(currentVersion, newVersion) != 0) {
+                  log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Update found. Downloading Update\n");
+                  snprintf(downloadCmd, sizeof(downloadCmd),
+                  "powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\duckstation.zip'\"", url, dirs[0]);
+            
+               if (system(downloadCmd) != 0) {
+                  log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed to download update, aborting.\n");
+                  return false;
+               } else {
+                  log_cb(RETRO_LOG_ERROR, "[LAUNCHER-INFO]: Download successful, extracting update.\n");
+                  return true;
+               }
+         } 
+      }
+   }
+   log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: No update found.\n");
+   return false;
+}
+   
+
+static bool extractor(char **dirs)
+{
+   char extractCmd[MAX_PATH * 2] = {0};
+   snprintf(extractCmd, sizeof(extractCmd),
+            "powershell -Command \"Expand-Archive -Path '%s\\duckstation.zip' -DestinationPath '%s' -Force; Remove-Item -Path '%s\\duckstation.zip' -Force\"", 
+            dirs[0], dirs[0], dirs[0]);
+            
+   if (system(extractCmd) != 0) {
+      log_cb(RETRO_LOG_ERROR,"[LAUNCHER-ERROR]: Failed to extract emulator, aborting.\n");
+      return false;
+   } else {
+      log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Success, rebooting RetroArch...\n");
+      return true;
+   }
+}
+
+
 /**
- * libretro callback; Called when a game is to be loaded.
- *  
- *  - Windows:
- *       - create dir for emulator files and bios
-		 - setup folders
- *       - search for .exe binary with name pattern.
- *		
- * - Final Steps:
- *       - attach ROM absolute path from info->path in double quotes for system() function, avoids truncation.
- *       - if info->path has no ROM, fallback to bios file placed by the user.
-         NOTE: info structure must be checked when is not null
+ * libretro callback; Called when a game is to be loaded. 
+  - attach ROM absolute path from info->path in double quotes for system() function, avoids truncation.
+  - if info->path has no ROM, fallback to bios file placed by the user.
+  NOTE: info structure must be checked when is not null
  */
+
 bool retro_load_game(const struct retro_game_info *info)
 {
-      WIN32_FIND_DATA findFileData;
-      HANDLE hFind;
-      char emuPath[MAX_PATH] = "C:\\RetroArch-Win64\\system\\duckstation";
-      char biosPath[MAX_PATH] = "C:\\RetroArch-Win64\\system\\duckstation\\bios";
-      char thumbnailsPath[MAX_PATH] = "C:\\RetroArch-Win64\\thumbnails\\Sony - Playstation";
-      char executable[MAX_PATH] = {0};
-      char searchPath[MAX_PATH] = {0};
-      const char *thumbDirs[] = {"\\Named_Boxarts", "\\Named_Snaps", "\\Named_Titles"};
-      char currentVersionLocation[512] = {0};
-      char newVersionLocation[512] = {0};
-      char urlLocation[512] = {0};
 
-      // Initialize paths for updater and downloader.
-      snprintf(currentVersionLocation, sizeof(currentVersionLocation), "%s\\currentId.txt", emuPath);
-      snprintf(newVersionLocation, sizeof(newVersionLocation), "%s\\newId.txt", emuPath);
-      snprintf(urlLocation, sizeof(urlLocation), "%s\\url.txt", emuPath);
+   // Default Emulator Paths
+   char *dirs[] = {
+         "C:\\RetroArch-Win64\\system\\duckstation",
+         "C:\\RetroArch-Win64\\system\\duckstation\\bios",
+         "C:\\RetroArch-Win64\\thumbnails\\Sony - Playstation",
+         "C:\\RetroArch-Win64\\thumbnails\\Sony - Playstation\\Named_Boxarts",
+         "C:\\RetroArch-Win64\\thumbnails\\Sony - Playstation\\Named_Snaps",
+         "C:\\RetroArch-Win64\\thumbnails\\Sony - Playstation\\Named_Titles"
+      };
 
-      // Create emulator folder if it doesn't exist
-      if (GetFileAttributes(emuPath) == INVALID_FILE_ATTRIBUTES) {
-         _mkdir(emuPath);
-         printf("[LAUNCHER-INFO]: Emulator folder created in %s\n", emuPath);
-      } else {
-         printf("[LAUNCHER-INFO]: Emulator folder already exists\n");
-      }
+   // Emulator build versions and URL to download. Content is generated from powershell cmds
+   char *downloaderDirs[] = {
+      "C:\\RetroArch-Win64\\system\\duckstation\\0.Url.txt",
+      "C:\\RetroArch-Win64\\system\\duckstation\\1.CurrentVersion.txt",
+      "C:\\RetroArch-Win64\\system\\duckstation\\2.NewVersion.txt",
+      
+   };
 
-      // Create BIOS folder if it doesn't exist
-      if (GetFileAttributes(biosPath) == INVALID_FILE_ATTRIBUTES) {
-         _mkdir(biosPath);
-         printf("[LAUNCHER-INFO]: BIOS folder created in %s\n", biosPath);
-      } else {
-         printf("[LAUNCHER-INFO]: BIOS folder already exists\n");
-      }
+   char *githubUrls[] = {
+      "https://api.github.com/repos/stenzek/duckstation/releases/latest",
+      "https://github.com/stenzek/duckstation/releases/download/"
+   };
 
-      // Create thumnbnails folder if it doesn't exist
-      if (GetFileAttributes(thumbnailsPath) == INVALID_FILE_ATTRIBUTES) {
-         _mkdir(thumbnailsPath);
-         printf("[LAUNCHER-INFO]: Thumbnails folder created in %s\n", thumbnailsPath);
-      } else {
-         printf("[LAUNCHER-INFO]: Thumbanils folder already exists\n");
-      }
+   char executable[513] = {0};
 
-      // Create Thumbnail directories
-      for (size_t i = 0; i < sizeof(thumbDirs)/sizeof(thumbDirs[0]); i++) {
-         char fullPath[MAX_PATH] = {0};
-         snprintf(fullPath, sizeof(fullPath), "%s%s", thumbnailsPath, thumbDirs[i]);
-         if (GetFileAttributes(fullPath) == INVALID_FILE_ATTRIBUTES) {
-            _mkdir(fullPath);
-            printf("[LAUNCHER-INFO]: %s folder created\n", fullPath);
-         } else {
-            printf("[LAUNCHER-INFO]: %s folder already exists\n", fullPath);
-         }
-      }
-
-      // Search for binary executable
-      snprintf(searchPath, MAX_PATH, "%s\\duckstation*.exe", emuPath);
-      hFind = FindFirstFile(searchPath, &findFileData);
-
-      if (hFind != INVALID_HANDLE_VALUE) {
-         snprintf(executable, MAX_PATH, "%s\\%s", emuPath, findFileData.cFileName);
-         FindClose(hFind);
-         printf("[LAUNCHER-INFO]: Found emulator: %s\n", executable);
-
-         /*If executable was found, check for updates by comparing current URL ID with the last saved URL ID. 
-           Build the new download URL with the new tag if any.
-           
-           If the IDs are different use the new fetched URL to download
-
-           This is needed because on duckstation the rolling releases are on the same tag 
-           called "latest", so if you try to compare the URLs those will be always equal.
-
-           Write TXT files containing IDs in UTF-8 to avoid issues
-          */ 
-         int currentId = 0, newId = 0;
-         char currentIdStr[32] = {0}, newIdStr[32] = {0}, urlString[MAX_PATH] = {0}, psCommand[MAX_PATH * 3] = {0};
-
-         snprintf(psCommand, sizeof(psCommand),
-         "powershell -Command \"$response = (Invoke-WebRequest -Uri 'https://api.github.com/repos/stenzek/duckstation/releases/latest' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json; "
-               "$tag = $response.tag_name;"
-               "$name = $response.assets[5].name;"
-               "$url = 'https://github.com/stenzek/duckstation/releases/download/' + $tag + '/' + $name; "
-               "$id  = $response.assets[5].id;"
-               "$url | Set-Content -Path '%s' -Encoding Ascii; "
-               "$id | Set-Content -Path '%s' -Encoding Ascii; \"", urlLocation, newVersionLocation);
-
-         if (system(psCommand) != 0) {
-            printf("[LAUNCHER-ERROR]: Failed to fetch new version, aborting.\n");
-            return false;
-         }
-          
-         FILE *currentVersion = fopen(currentVersionLocation, "r");
-         FILE *newVersion = fopen(newVersionLocation, "r");
-         FILE *url = fopen(urlLocation, "r");
-         
-         if (currentVersion && newVersion && url) {
-            fgets(currentIdStr, sizeof(currentIdStr), currentVersion);
-            fgets(newIdStr, sizeof(newIdStr), newVersion);
-            fgets(urlString, sizeof(urlString), url);
-            fclose(currentVersion);
-            fclose(newVersion);
-            fclose(url);
-            currentId = atoi(currentIdStr);
-            newId = atoi(newIdStr);
-
-            printf("%s\n%s\n", currentIdStr, newIdStr);
-         } else {
-            printf("[LAUNCHER-ERROR]: Failed to fetch update, aborting.\n");
-            return false;
-         }
-
-         printf("CURRENT ID: %d\nNEW ID: %d\n", currentId, newId);
-
-         if (currentId != newId) {
-             printf("[LAUNCHER-INFO]: duckstation update Found, new URL ID: %d\n", newId);
-             printf("[LAUNCHER-INFO]: current duckstation URL ID: %d\n", currentId);
-
-             char downloadCmd[MAX_PATH * 2] = {0};
-             snprintf(downloadCmd, sizeof(downloadCmd),
-          "powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\duckstation.zip'\"", urlString, emuPath);
-         
-         if (system(downloadCmd) != 0) {
-            printf("[LAUNCHER-ERROR]: Failed to download emulator, aborting.\n");
-            return false;
-         } else {
-            printf("[LAUNCHER-INFO]: Download successful, extracting emulator.\n");
-           
-            char extractCmd[MAX_PATH * 2] = {0};
-            snprintf(extractCmd, sizeof(extractCmd),
-             "powershell -Command \"Expand-Archive -Path '%s\\duckstation.zip' -DestinationPath '%s' -Force; Remove-Item -Path '%s\\duckstation.zip' -Force\"", emuPath, emuPath, emuPath);
-            
-            if (system(extractCmd) != 0) {
-               printf("[LAUNCHER-ERROR]: Failed to extract emulator, aborting.\n");
-               return false;
-            }
-            printf("[LAUNCHER-INFO]: Success, rebooting RetroArch...\n");
-            return false;
-         }
-         } else {
-            printf("[LAUNCHER-INFO]: No duckstation updates found.\n");
-         }
-
-      } else {
-         printf("[LAUNCHER-INFO]: No executable found, downloading emulator.\n");
-
-         /* If no emulator was downloaded before, download directly from last available URL 
-            Retreiving the release URL ID to check if the release has changed for the updater.
-            Each release generates a different ID for the same URL.
-         */
-
-         char url[MAX_PATH];
-         char psCommand[MAX_PATH * 3] = {0};
-         snprintf(psCommand, sizeof(psCommand),
-         "powershell -Command \"$response = (Invoke-WebRequest -Uri 'https://api.github.com/repos/stenzek/duckstation/releases/latest' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json; "
-               "$tag = $response.tag_name;"
-               "$name = $response.assets[5].name;"
-               "$id = $response.assets[5].id;"
-               "$url = 'https://github.com/stenzek/duckstation/releases/download/' + $tag + '/' + $name; "
-               "$url | Set-Content -Path '%s' -Encoding Ascii; "
-               "$id | Set-Content -Path '%s' -Encoding Ascii; \"", urlLocation, currentVersionLocation);
-
-         if (system(psCommand) != 0) {
-            printf("[LAUNCHER-ERROR]: Failed to fetch latest version, aborting.\n");
-            return false;
-         }
-
-         FILE *file = fopen(urlLocation, "r");
-         if (file) {
-            fgets(url, sizeof(url), file);
-            fclose(file);
-         } else {
-            printf("[LAUNCHER-ERROR]: Failed to read version file, aborting.\n");
-            return false;
-         }
-
-         url[strcspn(url, "\r\n")] = 0;
-
-         printf("[LAUNCHER-INFO]: Latest duckstation release URL: %s\n", url);
-         
-         char downloadCmd[MAX_PATH * 2] = {0};
-         snprintf(downloadCmd, sizeof(downloadCmd),
-          "powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\duckstation.zip'\"", url, emuPath);
-         
-         if (system(downloadCmd) != 0) {
-            printf("[LAUNCHER-ERROR]: Failed to download emulator, aborting.\n");
-            return false;
-         } else {
-            printf("[LAUNCHER-INFO]: Download successful, extracting emulator.\n");
-           
-            char extractCmd[MAX_PATH * 2] = {0};
-            snprintf(extractCmd, sizeof(extractCmd),
-             "powershell -Command \"Expand-Archive -Path '%s\\duckstation.zip' -DestinationPath '%s' -Force; Remove-Item -Path '%s\\duckstation.zip' -Force\"", emuPath, emuPath, emuPath);
-            
-            if (system(extractCmd) != 0) {
-               printf("[LAUNCHER-ERROR]: Failed to extract emulator, aborting.\n");
-               return false;
-            }
-            printf("[LAUNCHER-INFO]: Success, rebooting RetroArch...\n");
-            return false;
-         }
-      }
-
-      if (info == NULL || info->path == NULL) {
-            char args[512] = {0};
-            snprintf(args, sizeof(args), " -fullscreen -bios");
-            strncat(executable, args, sizeof(executable)-1);
-      } else {
-            char args[512] = {0};
-            snprintf(args, sizeof(args), " -fullscreen -bios \"%s\"", info->path);
-            strncat(executable, args, sizeof(executable)-1);
-      }
+   setup(dirs, executable);
+   
+   if (downloader(dirs, downloaderDirs, githubUrls, executable)) {
+      extractor(dirs);
+   }
+   
+   if (info == NULL || info->path == NULL) {
+         char args[512] = {0};
+         snprintf(args, sizeof(args), " -fullscreen -bios");
+         strncat(executable, args, sizeof(executable)-1);
+   } else {
+         char args[512] = {0};
+         snprintf(args, sizeof(args), " -fullscreen -bios \"%s\"", info->path);
+         strncat(executable, args, sizeof(executable)-1);
+   }
 
    if (system(executable) == 0) {
-      printf("[LAUNCHER-INFO]: Finished running duckstation.\n");
+      log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Finished running duckstation.\n");
       return true;
    }
 
-   printf("[LAUNCHER-INFO]: Failed running duckstation.\n");
+   log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed running duckstation.\n");
    return false;
 }
 

@@ -231,11 +231,14 @@ static bool downloader(char **Paths, char **downloaderDirs, char **githubUrls, c
          }
 
       snprintf(downloadCmd, sizeof(downloadCmd), 
-      "wget -O %s/duckstation.AppImage %s && chmod +x %s/duckstation.AppImage", Paths[0], url, Paths[0]);
+      "wget -O %s/duckstation.AppImage %s && chmod +x %s", Paths[0], url, Paths[6]);
       
       if (system(downloadCmd) != 0) {
             log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed to download emulator, aborting.\n");
             return false;
+         } else {
+            log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Success.\n");
+            return true;
          }
    } else { // If it's not the first download, fetch newVersion ID.
          snprintf(bashCommand, sizeof(bashCommand),
@@ -273,7 +276,7 @@ static bool downloader(char **Paths, char **downloaderDirs, char **githubUrls, c
                if (strcmp(currentVersion, newVersion) != 0) {
                   log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Update found. Downloading Update\n");
                   snprintf(downloadCmd, sizeof(downloadCmd), 
-                  "wget -O %s/duckstation.AppImage %s && chmod +x %s/duckstation.AppImage", Paths[0], url, Paths[0]);
+                  "wget -O %s/duckstation.AppImage %s && chmod +x %s", Paths[0], url, Paths[6]);
                   
                   if (system(downloadCmd) != 0) {
                      log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed to download update, aborting.\n");
@@ -293,6 +296,7 @@ static bool downloader(char **Paths, char **downloaderDirs, char **githubUrls, c
                         return false;
                      } else {
                         log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Success.\n");
+                        return true;
                      }
                   }
                } else {
@@ -301,7 +305,7 @@ static bool downloader(char **Paths, char **downloaderDirs, char **githubUrls, c
             }
          }
    }
-   return true;
+   return false;
 }
 
 /**
@@ -321,7 +325,7 @@ bool retro_load_game(const struct retro_game_info *info)
          "/.config/retroarch/thumbnails/Sony - Playstation/Named_Boxarts",
          "/.config/retroarch/thumbnails/Sony - Playstation/Named_Snaps",
          "/.config/retroarch/thumbnails/Sony - Playstation/Named_Titles",
-         "/.config/retroarch/system/duckstation/duckstation*" // search Path for glob.
+         "/.config/retroarch/system/duckstation/duckstation.AppImage" // search Path for glob.
       };
 
    // Emulator build versions and URL to download. Content is generated from powershell cmds

@@ -182,8 +182,6 @@ static bool downloader(char **dirs, char **downloaderDirs, char **githubUrls, ch
    char url[260] = {0}, currentVersion[32] = {0}, newVersion[32] = {0};
    char psCommand[MAX_PATH * 3] = {0}, downloadCmd[MAX_PATH * 2] = {0}; 
 
-   setup(dirs, numPaths, executable);
-
    if (strlen(executable) == 0) {
          snprintf(psCommand, sizeof(psCommand),
        "powershell -Command \"$response = (Invoke-WebRequest -Uri '%s' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json; "

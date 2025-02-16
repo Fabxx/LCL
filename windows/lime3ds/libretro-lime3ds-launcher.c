@@ -169,7 +169,7 @@ static char *setup(char **Paths, size_t numPaths, char *executable)
    }
 }
 
-/* If no emulator was found, download it. ID number must be saved in UTF-8 Like docoument to extract with atoi()
+/* If no emulator was found, download it. ID number must be saved in ASCII to avoid BOM bytes.
       If emulator is found, retreive new URL ID and compare it with previously saved ID. If they don't match
       download the new version.
 
@@ -300,7 +300,7 @@ static bool extractor(char **dirs)
       log_cb(RETRO_LOG_ERROR,"[LAUNCHER-ERROR]: Failed to extract emulator, aborting.\n");
       return false;
    } else {
-      log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Success, running emulator.\n");
+      log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Success.\n");
       return true;
    }
 }
@@ -348,19 +348,22 @@ bool retro_load_game(const struct retro_game_info *info)
    if (downloader(dirs, downloaderDirs, githubUrls, executable, numPaths)) {
       extractor(dirs);
    }
-   
-   if (info != NULL && info->path != NULL) {
+
+   // if executable exists, only then try to launch it.
+   if (strlen(executable) > 0) {
+      if (info != NULL && info->path != NULL) {
          char args[512] = {0};
          snprintf(args, sizeof(args), " \"%s\"", info->path);
          strncat(executable, args, sizeof(executable)-1);
-   }
+      }
 
-   if (system(executable) == 0) {
-      log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Finished running lime3ds.\n");
-      return true;
+      if (system(executable) == 0) {
+         log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Finished running lime3ds.\n");
+         return true;
+      } else {
+         log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed running lime3ds.\n");
+      }
    }
-
-   log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed running lime3ds.\n");
    return false;
 }
 

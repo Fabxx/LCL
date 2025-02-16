@@ -173,7 +173,9 @@ static char *setup(char **Paths, size_t numPaths, char *executable)
 
 /* in case of PPSSPP, we get lastes release LINK from the official website. GitHub artifacts for windows are not available
    a direct approach is to parse all available Links, and select the most recent one which contains
-   the lastes build
+   the lastes build.
+
+   Url link and IDs are saved in ASCII to avoid BOM bytes.
 */
 static bool downloader(char **dirs, char **downloaderDirs, char **githubUrls, char *executable, size_t numPaths)
 {
@@ -288,8 +290,8 @@ static bool extractor(char **dirs)
       log_cb(RETRO_LOG_ERROR,"[LAUNCHER-ERROR]: Failed to extract emulator, aborting.\n");
       return false;
    } else {
-      log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Success, running emulator.\n");
-      return true; // if false will close core.
+      log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Success.\n");
+      return true;
    }
 }
 
@@ -337,22 +339,25 @@ bool retro_load_game(const struct retro_game_info *info)
       extractor(dirs);
    }
    
-   if (info == NULL || info->path == NULL) {
+   // if executable exists, only then try to launch it.
+   if (strlen(executable) > 0) {
+      if (info == NULL || info->path == NULL) {
          char args[512] = {0};
          snprintf(args, sizeof(args), " --fullscreen");
          strncat(executable, args, sizeof(executable)-1);
-   } else {
+      } else {
          char args[512] = {0};
-         snprintf(args, sizeof(args), " -fullscreen \"%s\"", info->path);
+         snprintf(args, sizeof(args), " --fullscreen \"%s\"", info->path);
          strncat(executable, args, sizeof(executable)-1);
-   }
+      }
 
-   if (system(executable) == 0) {
-      log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Finished running PPSSPP.\n");
-      return true;
+      if (system(executable) == 0) {
+         log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Finished running PPSSPP.\n");
+         return true;
+      } else {
+         log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed running PPSSPP.\n");
+      }
    }
-
-   log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed running PPSSPP.\n");
    return false;
 }
 

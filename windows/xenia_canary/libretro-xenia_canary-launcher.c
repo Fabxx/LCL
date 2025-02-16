@@ -1,3 +1,4 @@
+#include <minwindef.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -134,147 +135,233 @@ void retro_run(void)
    environ_cb(RETRO_ENVIRONMENT_SHUTDOWN, NULL);
 }
 
-/**
- * libretro callback; Called when a game is to be loaded.
- *  
- *  - Windows:
- *       - create dir for emulator files and bios
-		 - setup folders
- *       - search for .exe binary with name pattern.
- *		
- * - Final Steps:
- *       - attach ROM absolute path from info->path in double quotes for system() function, avoids truncation.
- *       - if info->path has no ROM, fallback to bios file placed by the user.
-         NOTE: info structure must be checked when is not null
- */
-bool retro_load_game(const struct retro_game_info *info)
+
+// Setup emulator dirs and try to find executable.
+static char *setup(char **Paths, size_t numPaths, char *executable)
 {
-      WIN32_FIND_DATA findFileData;
-      HANDLE hFind;
-      char emuPath[MAX_PATH] = "C:\\RetroArch-Win64\\system\\xenia_canary";
-      char biosPath[MAX_PATH] = "C:\\RetroArch-Win64\\system\\xenia_canary\\bios";
-      char thumbnailsPath[MAX_PATH] = "C:\\RetroArch-Win64\\thumbnails\\Microsoft - Xbox 360";
-      char executable[MAX_PATH] = {0};
-      char searchPath[MAX_PATH] = {0};
-      const char *thumbDirs[] = {"\\Named_Boxarts", "\\Named_Snaps", "\\Named_Titles"};
+   WIN32_FIND_DATA findFileData;
+   HANDLE hFind;
+   char searchPath[MAX_PATH] = {0};
 
-      // Create emulator folder if it doesn't exist
-      if (GetFileAttributes(emuPath) == INVALID_FILE_ATTRIBUTES) {
-         _mkdir(emuPath);
-         printf("[LAUNCHER-INFO]: Emulator folder created in %s\n", emuPath);
+   // Create Default Dirs if they don't exist.
+   for (size_t i = 0; i < numPaths; i++) {
+      if (GetFileAttributes(Paths[i]) == INVALID_FILE_ATTRIBUTES) {
+         _mkdir(Paths[i]);
+         log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: created folder in %s\n", Paths[i]);
       } else {
-         printf("[LAUNCHER-INFO]: Emulator folder already exists\n");
+         log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: %s folder already exists\n", Paths[i]);
       }
-
-      // Create BIOS folder if it doesn't exist
-      if (GetFileAttributes(biosPath) == INVALID_FILE_ATTRIBUTES) {
-         _mkdir(biosPath);
-         printf("[LAUNCHER-INFO]: BIOS folder created in %s\n", biosPath);
-      } else {
-         printf("[LAUNCHER-INFO]: BIOS folder already exists\n");
-      }
-
-      // Create thumnbnails folder if it doesn't exist
-      if (GetFileAttributes(thumbnailsPath) == INVALID_FILE_ATTRIBUTES) {
-         _mkdir(thumbnailsPath);
-         printf("[LAUNCHER-INFO]: Thumbnails folder created in %s\n", thumbnailsPath);
-      } else {
-         printf("[LAUNCHER-INFO]: Thumbanils folder already exists\n");
-      }
-
-      // Create Thumbnail directories
-      for (size_t i = 0; i < sizeof(thumbDirs)/sizeof(thumbDirs[0]); i++) {
-         char fullPath[MAX_PATH] = {0};
-         snprintf(fullPath, sizeof(fullPath), "%s%s", thumbnailsPath, thumbDirs[i]);
-         if (GetFileAttributes(fullPath) == INVALID_FILE_ATTRIBUTES) {
-            _mkdir(fullPath);
-            printf("[LAUNCHER-INFO]: %s folder created\n", fullPath);
-         } else {
-            printf("[LAUNCHER-INFO]: %s folder already exists\n", fullPath);
-         }
-      }
-
-      // Search for binary executable
-      snprintf(searchPath, MAX_PATH, "%s\\xenia_canary*.exe", emuPath);
-      hFind = FindFirstFile(searchPath, &findFileData);
-
-      if (hFind != INVALID_HANDLE_VALUE) {
-         snprintf(executable, MAX_PATH, "%s\\%s", emuPath, findFileData.cFileName);
-         FindClose(hFind);
-         printf("[LAUNCHER-INFO]: Found emulator: %s\n", executable);
-      } else {
-         printf("[LAUNCHER-INFO]: No executable found, downloading emulator.\n");
-        
-            // Get lastes release of the emulator from URL
-            
-            char url[MAX_PATH];
-            char psCommand[MAX_PATH * 3] = {0};
-
-            snprintf(psCommand, sizeof(psCommand),
-    "powershell -Command \"$response = (Invoke-WebRequest -Uri 'https://api.github.com/repos/xenia-canary/xenia-canary-releases/releases' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json; "
-            "$tag = $response[0].tag_name; "
-            "$name = $response[0].assets[1].name; "
-            "$url = 'https://github.com/xenia-canary/xenia-canary-releases/releases/download/' + $tag + '/' + $name; "
-            "Write-Output $url\" > version.txt");
-
-         if (system(psCommand) != 0) {
-            printf("[LAUNCHER-ERROR]: Failed to fetch latest version, aborting.\n");
-            return false;
-         }
-
-         FILE *file = fopen("version.txt", "r");
-         if (file) {
-            fgets(url, sizeof(url), file);
-            fclose(file);
-            remove("version.txt");
-         } else {
-            printf("[LAUNCHER-ERROR]: Failed to read version file, aborting.\n");
-            return false;
-         }
-
-         url[strcspn(url, "\r\n")] = 0;
-
-         printf("[LAUNCHER-INFO]: Latest Xenia-Canary release URL: %s\n", url);
-         
-         char downloadCmd[MAX_PATH * 2] = {0};
-         snprintf(downloadCmd, sizeof(downloadCmd),
-          "powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\xenia_canary.zip'\"", url, emuPath);
-         
-         if (system(downloadCmd) != 0) {
-            printf("[LAUNCHER-ERROR]: Failed to download emulator, aborting.\n");
-            return false;
-         } else {
-            printf("[LAUNCHER-INFO]: Download successful, extracting emulator.\n");
-           
-            char extractCmd[MAX_PATH * 2] = {0};
-            snprintf(extractCmd, sizeof(extractCmd),
-             "powershell -Command \"Expand-Archive -Path '%s\\xenia_canary.zip' -DestinationPath '%s' -Force; Remove-Item -Path '%s\\xenia_canary.zip' -Force\"", emuPath, emuPath, emuPath);
-            
-            if (system(extractCmd) != 0) {
-               printf("[LAUNCHER-ERROR]: Failed to extract emulator, aborting.\n");
-               return false;
-            }
-            printf("[LAUNCHER-INFO]: Success, rebooting RetroArch...\n");
-            return false;
-         }
-      }
-
-      if (info == NULL || info->path == NULL) {
-            char args[512] = {0};
-            snprintf(args, sizeof(args), " --fullscreen=true");
-            strncat(executable, args, sizeof(executable)-1);
-      } else {
-         char args[512] = {0};
-         snprintf(args, sizeof(args), " --fullscreen=true \"%s\"", info->path);
-         strncat(executable, args, sizeof(executable)-1);
-      } 
-
-   if (system(executable) == 0) {
-      printf("[LAUNCHER-INFO]: Finished running xenia_canary.\n");
-      return true;
    }
 
-   printf("[LAUNCHER-INFO]: Failed running xenia_canary.\n");
+   // Lookup for Emulator Executable inside Emulator folder. hFind resolves wildcard.
+   snprintf(searchPath, MAX_PATH, "%s\\xenia_canary.exe", Paths[0]);
+   hFind = FindFirstFile(searchPath, &findFileData);
+
+   if (hFind != INVALID_HANDLE_VALUE) {
+         snprintf(executable, MAX_PATH+1, "%s\\%s", Paths[0], findFileData.cFileName);
+         FindClose(hFind);
+         log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Found emulator: %s\n", executable);
+         return executable;
+   } else {
+      log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Downloading emulator.\n");
+      executable = "";
+      return executable;
+   }
+}
+
+   /* If no emulator was found, download it. ID number must be saved in ASCII to avoid BOM bytes.
+      If emulator is found, retreive new URL ID and compare it with previously saved ID. If they don't match
+      download the new version.
+
+      NOTE: Files must be opened with FILE pointer AFTER powershell created them, not before, or the process
+            will lock the files and PS won't be able to read from them.
+   */
+static bool downloader(char **dirs, char **downloaderDirs, char **githubUrls, char *executable, size_t numPaths)
+{
+
+   char url[260] = {0}, currentVersion[32] = {0}, newVersion[32] = {0};
+   char psCommand[MAX_PATH * 3] = {0}, downloadCmd[MAX_PATH * 2] = {0}; 
+
+   setup(dirs, numPaths, executable);
+
+   if (strlen(executable) == 0) {
+         snprintf(psCommand, sizeof(psCommand),
+       "powershell -Command \"$response = (Invoke-WebRequest -Uri '%s' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json; "
+               "$tag  = $response[0].tag_name;"
+               "$name = $response[0].assets[1].name;"
+               "$id   = $response[0].assets[1].id;"
+               "$url  = '%s' + $tag + '/' + $name; "
+               "[System.IO.File]::WriteAllText('%s', $url, [System.Text.Encoding]::ASCII); "
+               "[System.IO.File]::WriteAllText('%s', $id , [System.Text.Encoding]::ASCII); \"", 
+               githubUrls[0], githubUrls[1], downloaderDirs[0], downloaderDirs[1]);
+      
+      if (system(psCommand) != 0) {
+            log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed to fetch download URL, aborting.\n");
+            return false;
+         } else { // If it's first download, extract only URL for download. Current version is already saved by powershell.
+               FILE *urlFile = fopen(downloaderDirs[0], "r");
+
+               if (!urlFile) {
+                  log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Powershell failed to export ID of download URL. Aborting.\n");
+                  return false;
+               } else {
+                   fgets(url, sizeof(url), urlFile);
+                   fclose(urlFile);
+               }
+         }
+         
+         snprintf(downloadCmd, sizeof(downloadCmd),
+          "powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\xenia_canary.zip'\"", url, dirs[0]);
+         
+         if (system(downloadCmd) != 0) {
+            log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed to download emulator, aborting.\n");
+            return false;
+         } else {
+            log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Download successful, extracting emulator.\n");
+            return true;
+         }
+      } else { // If it's not the first download, fetch newVersion ID.
+            snprintf(psCommand, sizeof(psCommand),
+       "powershell -Command \"$response = (Invoke-WebRequest -Uri '%s' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json; "
+               "$tag  = $response[0].tag_name;"
+               "$name = $response[0].assets[1].name;"
+               "$id   = $response[0].assets[1].id;"
+               "$url  = '%s' + $tag + '/' + $name; "
+               "[System.IO.File]::WriteAllText('%s', $url, [System.Text.Encoding]::ASCII); "
+               "[System.IO.File]::WriteAllText('%s', $id, [System.Text.Encoding]::ASCII); \"", 
+               githubUrls[0], githubUrls[1], downloaderDirs[0], downloaderDirs[2]);
+      
+      if (system(psCommand) != 0) {
+            log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed to fetch update, aborting.\n");
+            return false;
+         } else { // Extract URL, currentID and newID for comparison
+               FILE *urlFile = fopen(downloaderDirs[0], "r");
+               FILE *currentVersionFile = fopen(downloaderDirs[1], "r");
+               FILE *newVersionFile = fopen(downloaderDirs[2], "r"); 
+   
+               if (!newVersionFile && !urlFile && !currentVersionFile) {
+                   log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Metadata files not found. Aborting.\n");
+                   return false;
+               }
+
+               fgets(url, sizeof(url), urlFile);
+               fgets(currentVersion, sizeof(currentVersion), currentVersionFile);
+               fgets(newVersion, sizeof(newVersion), newVersionFile);
+               
+               fclose(urlFile);
+               fclose(currentVersionFile);
+               fclose(newVersionFile);
+                
+               if (strcmp(currentVersion, newVersion) != 0) {
+                  log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Update found. Downloading Update\n");
+                  snprintf(downloadCmd, sizeof(downloadCmd),
+                  "powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\xenia_canary.zip'\"", url, dirs[0]);
+            
+               if (system(downloadCmd) != 0) {
+                  log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed to download update, aborting.\n");
+                  return false;
+               } else {
+                  // Overwrite Current version.txt file with new ID if download was successfull.
+                   snprintf(psCommand, sizeof(psCommand),
+                  "powershell -Command \"$response = (Invoke-WebRequest -Uri '%s' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json; "
+                           "$id   = $response[0].assets[1].id;"
+                           "[System.IO.File]::WriteAllText('%s', $id, [System.Text.Encoding]::ASCII); \"", 
+                           githubUrls[0], downloaderDirs[1]);
+                  
+                  if (system(psCommand) != 0) {
+                     log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed to update current version file. Aborting.\n");
+                     return false;
+                  }
+                  log_cb(RETRO_LOG_ERROR, "[LAUNCHER-INFO]: Download successful, extracting update.\n");
+                  return true;
+               }
+         } 
+      }
+   }
+   log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: No update found.\n");
+   return false;
+}
+   
+
+static bool extractor(char **dirs)
+{
+   char extractCmd[MAX_PATH * 2] = {0};
+   snprintf(extractCmd, sizeof(extractCmd),
+            "powershell -Command \"Expand-Archive -Path '%s\\xenia_canary.zip' -DestinationPath '%s' -Force; Remove-Item -Path '%s\\xenia_canary.zip' -Force\"", 
+            dirs[0], dirs[0], dirs[0]);
+            
+   if (system(extractCmd) != 0) {
+      log_cb(RETRO_LOG_ERROR,"[LAUNCHER-ERROR]: Failed to extract emulator, aborting.\n");
+      return false;
+   } else {
+      log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Success.\n");
+      return true;
+   }
+}
+
+
+/**
+ * libretro callback; Called when a game is to be loaded. 
+  - attach ROM absolute path from info->path in double quotes for system() function, avoids truncation.
+  - if info->path has no ROM, fallback to bios file placed by the user.
+  NOTE: info structure must be checked when is not null
+ */
+
+bool retro_load_game(const struct retro_game_info *info)
+{
+
+   // Default Emulator Paths
+   char *dirs[] = {
+         "C:\\RetroArch-Win64\\system\\xenia_canary",
+         "C:\\RetroArch-Win64\\system\\xenia_canary\\bios",
+         "C:\\RetroArch-Win64\\thumbnails\\Microsoft - Xbox 360",
+         "C:\\RetroArch-Win64\\thumbnails\\Microsoft - Xbox 360\\Named_Boxarts",
+         "C:\\RetroArch-Win64\\thumbnails\\Microsoft - Xbox 360\\Named_Snaps",
+         "C:\\RetroArch-Win64\\thumbnails\\Microsoft - Xbox 360\\Named_Titles"
+      };
+
+   size_t numPaths = sizeof(dirs)/sizeof(char*);
+
+   // Emulator build versions and URL to download. Content is generated from powershell cmds
+   char *downloaderDirs[] = {
+      "C:\\RetroArch-Win64\\system\\xenia_canary\\0.Url.txt",
+      "C:\\RetroArch-Win64\\system\\xenia_canary\\1.CurrentVersion.txt",
+      "C:\\RetroArch-Win64\\system\\xenia_canary\\2.NewVersion.txt",
+      
+   };
+
+   char *githubUrls[] = {
+      "https://api.github.com/repos/xenia-canary/xenia-canary-releases/releases",
+      "https://github.com/xenia-canary/xenia-canary-releases/releases/download/"
+   };
+
+   char executable[513] = {0};
+
+   setup(dirs, numPaths, executable);
+   
+   if (downloader(dirs, downloaderDirs, githubUrls, executable, numPaths)) {
+      extractor(dirs);
+   }
+
+   // if executable exists, only then try to launch it.
+   if (strlen(executable) > 0) {
+      if (info == NULL || info->path == NULL) {
+         char args[512] = {0};
+         snprintf(args, sizeof(args), " --fullscreen=true");
+         strncat(executable, args, sizeof(executable)-1);
+      } else {
+            char args[512] = {0};
+            snprintf(args, sizeof(args), " --fullscreen=true \"%s\"", info->path);
+            strncat(executable, args, sizeof(executable)-1);
+      }
+
+      if (system(executable) == 0) {
+         log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Finished running xenia_canary.\n");
+         return true;
+      } else {
+         log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed running xenia_canary.\n");
+      }
+   }
    return false;
 }
 

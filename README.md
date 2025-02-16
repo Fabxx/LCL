@@ -27,7 +27,7 @@ So i've made these cores to facilitate the usage of emulators, and to use the up
 - `jq` JSON parser package for Linux
 - `bash` interpreter for Linux
 - `powershell` for Windows
-- `7z4Powershell` module for Windows, to extract 7z archive. Will be downloaded by the core that needs it.
+- `7z4Powershell` module for Windows, to extract 7z archive. Needed by emulators released in `7z` format.
   
 # Usage
 
@@ -37,7 +37,8 @@ The core does the following:
 - Setup thumbnail folders for boxarts, snaps and title images for the selected system
 - Create a `bios` folder under `retroarch/system/system name`
 - Reboots retroarch to let the user run the core, with BIOS (if supported) or with a game from playlist
-
+- On next boot will check if an update is available by comparing the current and new URL ids used to fetch
+  the release, if they are different it means that a new release with a new url is out, and it will be downloaded.
 
 # Core installation
 

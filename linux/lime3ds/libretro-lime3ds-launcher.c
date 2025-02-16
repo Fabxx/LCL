@@ -391,13 +391,9 @@ bool retro_load_game(const struct retro_game_info *info)
 
    // if executable exists, only then try to launch it.
    if (strlen(executable) > 0) {
-      if (info == NULL || info->path == NULL) {
+      if (info != NULL || info->path != NULL) {
          char args[512] = {0};
-         snprintf(args, sizeof(args), " -fullscreen -bios");
-         strncat(executable, args, sizeof(executable)-1);
-      } else {
-         char args[512] = {0};
-         snprintf(args, sizeof(args), " -fullscreen \"%s\"", info->path);
+         snprintf(args, sizeof(args), " \"%s\"", info->path);
          strncat(executable, args, sizeof(executable)-1);
       }
 

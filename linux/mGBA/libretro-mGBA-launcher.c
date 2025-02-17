@@ -135,7 +135,7 @@ void retro_run(void)
    unsigned stride = 320;
    video_cb(frame_buf, 320, 240, stride << 2);
 
-   // Shutdown the environment now that xemu has loaded and quit.
+   // Shutdown the environment
    environ_cb(RETRO_ENVIRONMENT_SHUTDOWN, NULL);
 }
 
@@ -155,184 +155,226 @@ static int is_elf_executable(const char *filename) {
 }
 
 /**
- * libretro callback; Called when a game is to be loaded.
- *  - Linux
- *        - resolve HOME path 
- *        - create dir for emulator files and bios
- *        - apply regex search with glob, filter by file and ELF executable
- *
- * - Final Steps:
- *       - attach ROM absolute path from info->path in double quotes for system() function, avoids truncation.
- *       - if info->path has no ROM, fallback to bios file placed by the user.
-         NOTE: info structure must be checked when is not null
+ * Setup emulator directories and try to find executable.
+ * If executable was not found then download it.
+ * If executable was found check for updates.
  */
-bool retro_load_game(const struct retro_game_info *info)
+static char *setup(char **Paths, size_t numPaths, char *executable)
 {
+   glob_t buf;
+   struct stat path_stat; 
 
-      glob_t buf;
-      struct stat path_stat;
-      char executable[512] = {0};
-      char path[512] = {0};
-      const char *home = getenv("HOME");
-
-      if (!home) {
-         return false;
-      }
-
-      /**
-       * Create thumbnail directories if they don't exist:
-
-         - System name directory
-         - Named_Boxart directory
-         - Named_Snaps directory
-         - Named_Titles
-       * 
-       */
-
-      snprintf(path, sizeof(path), "%s/.config/retroarch/thumbnails/Nintendo - Game Boy Advance", home);
-
-      if (stat(path, &path_stat) != 0) {
-         mkdir(path, 0755);
-         printf("[LAUNCHER-INFO]: thumbnail folder created in %s\n", path);
+   // Do NOT try to create search path for glob (dirs[6])
+   for (size_t i = 0; i < numPaths-1; i++) {
+      if (stat(Paths[i], &path_stat) != 0) {
+         mkdir(Paths[i], 0755);
+         log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: %s folder created\n", Paths[i]);
       } else {
-         printf("[LAUNCHER-INFO]: thumbnail folder already exist\n");
+         log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: %s folder already exist\n", Paths[i]);
       }
+   }
 
-      snprintf(path, sizeof(path), "%s/.config/retroarch/thumbnails/Nintendo - Game Boy Advance/Named_Boxarts", home);
-
-      if (stat(path, &path_stat) != 0) {
-         mkdir(path, 0755);
-         printf("[LAUNCHER-INFO]: Boxart folder created in %s\n", path);
-      } else {
-         printf("[LAUNCHER-INFO]: Boxart folder already exist\n");
-      }
-
-      snprintf(path, sizeof(path), "%s/.config/retroarch/thumbnails/Nintendo - Game Boy Advance/Named_Snaps", home);
-
-      if (stat(path, &path_stat) != 0) {
-         mkdir(path, 0755);
-         printf("[LAUNCHER-INFO]: Snaps folder created in %s\n", path);
-      } else {
-         printf("[LAUNCHER-INFO]: Snaps folder already exist\n");
-      }
-
-      snprintf(path, sizeof(path), "%s/.config/retroarch/thumbnails/Nintendo - Game Boy Advance/Named_Titles", home);
-
-      if (stat(path, &path_stat) != 0) {
-         mkdir(path, 0755);
-         printf("[LAUNCHER-INFO]: Titles folder created in %s\n", path);
-      } else {
-         printf("[LAUNCHER-INFO]: Titles folder already exist\n");
-      }
-      
-      // Create emulator folder if it doesn't exist
-      snprintf(path, sizeof(path), "%s/.config/retroarch/system/mGBA", home);
-
-      if (stat(path, &path_stat) != 0) {
-         mkdir(path, 0755);
-         printf("[LAUNCHER-INFO]: emulator folder created in %s\n", path);
-      } else {
-         printf("[LAUNCHER-INFO]: emulator folder already exist\n");
-      }
-
-      // search for binary executable.
-      char emuList[512] = {0};
-
-      snprintf(emuList, sizeof(emuList), "%s/.config/retroarch/system/mGBA/mGBA.AppImage", home);
-
-      if (glob(emuList, 0, NULL, &buf) == 0) {
+   if (glob(Paths[6], 0, NULL, &buf) == 0) {
          for (size_t i = 0; i < buf.gl_pathc; i++) {
             if (stat(buf.gl_pathv[i], &path_stat) == 0 && !S_ISDIR(path_stat.st_mode)) {
                   if (is_elf_executable(buf.gl_pathv[i])) {
-                     snprintf(executable, sizeof(executable), "%s", buf.gl_pathv[i]);
-                     printf("[LAUNCHER-INFO]: Found emulator: %s\n", executable);
-                     break;
+                     //Match size of 513 from retro_load_game() function.
+                     snprintf(executable, sizeof(executable)+505, "%s", buf.gl_pathv[i]);
+                     log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Found emulator: %s\n", executable);
+                     return executable;
                }
             }
          }
          globfree(&buf);
-      }
+      } 
+      
+      log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Downloading emulator.\n");
+      executable = "";
+      return executable;
+}
 
-      // if no executable was found, download the emulator and make it executable, then close core.
-      if (strlen(executable) == 0) {
-         printf("[LAUNCHER-INFO]: No executable found, downloading emulator.\n");
+static bool downloader(char **Paths, char **downloaderDirs, char **githubUrls, char *executable, size_t numPaths)
+{
+   char url[260] = {0}, currentVersion[32] = {0}, newVersion[32] = {0};
+   char bashCommand[1024] = {0}, downloadCmd[1024] = {0}; 
 
-         // Retreive lastes version from URL
+   if (strlen(executable) == 0) {
 
-         char url[256] = {0};
-         char bashCommand[1024] = {0};
+      char bashCommand[1024] = {0};
 
-         snprintf(bashCommand, sizeof(bashCommand),
-    "bash -c 'json_data=$(curl -s -H \"Accept: application/json\" \"https://api.github.com/repos/mgba-emu/mgba/releases/latest\"); "
-            "tag=$(echo \"$json_data\" | jq -r \".tag_name\"); "
-            "name=$(echo \"$json_data\" | jq -r \".assets[2].name\"); "
-            "if [ -z \"$tag\" ] || [ -z \"$name\" ] || [ \"$tag\" = \"null\" ] || [ \"$name\" = \"null\" ]; then exit 1; fi; "
-            "url=\"https://github.com/mgba-emu/mgba/releases/download/$tag/$name\"; "
-            "echo \"$url\" > version.txt'");
+      snprintf(bashCommand, sizeof(bashCommand),
+         "bash -c 'json_data=$(curl -s -H \"Accept: application/json\" \"%s\"); "
+         "tag=$(echo \"$json_data\" | jq -r \".tag_name\"); "
+         "name=$(echo \"$json_data\" | jq -r \".assets[2].name\"); "
+         "id=$(echo \"$json_data\" | jq -r \".assets[2].id\"); "
+         "if [ -z \"$tag\" ] || [ -z \"$name\" ] || [ \"$tag\" = \"null\" ] || [ \"$id\" = \"null\" ]  || [ \"$name\" = \"null\" ]; then exit 1; fi; "
+         "url=\"%s$tag/$name\"; "
+         "echo \"$url\" > \"%s\";"
+         "echo \"$id\"  > \"%s\"'",
+         githubUrls[0], githubUrls[1], downloaderDirs[0], downloaderDirs[1]);
 
-         if (system(bashCommand) != 0) {
-            printf("[LAUNCHER-ERROR]: Failed to fetch latest version, aborting.\n");
-            return 1;
-         }
-
-         FILE *file = fopen("version.txt", "r");
-         if (file) {
-            fgets(url, sizeof(url), file);
-            fclose(file);
-            remove("version.txt");
-         } else {
-            printf("[LAUNCHER-ERROR]: Failed to read version file, aborting.\n");
+      if (system(bashCommand) != 0) {
+            log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed to fetch download URL, aborting.\n");
             return false;
-         }
-
-         url[strcspn(url, "\r\n")] = 0;  // Rimuove newline
-
-         printf("[LAUNCHER-INFO]: Latest melonDS release URL: %s\n", url);
-
-         char download[256] = {0};
-         snprintf(download, sizeof(download), "wget -O %s/mGBA.AppImage %s", path, url);
-
-         if (system(download) != 0) {
-            printf("[LAUNCHER-ERROR]: Failed to download emulator, aborting.\n");
-            return false;
-         } else {
-               char chmod[512] = {0};
-               snprintf(chmod, sizeof(chmod), "chmod +x %s/mGBA.AppImage", path);
-
-               printf("[LAUNCHER-INFO]: Setting execution permission on executable.\n");
-
-               if (system(chmod) != 0) {
-                  printf("[LAUNCHER-ERROR]: Failed to set executable permissions, aborting.\n");
-                  return false;
-               } else {
-                  printf("[LAUNCHER-INFO]: Success, rebooting retroarch...\n");
-                  return true;
-               }
+         } else { // If it's first download, extract only URL for download. Current version is already saved by bash.
+            FILE *urlFile = fopen(downloaderDirs[0], "r");
+            
+            if (!urlFile) {
+               log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed to read version file, aborting.\n");
+               return false;
+            } else {
+               fgets(url, sizeof(url), urlFile);
+               fclose(urlFile);
+               url[strcspn(url, "\n")] = 0;
             }
          }
 
-      // Create bios folder if it doesn't exist
-      snprintf(path, sizeof(path), "%s/.config/retroarch/system/mGBA/bios", home);
+      snprintf(downloadCmd, sizeof(downloadCmd), 
+      "wget -O %s/mGBA.AppImage %s && chmod +x %s", Paths[0], url, Paths[6]);
+      
+      if (system(downloadCmd) != 0) {
+            log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed to download emulator, aborting.\n");
+            return false;
+         } else {
+            log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Extracting archive.\n");
+            return true;
+         }
+   } else { // If it's not the first download, fetch newVersion ID.
+         snprintf(bashCommand, sizeof(bashCommand),
+       "bash -c 'json_data=$(curl -s -H \"Accept: application/json\" \"%s\"); "
+               "tag=$(echo \"$json_data\" | jq -r \".tag_name\"); "
+               "name=$(echo \"$json_data\" | jq -r \".assets[2].name\"); "
+               "id=$(echo \"$json_data\" | jq -r \".assets[2].id\"); "
+               "if [ -z \"$tag\" ] || [ -z \"$name\" ] || [ \"$tag\" = \"null\" ] || [ \"$id\" = \"null\" ]  || [ \"$name\" = \"null\" ]; then exit 1; fi; "
+               "url=\"%s$tag/$name\"; "
+               "echo \"$url\" > \"%s\";"
+               "echo \"$id\"  > \"%s\"'",
+               githubUrls[0], githubUrls[1], downloaderDirs[0], downloaderDirs[2]);
+         
+         if (system(bashCommand) != 0) {
+            log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed to fetch update, aborting.\n");
+            return false;
+         } else { // Extract URL, currentID and newID for comparison
+            FILE *urlFile = fopen(downloaderDirs[0], "r");
+            FILE *currentVersionFile = fopen(downloaderDirs[1], "r");
+            FILE *newVersionFile = fopen(downloaderDirs[2], "r");
+            
+            if (!urlFile && !currentVersionFile && ! newVersionFile) {
+               log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Metadata files not found. Aborting.\n");
+               return false;
+            } else {
+               fgets(url, sizeof(url), urlFile);
+               fgets(currentVersion, sizeof(currentVersion), currentVersionFile);
+               fgets(newVersion, sizeof(newVersion), newVersionFile);
+               fclose(urlFile);
+               fclose(currentVersionFile);
+               fclose(newVersionFile);
+               
+               url[strcspn(url, "\n")] = 0;
 
-      if (stat(path, &path_stat) != 0) {
-         mkdir(path, 0755);
-         printf("[LAUNCHER-INFO]: BIOS folder created in %s\n", path);
-      } else {
-         printf("[LAUNCHER-INFO]: BIOS folder already exist\n");
-      }
+               if (strcmp(currentVersion, newVersion) != 0) {
+                  log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Update found. Downloading Update\n");
+                  snprintf(downloadCmd, sizeof(downloadCmd), 
+                  "wget -O %s/mGBA.AppImage %s && chmod +x %s", Paths[0], url, Paths[6]);
+                  
+                  if (system(downloadCmd) != 0) {
+                     log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed to download update, aborting.\n");
+                     return false;
+                  } else {
+                     // Overwrite Current version.txt file with new ID if download was successfull.
+                     snprintf(bashCommand, sizeof(bashCommand),
+                   "bash -c 'json_data=$(curl -s -H \"Accept: application/json\" \"%s\"); "
+                           "id=$(echo \"$json_data\" | jq -r \".assets[2].id\"); "
+                           "if [ \"$id\" = \"null\" ]; then exit 1; fi; "
+                           "url=\"%s$tag/$name\"; "
+                           "echo \"$id\"  > \"%s\"'",
+                           githubUrls[0], githubUrls[1], downloaderDirs[1]);
+                  
+                     if (system(bashCommand) != 0) {
+                        log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed to update current version file. Aborting.\n");
+                        return false;
+                     } else {
+                        log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Success. Extracting archive.\n");
+                        return true;
+                     }
+                  }
+               } else {
+                  log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: No update found.\n");
+               }
+            }
+         }
+   }
+   return false;
+}
 
+/**
+ * libretro callback; Called when a game is to be loaded.
+*  - attach ROM absolute path from info->path in double quotes for system() function, avoids truncation.
+*  - if info->path has no ROM, fallback to bios file placed by the user.
+   NOTE: info structure must be checked when is not null
+ */
+bool retro_load_game(const struct retro_game_info *info)
+{
+
+   // Default Emulator Paths
+   char *dirs[] = {
+         "/.config/retroarch/system/mGBA",
+         "/.config/retroarch/system/mGBA/bios",
+         "/.config/retroarch/thumbnails/Nintendo - Game Boy Advance",
+         "/.config/retroarch/thumbnails/Nintendo - Game Boy Advance/Named_Boxarts",
+         "/.config/retroarch/thumbnails/Nintendo - Game Boy Advance/Named_Snaps",
+         "/.config/retroarch/thumbnails/Nintendo - Game Boy Advance/Named_Titles",
+         "/.config/retroarch/system/mGBA/mGBA.AppImage" // search Path for glob.
+      };
+
+   // Emulator build versions and URL to download. Content is generated from powershell cmds
+   char *downloaderDirs[] = {
+      "/.config/retroarch/system/mGBA/0.Url.txt",
+      "/.config/retroarch/system/mGBA/1.CurrentVersion.txt",
+      "/.config/retroarch/system/mGBA/2.NewVersion.txt",
+   };
+
+   char *githubUrls[] = {
+      "https://api.github.com/repos/mGBA-emu/mGBA/releases/latest",
+      "https://github.com/mGBA-emu/mGBA/releases/download/"
+   };
+
+   char executable[513] = {0};
+   const char *home = getenv("HOME");
+   size_t numPaths = sizeof(dirs)/sizeof(char*);
+   size_t dirPaths = sizeof(downloaderDirs)/sizeof(char*);
+
+   // Concat retreived HOME path for dirs.
+
+   for (size_t i = 0; i < numPaths; i++) {
+      char *tmp = dirs[i];
+      asprintf(&dirs[i], "%s%s", home, tmp );
+   }
+
+   for (size_t i = 0; i < dirPaths; i++) {
+      char *tmp = downloaderDirs[i];
+      asprintf(&downloaderDirs[i], "%s%s", home, tmp );
+   }
+
+   setup(dirs, numPaths, executable);
+   downloader(dirs, downloaderDirs, githubUrls, executable, numPaths);
+    
+
+   // if executable exists, only then try to launch it.
+   if (strlen(executable) > 0) {
       if (info != NULL && info->path != NULL) {
-         char args[256] = {0};
+         char args[512] = {0};
          snprintf(args, sizeof(args), " -f \"%s\"", info->path);
          strncat(executable, args, sizeof(executable)-1);
       }
 
-   if (system(executable) == 0) {
-      printf("[LAUNCHER-INFO]: Finished running mGBA.\n");
-      return true;
+      if (system(executable) == 0) {
+         log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Finished running mGBA.\n");
+         return true;
+      } else {
+         log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed running mGBA.\n");
+      }
    }
-
-   printf("[LAUNCHER-INFO]: Failed running mGBA.\n");
    return false;
 }
 

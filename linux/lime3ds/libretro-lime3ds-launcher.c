@@ -346,10 +346,10 @@ bool retro_load_game(const struct retro_game_info *info)
    char *dirs[] = {
          "/.config/retroarch/system/lime3ds",
          "/.config/retroarch/system/lime3ds/bios",
-         "/.config/retroarch/thumbnails/Sony - Playstation",
-         "/.config/retroarch/thumbnails/Sony - Playstation/Named_Boxarts",
-         "/.config/retroarch/thumbnails/Sony - Playstation/Named_Snaps",
-         "/.config/retroarch/thumbnails/Sony - Playstation/Named_Titles",
+         "/.config/retroarch/thumbnails/Nintendo - 3DS",
+         "/.config/retroarch/thumbnails/Nintendo - 3DS/Named_Boxarts",
+         "/.config/retroarch/thumbnails/Nintendo - 3DS/Named_Snaps",
+         "/.config/retroarch/thumbnails/Nintendo - 3DS/Named_Titles",
          "/.config/retroarch/system/lime3ds/lime3ds.AppImage" // search Path for glob.
       };
 
@@ -391,7 +391,7 @@ bool retro_load_game(const struct retro_game_info *info)
 
    // if executable exists, only then try to launch it.
    if (strlen(executable) > 0) {
-      if (info != NULL || info->path != NULL) {
+      if (info != NULL && info->path != NULL) {
          char args[512] = {0};
          snprintf(args, sizeof(args), " \"%s\"", info->path);
          strncat(executable, args, sizeof(executable)-1);

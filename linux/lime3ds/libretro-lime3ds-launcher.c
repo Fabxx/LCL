@@ -313,7 +313,7 @@ static bool downloader(char **Paths, char **downloaderDirs, char **githubUrls, c
  */
 static bool extractor(char **Paths)
 {
-   char extractCmd[512] = {0};
+   char extractCmd[1024] = {0};
    snprintf(extractCmd, sizeof(extractCmd), 
     "mkdir %s/tmp_dir && "
            "tar -xvzf %s/lime3ds.tar.gz -C %s/tmp_dir && " 

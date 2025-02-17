@@ -312,7 +312,7 @@ static bool downloader(char **Paths, char **downloaderDirs, char **githubUrls, c
  */
 static bool extractor(char **Paths)
 {
-   char extractCmd[512] = {0};
+   char extractCmd[1024] = {0};
    snprintf(extractCmd, sizeof(extractCmd), 
     "mkdir %s/tmp_dir && "
            "unzip %s/xenia_canary.zip -d %s/tmp_dir && " 
@@ -342,7 +342,7 @@ static bool extractor(char **Paths)
 bool retro_load_game(const struct retro_game_info *info)
 {
 
-   if (system("wineboot") != 0 && system("winetricks --force dxvk vkd3d") != 0) {
+   if (system("wineboot") != 0 || system("winetricks --force dxvk vkd3d") != 0) {
       log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: You need wine and winetricks to run xenia_canary\n");
       return false;
    }

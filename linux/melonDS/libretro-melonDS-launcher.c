@@ -312,7 +312,7 @@ static bool downloader(char **Paths, char **downloaderDirs, char **githubUrls, c
  */
 static bool extractor(char **Paths)
 {
-   char extractCmd[512] = {0};
+   char extractCmd[1204] = {0};
    snprintf(extractCmd, sizeof(extractCmd), 
     "mkdir %s/tmp_dir && "
            "unzip %s/melonDS.zip -d %s/tmp_dir && " 

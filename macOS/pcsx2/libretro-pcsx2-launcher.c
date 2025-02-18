@@ -10,8 +10,6 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-#define ELF_MAGIC "\x7F""ELF"
-
 static uint32_t *frame_buf;
 static struct retro_log_callback logging;
 static retro_log_printf_t log_cb;
@@ -139,218 +137,258 @@ void retro_run(void)
    environ_cb(RETRO_ENVIRONMENT_SHUTDOWN, NULL);
 }
 
-static int is_elf_executable(const char *filename) {
-    
-    unsigned char magic[4];
-    int fd = open(filename, O_RDONLY);
+/**
+ * Setup emulator directories and try to find executable.
+ * If executable was not found then download it.
+ * If executable was found check for updates.
+ */
+static char *setup(char **Paths, size_t numPaths, char *executable)
+{
+   glob_t buf;
+   struct stat path_stat; 
 
-    if (fd < 0) {
-        return 0;
-    }
+   // Do NOT try to create search path for glob (dirs[6])
+   for (size_t i = 0; i < numPaths-1; i++) {
+      if (stat(Paths[i], &path_stat) != 0) {
+         mkdir(Paths[i], 0755);
+         log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: %s folder created\n", Paths[i]);
+      } else {
+         log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: %s folder already exist\n", Paths[i]);
+      }
+   }
 
-    ssize_t read_bytes = read(fd, magic, 4);
-    close(fd);
+   if (glob(Paths[6], 0, NULL, &buf) == 0) {
+         for (size_t i = 0; i < buf.gl_pathc; i++) {
+            if (stat(buf.gl_pathv[i], &path_stat) == 0 && !S_ISDIR(path_stat.st_mode)) {
+                     //Match size of 513 from retro_load_game() function.
+                     snprintf(executable, sizeof(executable)+505, "%s", buf.gl_pathv[i]);
+                     log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Found emulator: %s\n", executable);
+                     return executable;
+            }
+         }
+         globfree(&buf);
+      } 
+      
+      log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Downloading emulator.\n");
+      executable = "";
+      return executable;
+}
 
-    return (read_bytes == 4 && memcmp(magic, ELF_MAGIC, 4) == 0);
+static bool downloader(char **Paths, char **downloaderDirs, char **githubUrls, char *executable, size_t numPaths)
+{
+   char url[260] = {0}, currentVersion[32] = {0}, newVersion[32] = {0};
+   char bashCommand[1024] = {0}, downloadCmd[1024] = {0}; 
+
+   if (strlen(executable) == 0) {
+
+      char bashCommand[1024] = {0};
+
+      snprintf(bashCommand, sizeof(bashCommand),
+   "bash -c 'json_data=$(curl -s -H \"Accept: application/json\" \"%s\"); "
+         "tag=$(echo \"$json_data\" | jq -r \".tag_name\"); "
+         "name=$(echo \"$json_data\" | jq -r \".assets[2].name\"); "
+         "id=$(echo \"$json_data\" | jq -r \".assets[2].id\"); "
+         "if [ -z \"$tag\" ] || [ -z \"$name\" ] || [ \"$tag\" = \"null\" ] || [ \"$id\" = \"null\" ]  || [ \"$name\" = \"null\" ]; then exit 1; fi; "
+         "url=\"%s$tag/$name\"; "
+         "echo \"$url\" > \"%s\";"
+         "echo \"$id\"  > \"%s\"'",
+         githubUrls[0], githubUrls[1], downloaderDirs[0], downloaderDirs[1]);
+
+      if (system(bashCommand) != 0) {
+            log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed to fetch download URL, aborting.\n");
+            return false;
+         } else { // If it's first download, extract only URL for download. Current version is already saved by bash.
+            FILE *urlFile = fopen(downloaderDirs[0], "r");
+            
+            if (!urlFile) {
+               log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed to read version file, aborting.\n");
+               return false;
+            } else {
+               fgets(url, sizeof(url), urlFile);
+               fclose(urlFile);
+               url[strcspn(url, "\n")] = 0;
+
+            }
+         }
+
+      snprintf(downloadCmd, sizeof(downloadCmd), 
+      "wget -O %s/pcsx2.tar.xz %s", Paths[0], url);
+      
+      if (system(downloadCmd) != 0) {
+            log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed to download emulator, aborting.\n");
+            return false;
+         } else {
+            log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Success.\n");
+            return true;
+         }
+   } else { // If it's not the first download, fetch newVersion ID.
+         snprintf(bashCommand, sizeof(bashCommand),
+       "bash -c 'json_data=$(curl -s -H \"Accept: application/json\" \"%s\"); "
+               "tag=$(echo \"$json_data\" | jq -r \".tag_name\"); "
+               "name=$(echo \"$json_data\" | jq -r \".assets[2].name\"); "
+               "id=$(echo \"$json_data\" | jq -r \".assets[2].id\"); "
+               "if [ -z \"$tag\" ] || [ -z \"$name\" ] || [ \"$tag\" = \"null\" ] || [ \"$id\" = \"null\" ]  || [ \"$name\" = \"null\" ]; then exit 1; fi; "
+               "url=\"%s$tag/$name\"; "
+               "echo \"$url\" > \"%s\";"
+               "echo \"$id\"  > \"%s\"'",
+               githubUrls[0], githubUrls[1], downloaderDirs[0], downloaderDirs[2]);
+         
+         if (system(bashCommand) != 0) {
+            log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed to fetch update, aborting.\n");
+            return false;
+         } else { // Extract URL, currentID and newID for comparison
+            FILE *urlFile = fopen(downloaderDirs[0], "r");
+            FILE *currentVersionFile = fopen(downloaderDirs[1], "r");
+            FILE *newVersionFile = fopen(downloaderDirs[2], "r");
+            
+            if (!urlFile && !currentVersionFile && ! newVersionFile) {
+               log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Metadata files not found. Aborting.\n");
+               return false;
+            } else {
+               fgets(url, sizeof(url), urlFile);
+               fgets(currentVersion, sizeof(currentVersion), currentVersionFile);
+               fgets(newVersion, sizeof(newVersion), newVersionFile);
+               fclose(urlFile);
+               fclose(currentVersionFile);
+               fclose(newVersionFile);
+               
+               url[strcspn(url, "\n")] = 0;
+
+               if (strcmp(currentVersion, newVersion) != 0) {
+                  log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Update found. Downloading Update\n");
+                  snprintf(downloadCmd, sizeof(downloadCmd), 
+                  "wget -O %s/pcsx2.tar.xz", Paths[0], url);
+                  
+                  if (system(downloadCmd) != 0) {
+                     log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed to download update, aborting.\n");
+                     return false;
+                  } else {
+                     // Overwrite Current version.txt file with new ID if download was successfull.
+                     snprintf(bashCommand, sizeof(bashCommand),
+                   "bash -c 'json_data=$(curl -s -H \"Accept: application/json\" \"%s\"); "
+                           "id=$(echo \"$json_data\" | jq -r \".assets[2].id\"); "
+                           "if [ \"$id\" = \"null\" ]; then exit 1; fi; "
+                           "url=\"%s$tag/$name\"; "
+                           "echo \"$id\"  > \"%s\"'",
+                           githubUrls[0], githubUrls[1], downloaderDirs[1]);
+                  
+                     if (system(bashCommand) != 0) {
+                        log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed to update current version file. Aborting.\n");
+                        return false;
+                     } else {
+                        log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Success.\n");
+                        return true;
+                     }
+                  }
+               } else {
+                  log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: No update found.\n");
+               }
+            }
+         }
+   }
+   return false;
+}
+
+/**
+ * Extract emulator archive. If content is in a subfolder
+ * move it to the main folder, and delete the tmp folder.
+ * Apply execution permission afterwards.
+ * NOTE: Rename PCSX2-V2.2.0.app folder in PCSX2.app
+ */
+static bool extractor(char **Paths)
+{
+   char extractCmd[1024] = {0};
+   snprintf(extractCmd, sizeof(extractCmd), 
+    "mkdir %s/tmp_dir && "
+           "tar -xvzf %s/pcsx2.tar.xz -C %s/tmp_dir && " 
+           "mv %s/tmp_dir/* %s/PCSX2.app && "
+           "rm -rf %s/tmp_dir && "
+           "rm %s/pcsx2.tar.xz && "
+           "chmod +x %s", 
+           Paths[0], Paths[0], Paths[0], Paths[0], 
+           Paths[0], Paths[0], Paths[0], Paths[6]);
+   
+   if (system(extractCmd) != 0) {
+      log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed to extract emulator, aborting.\n");
+      return false;
+   } else {
+      log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Success.\n");
+
+   }
+   return true;
 }
 
 /**
  * libretro callback; Called when a game is to be loaded.
- *  - Linux
- *        - resolve HOME path 
- *        - create dir for emulator files and bios
- *        - apply regex search with glob, filter by file and ELF executable
- *
- * - Final Steps:
- *       - attach ROM absolute path from info->path in double quotes for system() function, avoids truncation.
- *       - if info->path has no ROM, fallback to bios file placed by the user.
-         NOTE: info structure must be checked when is not null
+*  - attach ROM absolute path from info->path in double quotes for system() function, avoids truncation.
+*  - if info->path has no ROM, fallback to bios file placed by the user.
+   NOTE: info structure must be checked when is not null
  */
 bool retro_load_game(const struct retro_game_info *info)
 {
 
-      glob_t buf;
-      struct stat path_stat;
-      char executable[512] = {0};
-      char path[512] = {0};
-      const char *home = getenv("HOME");
+   // Default Emulator Paths
+   char *dirs[] = {
+         "/Library/Application Support/RetroArch/system/pcsx2",
+         "/Library/Application Support/RetroArch/system/pcsx2/bios",
+         "/Library/Application Support/RetroArch/thumbnails/Sony - Playstation 2",
+         "/Library/Application Support/RetroArch/thumbnails/Sony - Playstation 2/Named_Boxarts",
+         "/Library/Application Support/RetroArch/thumbnails/Sony - Playstation 2/Named_Snaps",
+         "/Library/Application Support/RetroArch/thumbnails/Sony - Playstation 2/Named_Titles",
+         "/Library/Application Support/RetroArch/system/pcsx2/pcsx2.app/Contents/MacOS/PCSX2" // search Path for glob.
+      };
 
-      if (!home) {
-         return false;
-      }
+   // Emulator build versions and URL to download. Content is generated from powershell cmds
+   char *downloaderDirs[] = {
+      "/Library/Application Support/RetroArch/system/pcsx2/0.Url.txt",
+      "/Library/Application Support/RetroArch/system/pcsx2/1.CurrentVersion.txt",
+      "/Library/Application Support/RetroArch/system/pcsx2/2.NewVersion.txt",
+   };
 
-      /**
-       * Create thumbnail directories if they don't exist:
+   char *githubUrls[] = {
+      "https://api.github.com/repos/PCSX2/pcsx2/releases/latest",
+      "https://github.com/PCSX2/pcsx2/releases/download/"
+   };
 
-         - System name directory
-         - Named_Boxart directory
-         - Named_Snaps directory
-         - Named_Titles
-       * 
-       */
+   char executable[513] = {0};
+   const char *home = getenv("HOME");
+   size_t numPaths = sizeof(dirs)/sizeof(char*);
+   size_t dirPaths = sizeof(downloaderDirs)/sizeof(char*);
 
-      snprintf(path, sizeof(path), "%s/Library/Application Support/RetroArch/thumbnails/Sony - Playstation 2", home);
+   // Concat retreived HOME path for dirs.
 
-      if (stat(path, &path_stat) != 0) {
-         mkdir(path, 0755);
-         printf("[LAUNCHER-INFO]: thumbnail folder created in %s\n", path);
-      } else {
-         printf("[LAUNCHER-INFO]: thumbnail folder already exist\n");
-      }
-
-      snprintf(path, sizeof(path), "%s/Library/Application Support/RetroArch/thumbnails/Sony - Playstation 2/Named_Boxarts", home);
-
-      if (stat(path, &path_stat) != 0) {
-         mkdir(path, 0755);
-         printf("[LAUNCHER-INFO]: Boxart folder created in %s\n", path);
-      } else {
-         printf("[LAUNCHER-INFO]: Boxart folder already exist\n");
-      }
-
-      snprintf(path, sizeof(path), "%s/Library/Application Support/RetroArch/thumbnails/Sony - Playstation 2/Named_Snaps", home);
-
-      if (stat(path, &path_stat) != 0) {
-         mkdir(path, 0755);
-         printf("[LAUNCHER-INFO]: Snaps folder created in %s\n", path);
-      } else {
-         printf("[LAUNCHER-INFO]: Snaps folder already exist\n");
-      }
-
-      snprintf(path, sizeof(path), "%s/Library/Application Support/RetroArch/thumbnails/Sony - Playstation 2/Named_Titles", home);
-
-      if (stat(path, &path_stat) != 0) {
-         mkdir(path, 0755);
-         printf("[LAUNCHER-INFO]: Titles folder created in %s\n", path);
-      } else {
-         printf("[LAUNCHER-INFO]: Titles folder already exist\n");
-      }
-      
-      // Create emulator folder if it doesn't exist
-      snprintf(path, sizeof(path), "%s/Library/Application Support/RetroArch/system/pcsx2", home);
-
-      if (stat(path, &path_stat) != 0) {
-         mkdir(path, 0755);
-         printf("[LAUNCHER-INFO]: emulator folder created in %s\n", path);
-      } else {
-         printf("[LAUNCHER-INFO]: emulator folder already exist\n");
-      }
-
-      // search for binary executable.
-      char emuList[512] = {0};
-
-      snprintf(emuList, sizeof(emuList), "%s/Library/Application Support/RetroArch/system/pcsx2/PCSX2*/Contents/MacOS/PCSX2", home);
-
-      if (glob(emuList, 0, NULL, &buf) == 0) {
-         for (size_t i = 0; i < buf.gl_pathc; i++) {
-            if (stat(buf.gl_pathv[i], &path_stat) == 0 && !S_ISDIR(path_stat.st_mode)) {
-                  if (is_elf_executable(buf.gl_pathv[i])) {
-                     snprintf(executable, sizeof(executable), "%s", buf.gl_pathv[i]);
-                     printf("[LAUNCHER-INFO]: Found emulator: %s\n", executable);
-                     break;
-               }
-            }
-         }
-         globfree(&buf);
-      }
-
-      // if no executable was found, download the emulator and make it executable, then close core.
-      if (strlen(executable) == 0) {
-         printf("[LAUNCHER-INFO]: No executable found, downloading emulator.\n");
-
-         // Retreive lastes version from URL
-
-         char url[256] = {0};
-         char bashCommand[1024] = {0};
-
-         snprintf(bashCommand, sizeof(bashCommand),
-    "bash -c 'json_data=$(curl -s -H \"Accept: application/json\" \"https://api.github.com/repos/PCSX2/pcsx2/releases/latest\"); "
-            "tag=$(echo \"$json_data\" | jq -r \".tag_name\"); "
-            "name=$(echo \"$json_data\" | jq -r \".assets[2].name\"); "
-            "if [ -z \"$tag\" ] || [ -z \"$name\" ] || [ \"$tag\" = \"null\" ] || [ \"$name\" = \"null\" ]; then exit 1; fi; "
-            "url=\"https://github.com/PCSX2/pcsx2/releases/download/$tag/$name\"; "
-            "echo \"$url\" > version.txt'");
-
-
-
-         if (system(bashCommand) != 0) {
-            printf("[LAUNCHER-ERROR]: Failed to fetch latest version, aborting.\n");
-            return 1;
-         }
-
-         FILE *file = fopen("version.txt", "r");
-         if (file) {
-            fgets(url, sizeof(url), file);
-            fclose(file);
-            remove("version.txt");
-         } else {
-            printf("[LAUNCHER-ERROR]: Failed to read version file, aborting.\n");
-            return false;
-         }
-
-         url[strcspn(url, "\r\n")] = 0;  // Rimuove newline
-
-         printf("[LAUNCHER-INFO]: Latest pcsx2 release URL: %s\n", url);
-
-         char download[256] = {0};
-         snprintf(download, sizeof(download), "wget -O %s/pcsx2.tar.xz %s", path, url);
-
-         if (system(download) != 0) {
-            printf("[LAUNCHER-ERROR]: Failed to download emulator, aborting.\n");
-            return false;
-         } else {
-            printf("[LAUNCHER-INFO]: extracting emulator archive.\n");
-         
-            char extraction[512] = {0};
-            snprintf(extraction, sizeof(extraction), "tar -xvzf %s/pcsx2.tar.xz -C %s && rm %s/pcsx2.tar.xz", path, path, path);
-            
-            if (system(extraction) != 0) {
-               printf("[LAUNCHER-ERROR]: Failed to extract archive, aborting.\n");
-               return false;
-            } else {
-               char chmod[512] = {0};
-               snprintf(chmod, sizeof(chmod), "chmod +x %s/PCSX2*/Contents/MacOS/PCSX2", path);
-
-               printf("[LAUNCHER-INFO]: Setting execution permission on executable.\n");
-
-               if (system(chmod) != 0) {
-                  printf("[LAUNCHER-ERROR]: Failed to set executable permissions, aborting.\n");
-                  return false;
-               } else {
-                  printf("[LAUNCHER-INFO]: Success, rebooting retroarch...\n");
-                  return true;
-               }
-            }
-         }
-
-      // Create bios folder if it doesn't exist
-      snprintf(path, sizeof(path), "%s/Library/Application Support/RetroArch/system/pcsx2/bios", home);
-
-      if (stat(path, &path_stat) != 0) {
-         mkdir(path, 0755);
-         printf("[LAUNCHER-INFO]: BIOS folder created in %s\n", path);
-      } else {
-         printf("[LAUNCHER-INFO]: BIOS folder already exist\n");
-      }
+   for (size_t i = 0; i < numPaths; i++) {
+      char *tmp = dirs[i];
+      asprintf(&dirs[i], "%s%s", home, tmp );
    }
 
-      // Fallback to BIOS if "run core" is selected
+   for (size_t i = 0; i < dirPaths; i++) {
+      char *tmp = downloaderDirs[i];
+      asprintf(&downloaderDirs[i], "%s%s", home, tmp );
+   }
 
+   setup(dirs, numPaths, executable);
+   downloader(dirs, downloaderDirs, githubUrls, executable, numPaths);
+
+   // if executable exists, only then try to launch it.
+   if (strlen(executable) > 0) {
       if (info == NULL || info->path == NULL) {
-            char args[128] = {0};
-            snprintf(args, sizeof(args), " -fullscreen -bios");
-            strncat(executable, args, sizeof(executable)-1);
+         char args[512] = {0};
+         snprintf(args, sizeof(args), " -fullscreen -bios");
+         strncat(executable, args, sizeof(executable)-1);
       } else {
-         char args[256] = {0};
+         char args[512] = {0};
          snprintf(args, sizeof(args), " -fullscreen \"%s\"", info->path);
          strncat(executable, args, sizeof(executable)-1);
       }
 
-   if (system(executable) == 0) {
-      printf("[LAUNCHER-INFO]: Finished running pcsx2.\n");
-      return true;
+      if (system(executable) == 0) {
+         log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Finished running pcsx2.\n");
+         return true;
+      } else {
+         log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed running pcsx2.\n");
+      }
    }
-
-   printf("[LAUNCHER-INFO]: Failed running pcsx2.\n");
    return false;
 }
 

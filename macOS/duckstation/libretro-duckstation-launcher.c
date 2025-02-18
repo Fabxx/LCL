@@ -10,8 +10,6 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-#define ELF_MAGIC "\x7F""ELF"
-
 static uint32_t *frame_buf;
 static struct retro_log_callback logging;
 static retro_log_printf_t log_cb;
@@ -139,21 +137,6 @@ void retro_run(void)
    environ_cb(RETRO_ENVIRONMENT_SHUTDOWN, NULL);
 }
 
-static int is_elf_executable(const char *filename) {
-    
-    unsigned char magic[4];
-    int fd = open(filename, O_RDONLY);
-
-    if (fd < 0) {
-        return 0;
-    }
-
-    ssize_t read_bytes = read(fd, magic, 4);
-    close(fd);
-
-    return (read_bytes == 4 && memcmp(magic, ELF_MAGIC, 4) == 0);
-}
-
 /**
  * Setup emulator directories and try to find executable.
  * If executable was not found then download it.
@@ -177,12 +160,10 @@ static char *setup(char **Paths, size_t numPaths, char *executable)
    if (glob(Paths[6], 0, NULL, &buf) == 0) {
          for (size_t i = 0; i < buf.gl_pathc; i++) {
             if (stat(buf.gl_pathv[i], &path_stat) == 0 && !S_ISDIR(path_stat.st_mode)) {
-                  if (is_elf_executable(buf.gl_pathv[i])) {
                      //Match size of 513 from retro_load_game() function.
                      snprintf(executable, sizeof(executable)+505, "%s", buf.gl_pathv[i]);
                      log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Found emulator: %s\n", executable);
                      return executable;
-               }
             }
          }
          globfree(&buf);

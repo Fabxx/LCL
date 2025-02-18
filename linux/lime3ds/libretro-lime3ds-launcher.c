@@ -346,10 +346,10 @@ bool retro_load_game(const struct retro_game_info *info)
    char *dirs[] = {
          "/.config/retroarch/system/lime3ds",
          "/.config/retroarch/system/lime3ds/bios",
-         "/.config/retroarch/thumbnails/Nintendo - 3DS",
-         "/.config/retroarch/thumbnails/Nintendo - 3DS/Named_Boxarts",
-         "/.config/retroarch/thumbnails/Nintendo - 3DS/Named_Snaps",
-         "/.config/retroarch/thumbnails/Nintendo - 3DS/Named_Titles",
+         "/.config/retroarch/thumbnails/Nintendo - Nintendo 3DS",
+         "/.config/retroarch/thumbnails/Nintendo - Nintendo 3DS/Named_Boxarts",
+         "/.config/retroarch/thumbnails/Nintendo - Nintendo 3DS/Named_Snaps",
+         "/.config/retroarch/thumbnails/Nintendo - Nintendo 3DS/Named_Titles",
          "/.config/retroarch/system/lime3ds/lime3ds.AppImage" // search Path for glob.
       };
 

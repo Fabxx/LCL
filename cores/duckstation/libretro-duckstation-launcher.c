@@ -4,12 +4,14 @@
 #include <stdarg.h>
 #include <string.h>
 #include "libretro.h"
+
 #if defined __linux || __APPLE__
 #include <glob.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <fcntl.h>
+
 #elif defined __WIN32__
 #include <windows.h>
 #include <direct.h>
@@ -375,7 +377,7 @@ static bool updater(char **Paths, char **downloaderDirs, char **githubUrls)
                   return false;
                } else {
                   // Overwrite Current version.txt file with new ID if download was successfull.
-                  #if defined __linux__
+                  #if defined __linux__ || __APPLE__
                   
                   snprintf(command, sizeof(command),
                   "bash -c 'json_data=$(curl -s -H \"Accept: application/json\" \"%s\"); "
@@ -384,16 +386,6 @@ static bool updater(char **Paths, char **downloaderDirs, char **githubUrls)
                         "url=\"%s$tag/$name\"; "
                         "echo \"$id\"  > \"%s\"'",
                         githubUrls[0], assetId, githubUrls[1], downloaderDirs[1]);
-                  
-                  #elif defined __APPLE__
-                  
-                  snprintf(bashCommand, sizeof(bashCommand),
-                           "bash -c 'json_data=$(curl -s -H \"Accept: application/json\" \"%s\"); "
-                           "id=$(echo \"$json_data\" | jq -r \".assets[%c].id\"); "
-                           "if [ \"$id\" = \"null\" ]; then exit 1; fi; "
-                           "url=\"%s$tag/$name\"; "
-                           "echo \"$id\"  > \"%s\"'",
-                           githubUrls[0], assetId, githubUrls[1], downloaderDirs[1]);
 
                   #elif defined __WIN32__
                   
@@ -421,6 +413,8 @@ static bool updater(char **Paths, char **downloaderDirs, char **githubUrls)
    return false;
 }
 
+// Linux has directly appImage, no need to extract
+#if defined __WIN32__ || __APPLE__
 static bool extractor(char **dirs)
 {
    char command[1024] = {0};
@@ -438,8 +432,8 @@ static bool extractor(char **dirs)
            "rm -rf %s/tmp_dir && "
            "rm %s/duckstation.zip && "
            "chmod +x %s", 
-           Paths[0], Paths[0], Paths[0], Paths[0], 
-           Paths[0], Paths[0], Paths[0], Paths[6]);
+           dirs[0], dirs[0], dirs[0], dirs[0], 
+           dirs[0], dirs[0], dirs[0], dirs[6]);
    #endif             
 
    if (system(command) != 0) {
@@ -450,6 +444,7 @@ static bool extractor(char **dirs)
       return true;
    }
 }
+#endif
 
 /**
  * libretro callback; Called when a game is to be loaded.

@@ -155,20 +155,7 @@ static char *setup(char **Paths, size_t numPaths, char *executable)
       }
    }
 
-   // Lookup for Emulator Executable inside Emulator folder. hFind resolves wildcard.
-   snprintf(searchPath, MAX_PATH, "%s\\duckstation*.exe", Paths[0]);
-   hFind = FindFirstFile(searchPath, &findFileData);
-
-   if (hFind != INVALID_HANDLE_VALUE) {
-         snprintf(executable, MAX_PATH+1, "%s\\%s", Paths[0], findFileData.cFileName);
-         FindClose(hFind);
-         log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Found emulator: %s\n", executable);
-         return executable;
-   } else {
-      log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Downloading emulator.\n");
-      executable = "";
-      return executable;
-   }
+   
 }
 
    /* If no emulator was found, download it. ID number must be saved in ASCII to avoid BOM bytes.
@@ -180,35 +167,6 @@ static char *setup(char **Paths, size_t numPaths, char *executable)
    */
 static bool downloader(char **dirs, char **downloaderDirs, char **githubUrls, char *executable, size_t numPaths)
 {
-
-   char url[260] = {0}, currentVersion[32] = {0}, newVersion[32] = {0};
-   char psCommand[MAX_PATH * 3] = {0}, downloadCmd[MAX_PATH * 2] = {0}; 
-
-   if (strlen(executable) == 0) {
-         snprintf(psCommand, sizeof(psCommand),
-       "powershell -Command \"$response = (Invoke-WebRequest -Uri '%s' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json; "
-               "$tag  = $response.tag_name;"
-               "$name = $response.assets[5].name;"
-               "$id   = $response.assets[5].id;"
-               "$url  = '%s' + $tag + '/' + $name; "
-               "[System.IO.File]::WriteAllText('%s', $url, [System.Text.Encoding]::ASCII); "
-               "[System.IO.File]::WriteAllText('%s', $id , [System.Text.Encoding]::ASCII); \"", 
-               githubUrls[0], githubUrls[1], downloaderDirs[0], downloaderDirs[1]);
-      
-      if (system(psCommand) != 0) {
-            log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed to fetch download URL, aborting.\n");
-            return false;
-         } else { // If it's first download, extract only URL for download. Current version is already saved by powershell.
-               FILE *urlFile = fopen(downloaderDirs[0], "r");
-
-               if (!urlFile) {
-                  log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Powershell failed to export ID of download URL. Aborting.\n");
-                  return false;
-               } else {
-                   fgets(url, sizeof(url), urlFile);
-                   fclose(urlFile);
-               }
-         }
          
          snprintf(downloadCmd, sizeof(downloadCmd),
           "powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\duckstation.zip'\"", url, dirs[0]);

@@ -4,12 +4,14 @@
 #include <stdarg.h>
 #include <string.h>
 #include "libretro.h"
+
 #if defined __linux || __APPLE__
 #include <glob.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <fcntl.h>
+
 #elif defined __WIN32__
 #include <windows.h>
 #include <direct.h>
@@ -52,10 +54,10 @@ void retro_set_controller_port_device(unsigned port, unsigned device)
 void retro_get_system_info(struct retro_system_info *info)
 {
    memset(info, 0, sizeof(*info));
-   info->library_name     = "duckstation Launcher";
+   info->library_name     = "mGBA Launcher";
    info->library_version  = "0.1a";
    info->need_fullpath    = true;
-   info->valid_extensions = "cue|img|ecm|chd";
+   info->valid_extensions = "gba|gbc|gc";
 }
 
 static retro_video_refresh_t video_cb;
@@ -193,7 +195,7 @@ static bool setup(char **Paths, size_t numPaths, char *executable)
    }
 
    // Lookup for Emulator Executable inside Emulator folder. hFind resolves wildcard.
-   snprintf(searchPath, MAX_PATH, "%s\\duckstation*.exe", Paths[0]);
+   snprintf(searchPath, MAX_PATH, "%s\\mGBA.exe", Paths[0]);
    hFind = FindFirstFile(searchPath, &findFileData);
 
    if (hFind != INVALID_HANDLE_VALUE) {
@@ -214,15 +216,15 @@ static bool downloader(char **Paths, char **downloaderDirs, char **githubUrls)
    
    #ifdef __linux__
 
-   char assetId = '9';
+   char assetId = '2';
 
    #elif defined __APPLE__
 
-   char assetId = '1';
+   char assetId = '3';
 
    #elif defined __WIN32__
 
-   char assetId = '5';
+   char assetId = '17';
    #endif
    
       #if defined __linux__ || __APPLE__
@@ -270,13 +272,13 @@ static bool downloader(char **Paths, char **downloaderDirs, char **githubUrls)
 
    #ifdef __linux__
    snprintf(command, sizeof(command), 
-   "wget -O %s/duckstation.AppImage %s && chmod +x %s", Paths[0], url, Paths[6]);
+   "wget -O %s/mGBA.AppImage %s && chmod +x %s", Paths[0], url, Paths[6]);
    
    #elif defined __APPLE__
-   snprintf(command, sizeof(command), "wget -O %s/duckstation.zip %s", Paths[0], url);
+   snprintf(command, sizeof(command), "wget -O %s/mGBA.dmg %s", Paths[0], url);
    
    #elif defined __WIN32__
-      snprintf(command, sizeof(command),"powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\duckstation.zip'\"", url, dirs[0]);
+   snprintf(command, sizeof(command),"powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\mGBA.7z'\"", url, dirs[0]);
 
    #endif
    
@@ -296,15 +298,15 @@ static bool updater(char **Paths, char **downloaderDirs, char **githubUrls)
 
    #ifdef __linux__
 
-   char assetId = '9';
+   char assetId = '2';
 
    #elif defined __APPLE__
 
-   char assetId = '1';
+   char assetId = '3';
 
    #elif defined __WIN32__
 
-   char assetId = '5';
+   char assetId = '17';
    #endif
    
    #if defined __linux__ || __APPLE__
@@ -357,17 +359,17 @@ static bool updater(char **Paths, char **downloaderDirs, char **githubUrls)
                #ifdef __linux__
 
                snprintf(command, sizeof(command), 
-               "wget -O %s/duckstation.AppImage %s && chmod +x %s", Paths[0], url, Paths[6]);
+               "wget -O %s/mGBA.AppImage %s && chmod +x %s", Paths[0], url, Paths[6]);
                
                #elif defined __APPLE__
                
                snprintf(downloadCmd, sizeof(downloadCmd), 
-                       "wget -O %s/duckstation.zip %s", Paths[0], url);
+                       "wget -O %s/mGBA.dmg %s", Paths[0], url);
                
                #elif defined __WIN32__
                
                 snprintf(downloadCmd, sizeof(downloadCmd),
-                       "powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\duckstation.zip'\"", url, Paths[0]);
+                       "powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\mGBA.7z'\"", url, Paths[0]);
                #endif
 
                if (system(command) != 0) {
@@ -375,7 +377,7 @@ static bool updater(char **Paths, char **downloaderDirs, char **githubUrls)
                   return false;
                } else {
                   // Overwrite Current version.txt file with new ID if download was successfull.
-                  #if defined __linux__
+                  #if defined __linux__ || __APPLE__
                   
                   snprintf(command, sizeof(command),
                   "bash -c 'json_data=$(curl -s -H \"Accept: application/json\" \"%s\"); "
@@ -384,16 +386,6 @@ static bool updater(char **Paths, char **downloaderDirs, char **githubUrls)
                         "url=\"%s$tag/$name\"; "
                         "echo \"$id\"  > \"%s\"'",
                         githubUrls[0], assetId, githubUrls[1], downloaderDirs[1]);
-                  
-                  #elif defined __APPLE__
-                  
-                  snprintf(bashCommand, sizeof(bashCommand),
-                           "bash -c 'json_data=$(curl -s -H \"Accept: application/json\" \"%s\"); "
-                           "id=$(echo \"$json_data\" | jq -r \".assets[%c].id\"); "
-                           "if [ \"$id\" = \"null\" ]; then exit 1; fi; "
-                           "url=\"%s$tag/$name\"; "
-                           "echo \"$id\"  > \"%s\"'",
-                           githubUrls[0], assetId, githubUrls[1], downloaderDirs[1]);
 
                   #elif defined __WIN32__
                   
@@ -421,25 +413,49 @@ static bool updater(char **Paths, char **downloaderDirs, char **githubUrls)
    return false;
 }
 
+#if defined __APPLE__ || __WIN32__
+
 static bool extractor(char **dirs)
 {
    char command[1024] = {0};
    
    #ifdef __WIN32__
+   snprintf(command, sizeof(command), "powershell -Command \"Get-Module -ListAvailable -Name 7Zip4PowerShell\"");
+
+   if (system(command) == 0) {
+      log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Found 7z4Powershell module, skipping installation.\n");
+   } else {
+      // Install 7z4Powershell module, needed to extract 7z
+      snprintf(command, sizeof(command),
+          "powershell -Command \"Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Scope CurrentUser; "
+          "Set-PSRepository -Name 'PSGallery' -InstallationPolicy Trusted; "
+          "Install-Module -Name 7Zip4PowerShell -Force -Scope CurrentUser\"");
    
+   if (system(command) != 0) {
+         log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed to install 7z module, aborting.\n");
+         return false;
+      } else {
+         log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: 7z module installed, extracting emulator.\n");
+      }
+   }
+
    snprintf(command, sizeof(command),
-            "powershell -Command \"Expand-Archive -Path '%s\\duckstation.zip' -DestinationPath '%s' -Force; Remove-Item -Path '%s\\duckstation.zip' -Force\"", 
+            "powershell -Command \"Expand-7zip -ArchiveFileName '%s\\mGBA.7z' -TargetPath '%s'; Remove-Item -Path '%s\\mGBA.7z' -Force\"", 
             dirs[0], dirs[0], dirs[0]);
+
    #elif defined __APPLE__
-   snprintf(command, sizeof(command), 
-           "mkdir %s/tmp_dir && "
-           "unzip %s/duckstation.zip -d %s/tmp_dir && " 
-           "mv %s/tmp_dir/* %s && " \
-           "rm -rf %s/tmp_dir && "
-           "rm %s/duckstation.zip && "
+   
+   snprintf(extractCmd, sizeof(extractCmd), 
+           "mkdir %s/mnt && "
+           "hdiutil attach -nobrowse %s/mGBA.dmg -mountpoint %s/mnt && "
+           "cp %s/mnt/*/mGBA.app %s && " 
+           "hdiutil detach -force %s/mnt && "
+           "rm %s/mGBA.dmg && "
+           "rm -rf %s/mnt && "
            "chmod +x %s", 
            Paths[0], Paths[0], Paths[0], Paths[0], 
-           Paths[0], Paths[0], Paths[0], Paths[6]);
+           Paths[0], Paths[0], Paths[0], Paths[0], 
+           Paths[6]);
    #endif             
 
    if (system(command) != 0) {
@@ -450,6 +466,7 @@ static bool extractor(char **dirs)
       return true;
    }
 }
+#endif
 
 /**
  * libretro callback; Called when a game is to be loaded.
@@ -465,20 +482,20 @@ bool retro_load_game(const struct retro_game_info *info)
    const char *home = getenv("HOME");
 
    char *dirs[] = {
-         "/.config/retroarch/system/duckstation",
-         "/.config/retroarch/system/duckstation/bios",
-         "/.config/retroarch/thumbnails/Sony - PlayStation",
-         "/.config/retroarch/thumbnails/Sony - PlayStation/Named_Boxarts",
-         "/.config/retroarch/thumbnails/Sony - PlayStation/Named_Snaps",
-         "/.config/retroarch/thumbnails/Sony - PlayStation/Named_Titles",
-         "/.config/retroarch/system/duckstation/duckstation.AppImage" // search Path for glob.
+         "/.config/retroarch/system/mGBA",
+         "/.config/retroarch/system/mGBA/bios",
+         "/.config/retroarch/thumbnails/Nintendo - Game Boy Advance",
+         "/.config/retroarch/thumbnails/Nintendo - Game Boy Advance/Named_Boxarts",
+         "/.config/retroarch/thumbnails/Nintendo - Game Boy Advance/Named_Snaps",
+         "/.config/retroarch/thumbnails/Nintendo - Game Boy Advance/Named_Titles",
+         "/.config/retroarch/system/mGBA/mGBA.AppImage" // search Path for glob.
       };
    
    // Emulator build versions and URL to download. Content is generated from powershell cmds
    char *downloaderDirs[] = {
-      "/.config/retroarch/system/duckstation/0.Url.txt",
-      "/.config/retroarch/system/duckstation/1.CurrentVersion.txt",
-      "/.config/retroarch/system/duckstation/2.NewVersion.txt",
+      "/.config/retroarch/system/mGBA/0.Url.txt",
+      "/.config/retroarch/system/mGBA/1.CurrentVersion.txt",
+      "/.config/retroarch/system/mGBA/2.NewVersion.txt",
    };
 
    size_t numPaths = sizeof(dirs)/sizeof(char*);
@@ -501,20 +518,20 @@ bool retro_load_game(const struct retro_game_info *info)
    const char *home = getenv("HOME");
 
    char *dirs[] = {
-         "/Library/Application Support/RetroArch/system/duckstation",
-         "/Library/Application Support/RetroArch/system/duckstation/bios",
-         "/Library/Application Support/RetroArch/thumbnails/Sony - PlayStation",
-         "/Library/Application Support/RetroArch/thumbnails/Sony - PlayStation/Named_Boxarts",
-         "/Library/Application Support/RetroArch/thumbnails/Sony - PlayStation/Named_Snaps",
-         "/Library/Application Support/RetroArch/thumbnails/Sony - PlayStation/Named_Titles",
-         "/Library/Application Support/RetroArch/system/duckstation/DuckStation.app/Contents/MacOS/DuckStation" // search Path for glob.
+         "/Library/Application Support/RetroArch/system/mGBA",
+         "/Library/Application Support/RetroArch/system/mGBA/bios",
+         "/Library/Application Support/RetroArch/thumbnails/Nintendo - Game Boy Advance",
+         "/Library/Application Support/RetroArch/thumbnails/Nintendo - Game Boy Advance/Named_Boxarts",
+         "/Library/Application Support/RetroArch/thumbnails/Nintendo - Game Boy Advance/Named_Snaps",
+         "/Library/Application Support/RetroArch/thumbnails/Nintendo - Game Boy Advance/Named_Titles",
+         "/Library/Application Support/RetroArch/system/mGBA/mGBA.app/Contents/MacOS/mGBA" // search Path for glob.
       };
 
    // Emulator build versions and URL to download. Content is generated from powershell cmds
    char *downloaderDirs[] = {
-      "/Library/Application Support/RetroArch/system/duckstation/0.Url.txt",
-      "/Library/Application Support/RetroArch/system/duckstation/1.CurrentVersion.txt",
-      "/Library/Application Support/RetroArch/system/duckstation/2.NewVersion.txt",
+      "/Library/Application Support/RetroArch/system/mGBA/0.Url.txt",
+      "/Library/Application Support/RetroArch/system/mGBA/1.CurrentVersion.txt",
+      "/Library/Application Support/RetroArch/system/mGBA/2.NewVersion.txt",
    };
 
    size_t numPaths = sizeof(dirs)/sizeof(char*);
@@ -533,25 +550,25 @@ bool retro_load_game(const struct retro_game_info *info)
    #elif defined __WIN32__
 
    char *dirs[] = {
-         "C:\\RetroArch-Win64\\system\\duckstation",
-         "C:\\RetroArch-Win64\\system\\duckstation\\bios",
-         "C:\\RetroArch-Win64\\thumbnails\\Sony - PlayStation",
-         "C:\\RetroArch-Win64\\thumbnails\\Sony - PlayStation\\Named_Boxarts",
-         "C:\\RetroArch-Win64\\thumbnails\\Sony - PlayStation\\Named_Snaps",
-         "C:\\RetroArch-Win64\\thumbnails\\Sony - PlayStation\\Named_Titles"
+         "C:\\RetroArch-Win64\\system\\mGBA",
+         "C:\\RetroArch-Win64\\system\\mGBA\\bios",
+         "C:\\RetroArch-Win64\\thumbnails\\Nintendo - Game Boy Advance",
+         "C:\\RetroArch-Win64\\thumbnails\\Nintendo - Game Boy Advance\\Named_Boxarts",
+         "C:\\RetroArch-Win64\\thumbnails\\Nintendo - Game Boy Advance\\Named_Snaps",
+         "C:\\RetroArch-Win64\\thumbnails\\Nintendo - Game Boy Advance\\Named_Titles"
       };
    
    char *downloaderDirs[] = {
-      "C:\\RetroArch-Win64\\system\\duckstation\\0.Url.txt",
-      "C:\\RetroArch-Win64\\system\\duckstation\\1.CurrentVersion.txt",
-      "C:\\RetroArch-Win64\\system\\duckstation\\2.NewVersion.txt",
+      "C:\\RetroArch-Win64\\system\\mGBA\\0.Url.txt",
+      "C:\\RetroArch-Win64\\system\\mGBA\\1.CurrentVersion.txt",
+      "C:\\RetroArch-Win64\\system\\mGBA\\2.NewVersion.txt",
    };
 
    #endif
 
    char *githubUrls[] = {
-      "https://api.github.com/repos/stenzek/duckstation/releases/latest",
-      "https://github.com/stenzek/duckstation/releases/download/"
+      "https://api.github.com/repos/mGBA-emu/mGBA/releases/latest",
+      "https://github.com/mGBA-emu/mGBA/releases/download/"
    };
 
    char executable[513] = {0};
@@ -584,21 +601,17 @@ bool retro_load_game(const struct retro_game_info *info)
 
    // if executable exists, only then try to launch it.
    if (strlen(executable) > 0) {
-      if (info == NULL || info->path == NULL) {
+      if (info != NULL && info->path != NULL) {
          char args[512] = {0};
-         snprintf(args, sizeof(args), " -fullscreen -bios");
-         strncat(executable, args, sizeof(executable)-1);
-      } else {
-         char args[512] = {0};
-         snprintf(args, sizeof(args), " -fullscreen \"%s\"", info->path);
+         snprintf(args, sizeof(args), " -f \"%s\"", info->path);
          strncat(executable, args, sizeof(executable)-1);
       }
 
       if (system(executable) == 0) {
-         log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Finished running duckstation.\n");
+         log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Finished running mGBA.\n");
          return true;
       } else {
-         log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed running duckstation.\n");
+         log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed running mGBA.\n");
       }
    }
    return false;

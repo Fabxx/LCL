@@ -4,12 +4,14 @@
 #include <stdarg.h>
 #include <string.h>
 #include "libretro.h"
+
 #if defined __linux || __APPLE__
 #include <glob.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <fcntl.h>
+
 #elif defined __WIN32__
 #include <windows.h>
 #include <direct.h>
@@ -52,10 +54,10 @@ void retro_set_controller_port_device(unsigned port, unsigned device)
 void retro_get_system_info(struct retro_system_info *info)
 {
    memset(info, 0, sizeof(*info));
-   info->library_name     = "duckstation Launcher";
+   info->library_name     = "pcsx2 Launcher";
    info->library_version  = "0.1a";
    info->need_fullpath    = true;
-   info->valid_extensions = "cue|img|ecm|chd";
+   info->valid_extensions = "iso|chd|elf|ciso|cso|bin|cue|mdf|nrg|dump|gz|img|m3u";
 }
 
 static retro_video_refresh_t video_cb;
@@ -193,7 +195,7 @@ static bool setup(char **Paths, size_t numPaths, char *executable)
    }
 
    // Lookup for Emulator Executable inside Emulator folder. hFind resolves wildcard.
-   snprintf(searchPath, MAX_PATH, "%s\\duckstation*.exe", Paths[0]);
+   snprintf(searchPath, MAX_PATH, "%s\\pcsx2*.exe", Paths[0]);
    hFind = FindFirstFile(searchPath, &findFileData);
 
    if (hFind != INVALID_HANDLE_VALUE) {
@@ -214,11 +216,11 @@ static bool downloader(char **Paths, char **downloaderDirs, char **githubUrls)
    
    #ifdef __linux__
 
-   char assetId = '9';
+   char assetId = '0';
 
    #elif defined __APPLE__
 
-   char assetId = '1';
+   char assetId = '2';
 
    #elif defined __WIN32__
 
@@ -270,13 +272,13 @@ static bool downloader(char **Paths, char **downloaderDirs, char **githubUrls)
 
    #ifdef __linux__
    snprintf(command, sizeof(command), 
-   "wget -O %s/duckstation.AppImage %s && chmod +x %s", Paths[0], url, Paths[6]);
+   "wget -O %s/pcsx2.AppImage %s && chmod +x %s", Paths[0], url, Paths[6]);
    
    #elif defined __APPLE__
-   snprintf(command, sizeof(command), "wget -O %s/duckstation.zip %s", Paths[0], url);
+   snprintf(command, sizeof(command), "wget -O %s/pcsx2.tar.xz %s", Paths[0], url);
    
    #elif defined __WIN32__
-      snprintf(command, sizeof(command),"powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\duckstation.zip'\"", url, dirs[0]);
+   snprintf(command, sizeof(command),"powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\pcsx2.7z'\"", url, dirs[0]);
 
    #endif
    
@@ -296,11 +298,11 @@ static bool updater(char **Paths, char **downloaderDirs, char **githubUrls)
 
    #ifdef __linux__
 
-   char assetId = '9';
+   char assetId = '0';
 
    #elif defined __APPLE__
 
-   char assetId = '1';
+   char assetId = '2';
 
    #elif defined __WIN32__
 
@@ -357,17 +359,17 @@ static bool updater(char **Paths, char **downloaderDirs, char **githubUrls)
                #ifdef __linux__
 
                snprintf(command, sizeof(command), 
-               "wget -O %s/duckstation.AppImage %s && chmod +x %s", Paths[0], url, Paths[6]);
+               "wget -O %s/pcsx2.AppImage %s && chmod +x %s", Paths[0], url, Paths[6]);
                
                #elif defined __APPLE__
                
                snprintf(downloadCmd, sizeof(downloadCmd), 
-                       "wget -O %s/duckstation.zip %s", Paths[0], url);
+                       "wget -O %s/pcsx2.tar.xz %s", Paths[0], url);
                
                #elif defined __WIN32__
                
                 snprintf(downloadCmd, sizeof(downloadCmd),
-                       "powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\duckstation.zip'\"", url, Paths[0]);
+                       "powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\pcsx2.7z'\"", url, Paths[0]);
                #endif
 
                if (system(command) != 0) {
@@ -375,7 +377,7 @@ static bool updater(char **Paths, char **downloaderDirs, char **githubUrls)
                   return false;
                } else {
                   // Overwrite Current version.txt file with new ID if download was successfull.
-                  #if defined __linux__
+                  #if defined __linux__ || __APPLE__
                   
                   snprintf(command, sizeof(command),
                   "bash -c 'json_data=$(curl -s -H \"Accept: application/json\" \"%s\"); "
@@ -384,16 +386,6 @@ static bool updater(char **Paths, char **downloaderDirs, char **githubUrls)
                         "url=\"%s$tag/$name\"; "
                         "echo \"$id\"  > \"%s\"'",
                         githubUrls[0], assetId, githubUrls[1], downloaderDirs[1]);
-                  
-                  #elif defined __APPLE__
-                  
-                  snprintf(bashCommand, sizeof(bashCommand),
-                           "bash -c 'json_data=$(curl -s -H \"Accept: application/json\" \"%s\"); "
-                           "id=$(echo \"$json_data\" | jq -r \".assets[%c].id\"); "
-                           "if [ \"$id\" = \"null\" ]; then exit 1; fi; "
-                           "url=\"%s$tag/$name\"; "
-                           "echo \"$id\"  > \"%s\"'",
-                           githubUrls[0], assetId, githubUrls[1], downloaderDirs[1]);
 
                   #elif defined __WIN32__
                   
@@ -421,22 +413,44 @@ static bool updater(char **Paths, char **downloaderDirs, char **githubUrls)
    return false;
 }
 
+// Linux has directly appImage, no need to extract
+#if defined __WIN32__ || __APPLE__
 static bool extractor(char **dirs)
 {
    char command[1024] = {0};
    
    #ifdef __WIN32__
    
+  snprintf(command, sizeof(command), "powershell -Command \"Get-Module -ListAvailable -Name 7Zip4PowerShell\"");
+
+   if (system(command) == 0) {
+      log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Found 7z4Powershell module, skipping installation.\n");
+   } else {
+      // Install 7z4Powershell module, needed to extract 7z
+      snprintf(command, sizeof(command),
+          "powershell -Command \"Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Scope CurrentUser; "
+          "Set-PSRepository -Name 'PSGallery' -InstallationPolicy Trusted; "
+          "Install-Module -Name 7Zip4PowerShell -Force -Scope CurrentUser\"");
+   
+   if (system(command) != 0) {
+         log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed to install 7z module, aborting.\n");
+         return false;
+      } else {
+         log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: 7z module installed, extracting emulator.\n");
+      }
+   }
+
    snprintf(command, sizeof(command),
-            "powershell -Command \"Expand-Archive -Path '%s\\duckstation.zip' -DestinationPath '%s' -Force; Remove-Item -Path '%s\\duckstation.zip' -Force\"", 
+            "powershell -Command \"Expand-7zip -ArchiveFileName '%s\\pcsx2.7z' -TargetPath '%s'; Remove-Item -Path '%s\\pcsx2.7z' -Force\"", 
             dirs[0], dirs[0], dirs[0]);
+
    #elif defined __APPLE__
-   snprintf(command, sizeof(command), 
+   snprintf(extractCmd, sizeof(extractCmd), 
            "mkdir %s/tmp_dir && "
-           "unzip %s/duckstation.zip -d %s/tmp_dir && " 
-           "mv %s/tmp_dir/* %s && " \
+           "tar -xvzf %s/pcsx2.tar.xz -C %s/tmp_dir && " 
+           "mv %s/tmp_dir/* %s && "
            "rm -rf %s/tmp_dir && "
-           "rm %s/duckstation.zip && "
+           "rm %s/pcsx2.tar.xz && "
            "chmod +x %s", 
            Paths[0], Paths[0], Paths[0], Paths[0], 
            Paths[0], Paths[0], Paths[0], Paths[6]);
@@ -450,6 +464,7 @@ static bool extractor(char **dirs)
       return true;
    }
 }
+#endif
 
 /**
  * libretro callback; Called when a game is to be loaded.
@@ -465,20 +480,20 @@ bool retro_load_game(const struct retro_game_info *info)
    const char *home = getenv("HOME");
 
    char *dirs[] = {
-         "/.config/retroarch/system/duckstation",
-         "/.config/retroarch/system/duckstation/bios",
-         "/.config/retroarch/thumbnails/Sony - PlayStation",
-         "/.config/retroarch/thumbnails/Sony - PlayStation/Named_Boxarts",
-         "/.config/retroarch/thumbnails/Sony - PlayStation/Named_Snaps",
-         "/.config/retroarch/thumbnails/Sony - PlayStation/Named_Titles",
-         "/.config/retroarch/system/duckstation/duckstation.AppImage" // search Path for glob.
+         "/.config/retroarch/system/pcsx2",
+         "/.config/retroarch/system/pcsx2/bios",
+         "/.config/retroarch/thumbnails/Sony - PlayStation 2",
+         "/.config/retroarch/thumbnails/Sony - PlayStation 2/Named_Boxarts",
+         "/.config/retroarch/thumbnails/Sony - PlayStation 2/Named_Snaps",
+         "/.config/retroarch/thumbnails/Sony - PlayStation 2/Named_Titles",
+         "/.config/retroarch/system/pcsx2/pcsx2.AppImage" // search Path for glob.
       };
    
    // Emulator build versions and URL to download. Content is generated from powershell cmds
    char *downloaderDirs[] = {
-      "/.config/retroarch/system/duckstation/0.Url.txt",
-      "/.config/retroarch/system/duckstation/1.CurrentVersion.txt",
-      "/.config/retroarch/system/duckstation/2.NewVersion.txt",
+      "/.config/retroarch/system/pcsx2/0.Url.txt",
+      "/.config/retroarch/system/pcsx2/1.CurrentVersion.txt",
+      "/.config/retroarch/system/pcsx2/2.NewVersion.txt",
    };
 
    size_t numPaths = sizeof(dirs)/sizeof(char*);
@@ -501,20 +516,20 @@ bool retro_load_game(const struct retro_game_info *info)
    const char *home = getenv("HOME");
 
    char *dirs[] = {
-         "/Library/Application Support/RetroArch/system/duckstation",
-         "/Library/Application Support/RetroArch/system/duckstation/bios",
-         "/Library/Application Support/RetroArch/thumbnails/Sony - PlayStation",
-         "/Library/Application Support/RetroArch/thumbnails/Sony - PlayStation/Named_Boxarts",
-         "/Library/Application Support/RetroArch/thumbnails/Sony - PlayStation/Named_Snaps",
-         "/Library/Application Support/RetroArch/thumbnails/Sony - PlayStation/Named_Titles",
-         "/Library/Application Support/RetroArch/system/duckstation/DuckStation.app/Contents/MacOS/DuckStation" // search Path for glob.
+         "/Library/Application Support/RetroArch/system/pcsx2",
+         "/Library/Application Support/RetroArch/system/pcsx2/bios",
+         "/Library/Application Support/RetroArch/thumbnails/Sony - PlayStation 2",
+         "/Library/Application Support/RetroArch/thumbnails/Sony - PlayStation 2/Named_Boxarts",
+         "/Library/Application Support/RetroArch/thumbnails/Sony - PlayStation 2/Named_Snaps",
+         "/Library/Application Support/RetroArch/thumbnails/Sony - PlayStation 2/Named_Titles",
+         "/Library/Application Support/RetroArch/system/pcsx2/PCSX2.app/Contents/MacOS/PCSX2" // search Path for glob.
       };
 
    // Emulator build versions and URL to download. Content is generated from powershell cmds
    char *downloaderDirs[] = {
-      "/Library/Application Support/RetroArch/system/duckstation/0.Url.txt",
-      "/Library/Application Support/RetroArch/system/duckstation/1.CurrentVersion.txt",
-      "/Library/Application Support/RetroArch/system/duckstation/2.NewVersion.txt",
+      "/Library/Application Support/RetroArch/system/pcsx2/0.Url.txt",
+      "/Library/Application Support/RetroArch/system/pcsx2/1.CurrentVersion.txt",
+      "/Library/Application Support/RetroArch/system/pcsx2/2.NewVersion.txt",
    };
 
    size_t numPaths = sizeof(dirs)/sizeof(char*);
@@ -533,25 +548,25 @@ bool retro_load_game(const struct retro_game_info *info)
    #elif defined __WIN32__
 
    char *dirs[] = {
-         "C:\\RetroArch-Win64\\system\\duckstation",
-         "C:\\RetroArch-Win64\\system\\duckstation\\bios",
-         "C:\\RetroArch-Win64\\thumbnails\\Sony - PlayStation",
-         "C:\\RetroArch-Win64\\thumbnails\\Sony - PlayStation\\Named_Boxarts",
-         "C:\\RetroArch-Win64\\thumbnails\\Sony - PlayStation\\Named_Snaps",
-         "C:\\RetroArch-Win64\\thumbnails\\Sony - PlayStation\\Named_Titles"
+         "C:\\RetroArch-Win64\\system\\pcsx2",
+         "C:\\RetroArch-Win64\\system\\pcsx2\\bios",
+         "C:\\RetroArch-Win64\\thumbnails\\Sony - PlayStation 2",
+         "C:\\RetroArch-Win64\\thumbnails\\Sony - PlayStation 2\\Named_Boxarts",
+         "C:\\RetroArch-Win64\\thumbnails\\Sony - PlayStation 2\\Named_Snaps",
+         "C:\\RetroArch-Win64\\thumbnails\\Sony - PlayStation 2\\Named_Titles"
       };
    
    char *downloaderDirs[] = {
-      "C:\\RetroArch-Win64\\system\\duckstation\\0.Url.txt",
-      "C:\\RetroArch-Win64\\system\\duckstation\\1.CurrentVersion.txt",
-      "C:\\RetroArch-Win64\\system\\duckstation\\2.NewVersion.txt",
+      "C:\\RetroArch-Win64\\system\\pcsx2\\0.Url.txt",
+      "C:\\RetroArch-Win64\\system\\pcsx2\\1.CurrentVersion.txt",
+      "C:\\RetroArch-Win64\\system\\pcsx2\\2.NewVersion.txt",
    };
 
    #endif
 
    char *githubUrls[] = {
-      "https://api.github.com/repos/stenzek/duckstation/releases/latest",
-      "https://github.com/stenzek/duckstation/releases/download/"
+      "https://api.github.com/repos/PCSX2/pcsx2/releases/latest",
+      "https://github.com/PCSX2/pcsx2/releases/download/"
    };
 
    char executable[513] = {0};
@@ -595,10 +610,10 @@ bool retro_load_game(const struct retro_game_info *info)
       }
 
       if (system(executable) == 0) {
-         log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Finished running duckstation.\n");
+         log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Finished running pcsx2.\n");
          return true;
       } else {
-         log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed running duckstation.\n");
+         log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed running pcsx2.\n");
       }
    }
    return false;

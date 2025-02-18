@@ -4,12 +4,14 @@
 #include <stdarg.h>
 #include <string.h>
 #include "libretro.h"
+
 #if defined __linux || __APPLE__
 #include <glob.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <fcntl.h>
+
 #elif defined __WIN32__
 #include <windows.h>
 #include <direct.h>
@@ -52,10 +54,10 @@ void retro_set_controller_port_device(unsigned port, unsigned device)
 void retro_get_system_info(struct retro_system_info *info)
 {
    memset(info, 0, sizeof(*info));
-   info->library_name     = "duckstation Launcher";
+   info->library_name     = "lime3ds Launcher";
    info->library_version  = "0.1a";
    info->need_fullpath    = true;
-   info->valid_extensions = "cue|img|ecm|chd";
+   info->valid_extensions = "3ds|3dsx|elf|axf|cci|cxi|app";
 }
 
 static retro_video_refresh_t video_cb;
@@ -193,7 +195,7 @@ static bool setup(char **Paths, size_t numPaths, char *executable)
    }
 
    // Lookup for Emulator Executable inside Emulator folder. hFind resolves wildcard.
-   snprintf(searchPath, MAX_PATH, "%s\\duckstation*.exe", Paths[0]);
+   snprintf(searchPath, MAX_PATH, "%s\\lime3ds.exe", Paths[0]);
    hFind = FindFirstFile(searchPath, &findFileData);
 
    if (hFind != INVALID_HANDLE_VALUE) {
@@ -214,11 +216,11 @@ static bool downloader(char **Paths, char **downloaderDirs, char **githubUrls)
    
    #ifdef __linux__
 
-   char assetId = '9';
+   char assetId = '2';
 
    #elif defined __APPLE__
 
-   char assetId = '1';
+   char assetId = '3';
 
    #elif defined __WIN32__
 
@@ -270,13 +272,13 @@ static bool downloader(char **Paths, char **downloaderDirs, char **githubUrls)
 
    #ifdef __linux__
    snprintf(command, sizeof(command), 
-   "wget -O %s/duckstation.AppImage %s && chmod +x %s", Paths[0], url, Paths[6]);
+   "wget -O %s/lime3ds.tar.gz %s", Paths[0], url);
    
    #elif defined __APPLE__
-   snprintf(command, sizeof(command), "wget -O %s/duckstation.zip %s", Paths[0], url);
+   snprintf(command, sizeof(command), "wget -O %s/lime3ds.zip %s", Paths[0], url);
    
    #elif defined __WIN32__
-      snprintf(command, sizeof(command),"powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\duckstation.zip'\"", url, dirs[0]);
+      snprintf(command, sizeof(command),"powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\lime3ds.zip'\"", url, dirs[0]);
 
    #endif
    
@@ -296,11 +298,11 @@ static bool updater(char **Paths, char **downloaderDirs, char **githubUrls)
 
    #ifdef __linux__
 
-   char assetId = '9';
+   char assetId = '2';
 
    #elif defined __APPLE__
 
-   char assetId = '1';
+   char assetId = '3';
 
    #elif defined __WIN32__
 
@@ -357,17 +359,17 @@ static bool updater(char **Paths, char **downloaderDirs, char **githubUrls)
                #ifdef __linux__
 
                snprintf(command, sizeof(command), 
-               "wget -O %s/duckstation.AppImage %s && chmod +x %s", Paths[0], url, Paths[6]);
+               "wget -O %s/lime3ds.tar.gz %s", Paths[0], url);
                
                #elif defined __APPLE__
                
                snprintf(downloadCmd, sizeof(downloadCmd), 
-                       "wget -O %s/duckstation.zip %s", Paths[0], url);
+                       "wget -O %s/lime3ds.zip %s", Paths[0], url);
                
                #elif defined __WIN32__
                
                 snprintf(downloadCmd, sizeof(downloadCmd),
-                       "powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\duckstation.zip'\"", url, Paths[0]);
+                       "powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\lime3ds.zip'\"", url, Paths[0]);
                #endif
 
                if (system(command) != 0) {
@@ -375,7 +377,7 @@ static bool updater(char **Paths, char **downloaderDirs, char **githubUrls)
                   return false;
                } else {
                   // Overwrite Current version.txt file with new ID if download was successfull.
-                  #if defined __linux__
+                  #if defined __linux__ || __APPLE__
                   
                   snprintf(command, sizeof(command),
                   "bash -c 'json_data=$(curl -s -H \"Accept: application/json\" \"%s\"); "
@@ -384,16 +386,6 @@ static bool updater(char **Paths, char **downloaderDirs, char **githubUrls)
                         "url=\"%s$tag/$name\"; "
                         "echo \"$id\"  > \"%s\"'",
                         githubUrls[0], assetId, githubUrls[1], downloaderDirs[1]);
-                  
-                  #elif defined __APPLE__
-                  
-                  snprintf(bashCommand, sizeof(bashCommand),
-                           "bash -c 'json_data=$(curl -s -H \"Accept: application/json\" \"%s\"); "
-                           "id=$(echo \"$json_data\" | jq -r \".assets[%c].id\"); "
-                           "if [ \"$id\" = \"null\" ]; then exit 1; fi; "
-                           "url=\"%s$tag/$name\"; "
-                           "echo \"$id\"  > \"%s\"'",
-                           githubUrls[0], assetId, githubUrls[1], downloaderDirs[1]);
 
                   #elif defined __WIN32__
                   
@@ -421,25 +413,38 @@ static bool updater(char **Paths, char **downloaderDirs, char **githubUrls)
    return false;
 }
 
+
 static bool extractor(char **dirs)
 {
    char command[1024] = {0};
    
    #ifdef __WIN32__
-   
+
    snprintf(command, sizeof(command),
-            "powershell -Command \"Expand-Archive -Path '%s\\duckstation.zip' -DestinationPath '%s' -Force; Remove-Item -Path '%s\\duckstation.zip' -Force\"", 
+            "powershell -Command \"Expand-Archive -Path '%s\\lime3ds.zip' -DestinationPath '%s' -Force; Remove-Item -Path '%s\\lime3ds.zip' -Force\"", 
             dirs[0], dirs[0], dirs[0]);
    #elif defined __APPLE__
+   
    snprintf(command, sizeof(command), 
            "mkdir %s/tmp_dir && "
-           "unzip %s/duckstation.zip -d %s/tmp_dir && " 
-           "mv %s/tmp_dir/* %s && " \
+           "unzip %s/lime3ds.zip -d %s/tmp_dir && " 
+           "mv %s/tmp_dir/*/lime3ds.app %s && " \
            "rm -rf %s/tmp_dir && "
-           "rm %s/duckstation.zip && "
+           "rm %s/lime3ds.zip && "
            "chmod +x %s", 
-           Paths[0], Paths[0], Paths[0], Paths[0], 
-           Paths[0], Paths[0], Paths[0], Paths[6]);
+           dirs[0], dirs[0], dirs[0], dirs[0], 
+           dirs[0], dirs[0], dirs[0], dirs[6]);
+   #elif defined __linux__
+
+   snprintf(command, sizeof(command), 
+   "mkdir %s/tmp_dir && "
+           "tar -xvzf %s/lime3ds.tar.gz -C %s/tmp_dir && " 
+           "mv %s/tmp_dir/*/* %s && " \
+           "rm -rf %s/tmp_dir && "
+           "rm %s/lime3ds.tar.gz && "
+           "chmod +x %s", 
+           dirs[0], dirs[0], dirs[0], dirs[0], 
+           dirs[0], dirs[0], dirs[0], dirs[6]);
    #endif             
 
    if (system(command) != 0) {
@@ -465,20 +470,20 @@ bool retro_load_game(const struct retro_game_info *info)
    const char *home = getenv("HOME");
 
    char *dirs[] = {
-         "/.config/retroarch/system/duckstation",
-         "/.config/retroarch/system/duckstation/bios",
-         "/.config/retroarch/thumbnails/Sony - PlayStation",
-         "/.config/retroarch/thumbnails/Sony - PlayStation/Named_Boxarts",
-         "/.config/retroarch/thumbnails/Sony - PlayStation/Named_Snaps",
-         "/.config/retroarch/thumbnails/Sony - PlayStation/Named_Titles",
-         "/.config/retroarch/system/duckstation/duckstation.AppImage" // search Path for glob.
+         "/.config/retroarch/system/lime3ds",
+         "/.config/retroarch/system/lime3ds/bios",
+         "/.config/retroarch/thumbnails/Nintendo - Nintendo 3DS",
+         "/.config/retroarch/thumbnails/Nintendo - Nintendo 3DS/Named_Boxarts",
+         "/.config/retroarch/thumbnails/Nintendo - Nintendo 3DS/Named_Snaps",
+         "/.config/retroarch/thumbnails/Nintendo - Nintendo 3DS/Named_Titles",
+         "/.config/retroarch/system/lime3ds/lime3ds.AppImage" // search Path for glob.
       };
    
    // Emulator build versions and URL to download. Content is generated from powershell cmds
    char *downloaderDirs[] = {
-      "/.config/retroarch/system/duckstation/0.Url.txt",
-      "/.config/retroarch/system/duckstation/1.CurrentVersion.txt",
-      "/.config/retroarch/system/duckstation/2.NewVersion.txt",
+      "/.config/retroarch/system/lime3ds/0.Url.txt",
+      "/.config/retroarch/system/lime3ds/1.CurrentVersion.txt",
+      "/.config/retroarch/system/lime3ds/2.NewVersion.txt",
    };
 
    size_t numPaths = sizeof(dirs)/sizeof(char*);
@@ -501,20 +506,20 @@ bool retro_load_game(const struct retro_game_info *info)
    const char *home = getenv("HOME");
 
    char *dirs[] = {
-         "/Library/Application Support/RetroArch/system/duckstation",
-         "/Library/Application Support/RetroArch/system/duckstation/bios",
-         "/Library/Application Support/RetroArch/thumbnails/Sony - PlayStation",
-         "/Library/Application Support/RetroArch/thumbnails/Sony - PlayStation/Named_Boxarts",
-         "/Library/Application Support/RetroArch/thumbnails/Sony - PlayStation/Named_Snaps",
-         "/Library/Application Support/RetroArch/thumbnails/Sony - PlayStation/Named_Titles",
-         "/Library/Application Support/RetroArch/system/duckstation/DuckStation.app/Contents/MacOS/DuckStation" // search Path for glob.
+         "/Library/Application Support/RetroArch/system/lime3ds",
+         "/Library/Application Support/RetroArch/system/lime3ds/bios",
+         "/Library/Application Support/RetroArch/thumbnails/Nintendo - Nintendo 3DS",
+         "/Library/Application Support/RetroArch/thumbnails/Nintendo - Nintendo 3DS/Named_Boxarts",
+         "/Library/Application Support/RetroArch/thumbnails/Nintendo - Nintendo 3DS/Named_Snaps",
+         "/Library/Application Support/RetroArch/thumbnails/Nintendo - Nintendo 3DS/Named_Titles",
+         "/Library/Application Support/RetroArch/system/lime3ds/lime3ds.app/Contents/MacOS/lime3ds" // search Path for glob.
       };
 
    // Emulator build versions and URL to download. Content is generated from powershell cmds
    char *downloaderDirs[] = {
-      "/Library/Application Support/RetroArch/system/duckstation/0.Url.txt",
-      "/Library/Application Support/RetroArch/system/duckstation/1.CurrentVersion.txt",
-      "/Library/Application Support/RetroArch/system/duckstation/2.NewVersion.txt",
+      "/Library/Application Support/RetroArch/system/lime3ds/0.Url.txt",
+      "/Library/Application Support/RetroArch/system/lime3ds/1.CurrentVersion.txt",
+      "/Library/Application Support/RetroArch/system/lime3ds/2.NewVersion.txt",
    };
 
    size_t numPaths = sizeof(dirs)/sizeof(char*);
@@ -533,37 +538,34 @@ bool retro_load_game(const struct retro_game_info *info)
    #elif defined __WIN32__
 
    char *dirs[] = {
-         "C:\\RetroArch-Win64\\system\\duckstation",
-         "C:\\RetroArch-Win64\\system\\duckstation\\bios",
-         "C:\\RetroArch-Win64\\thumbnails\\Sony - PlayStation",
-         "C:\\RetroArch-Win64\\thumbnails\\Sony - PlayStation\\Named_Boxarts",
-         "C:\\RetroArch-Win64\\thumbnails\\Sony - PlayStation\\Named_Snaps",
-         "C:\\RetroArch-Win64\\thumbnails\\Sony - PlayStation\\Named_Titles"
+         "C:\\RetroArch-Win64\\system\\lime3ds",
+         "C:\\RetroArch-Win64\\system\\lime3ds\\bios",
+         "C:\\RetroArch-Win64\\thumbnails\\Nintendo - Nintendo 3DS",
+         "C:\\RetroArch-Win64\\thumbnails\\Nintendo - Nintendo 3DS\\Named_Boxarts",
+         "C:\\RetroArch-Win64\\thumbnails\\Nintendo - Nintendo 3DS\\Named_Snaps",
+         "C:\\RetroArch-Win64\\thumbnails\\Nintendo - Nintendo 3DS\\Named_Titles"
       };
    
    char *downloaderDirs[] = {
-      "C:\\RetroArch-Win64\\system\\duckstation\\0.Url.txt",
-      "C:\\RetroArch-Win64\\system\\duckstation\\1.CurrentVersion.txt",
-      "C:\\RetroArch-Win64\\system\\duckstation\\2.NewVersion.txt",
+      "C:\\RetroArch-Win64\\system\\lime3ds\\0.Url.txt",
+      "C:\\RetroArch-Win64\\system\\lime3ds\\1.CurrentVersion.txt",
+      "C:\\RetroArch-Win64\\system\\lime3ds\\2.NewVersion.txt",
    };
 
    #endif
 
    char *githubUrls[] = {
-      "https://api.github.com/repos/stenzek/duckstation/releases/latest",
-      "https://github.com/stenzek/duckstation/releases/download/"
+      "https://api.github.com/repos/Lime3DS/lime3ds-archive/releases/latest",
+      "https://github.com/Lime3DS/lime3ds-archive/releases/download/"
    };
 
    char executable[513] = {0};
 
    /**
-    * If no emulator was found, download and extract it (windows/macOS)
-    * if no emulator was found, download it and set execution permissions (linux)
+    * If no emulator was found, download and extract it
     * If emulator was found check for updates and extract them. (windows/macOS)
-    * If emulator was found check for updates and set execution permissions (linux)
     */
    
-   #if defined __WIN32__ || __APPLE__
    if (!setup(dirs, numPaths, executable)) {
       if (downloader(dirs, downloaderDirs, githubUrls)) {
          extractor(dirs);
@@ -574,31 +576,19 @@ bool retro_load_game(const struct retro_game_info *info)
       }
    }
 
-   #elif defined __linux__
-   if (!setup(dirs, numPaths, executable)) {
-      downloader(dirs, downloaderDirs, githubUrls);
-   } else {
-      updater(dirs, downloaderDirs, githubUrls);
-   }
-   #endif
-
    // if executable exists, only then try to launch it.
    if (strlen(executable) > 0) {
-      if (info == NULL || info->path == NULL) {
+      if (info != NULL && info->path != NULL) {
          char args[512] = {0};
-         snprintf(args, sizeof(args), " -fullscreen -bios");
-         strncat(executable, args, sizeof(executable)-1);
-      } else {
-         char args[512] = {0};
-         snprintf(args, sizeof(args), " -fullscreen \"%s\"", info->path);
+         snprintf(args, sizeof(args), " \"%s\"", info->path);
          strncat(executable, args, sizeof(executable)-1);
       }
 
       if (system(executable) == 0) {
-         log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Finished running duckstation.\n");
+         log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Finished running lime3ds.\n");
          return true;
       } else {
-         log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed running duckstation.\n");
+         log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed running lime3ds.\n");
       }
    }
    return false;

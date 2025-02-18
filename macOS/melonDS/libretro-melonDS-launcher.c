@@ -333,10 +333,10 @@ bool retro_load_game(const struct retro_game_info *info)
    char *dirs[] = {
          "/Library/Application Support/RetroArch/system/melonDS",
          "/Library/Application Support/RetroArch/system/melonDS/bios",
-         "/Library/Application Support/RetroArch/thumbnails/Nintendo - 3DS",
-         "/Library/Application Support/RetroArch/thumbnails/Nintendo - 3DS/Named_Boxarts",
-         "/Library/Application Support/RetroArch/thumbnails/Nintendo - 3DS/Named_Snaps",
-         "/Library/Application Support/RetroArch/thumbnails/Nintendo - 3DS/Named_Titles",
+         "/Library/Application Support/RetroArch/thumbnails/Nintendo - Nintendo DS",
+         "/Library/Application Support/RetroArch/thumbnails/Nintendo - Nintendo DS/Named_Boxarts",
+         "/Library/Application Support/RetroArch/thumbnails/Nintendo - Nintendo DS/Named_Snaps",
+         "/Library/Application Support/RetroArch/thumbnails/Nintendo - Nintendo DS/Named_Titles",
          "/Library/Application Support/RetroArch/system/melonDS/melonDS.app/Contents/MacOS/melonDS" // search Path for glob.
       };
 

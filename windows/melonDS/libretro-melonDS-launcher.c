@@ -314,10 +314,10 @@ bool retro_load_game(const struct retro_game_info *info)
    char *dirs[] = {
          "C:\\RetroArch-Win64\\system\\melonDS",
          "C:\\RetroArch-Win64\\system\\melonDS\\bios",
-         "C:\\RetroArch-Win64\\thumbnails\\Nintendo - DS",
-         "C:\\RetroArch-Win64\\thumbnails\\Nintendo - DS\\Named_Boxarts",
-         "C:\\RetroArch-Win64\\thumbnails\\Nintendo - DS\\Named_Snaps",
-         "C:\\RetroArch-Win64\\thumbnails\\Nintendo - DS\\Named_Titles"
+         "C:\\RetroArch-Win64\\thumbnails\\Nintendo - Nintendo DS",
+         "C:\\RetroArch-Win64\\thumbnails\\Nintendo - Nintendo DS\\Named_Boxarts",
+         "C:\\RetroArch-Win64\\thumbnails\\Nintendo - Nintendo DS\\Named_Snaps",
+         "C:\\RetroArch-Win64\\thumbnails\\Nintendo - Nintendo DS\\Named_Titles"
       };
 
    size_t numPaths = sizeof(dirs)/sizeof(char*);

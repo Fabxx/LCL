@@ -53,9 +53,13 @@ MacOS:
 - `.dylib` and `.info` files must go in `cores` folder of retroarch
 
 
-# Playlist custom controller icon
+# Playlist controller icons
 
-for those console that don't have an icon, copy-paste the png from `thumbnails` inside the `thumbnails` folder of retroarch
+Theme icons are compatible with the cores, since they match the system name of the pngs.
+
+You can check the names inside `retroarch/assets/driverName/themeName`
+
+In my case it would be `retroarch/assets/xmb/systematic`
 
 # Creating a playlist [Directory Scan]
 

@@ -156,7 +156,7 @@ static char *setup(char **Paths, size_t numPaths, char *executable)
    }
 
    // Lookup for Emulator Executable inside Emulator folder. hFind resolves wildcard.
-   snprintf(searchPath, MAX_PATH, "%s\\publish\\Ryujinx.exe", Paths[0]);
+   snprintf(searchPath, MAX_PATH, "%s\\Ryujinx.exe", Paths[0]);
    hFind = FindFirstFile(searchPath, &findFileData);
 
    if (hFind != INVALID_HANDLE_VALUE) {
@@ -285,10 +285,15 @@ static bool downloader(char **dirs, char **downloaderDirs, char **githubUrls, ch
 
 static bool extractor(char **dirs)
 {
-   char extractCmd[MAX_PATH * 2] = {0};
-   snprintf(extractCmd, sizeof(extractCmd),
-            "powershell -Command \"Expand-Archive -Path '%s\\ryujinx.zip' -DestinationPath '%s' -Force; Remove-Item -Path '%s\\ryujinx.zip' -Force\"", 
-            dirs[0], dirs[0], dirs[0]);
+   char extractCmd[MAX_PATH * 4] = {0};
+snprintf(extractCmd, sizeof(extractCmd),
+    "powershell -Command \""
+            "Expand-Archive -Path '%s\\ryujinx.zip' -DestinationPath '%s' -Force; "
+            "Remove-Item -Path '%s\\ryujinx.zip' -Force; "
+            "Move-Item -Path '%s\\publish\\*' -Destination '%s' -Force; "
+            "Remove-Item -Path '%s\\publish' -Recurse -Force"
+            "\"",
+            dirs[0], dirs[0], dirs[0], dirs[0], dirs[0], dirs[0]);
             
    if (system(extractCmd) != 0) {
       log_cb(RETRO_LOG_ERROR,"[LAUNCHER-ERROR]: Failed to extract emulator, aborting.\n");

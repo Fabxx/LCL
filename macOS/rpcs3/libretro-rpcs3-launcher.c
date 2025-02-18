@@ -346,10 +346,10 @@ bool retro_load_game(const struct retro_game_info *info)
    char *dirs[] = {
          "/Library/Application Support/RetroArch/system/rpcs3",
          "/Library/Application Support/RetroArch/system/rpcs3/bios",
-         "/Library/Application Support/RetroArch/thumbnails/Sony - Playstation 3",
-         "/Library/Application Support/RetroArch/thumbnails/Sony - Playstation 3/Named_Boxarts",
-         "/Library/Application Support/RetroArch/thumbnails/Sony - Playstation 3/Named_Snaps",
-         "/Library/Application Support/RetroArch/thumbnails/Sony - Playstation 3/Named_Titles",
+         "/Library/Application Support/RetroArch/thumbnails/Sony - PlayStation 3",
+         "/Library/Application Support/RetroArch/thumbnails/Sony - PlayStation 3/Named_Boxarts",
+         "/Library/Application Support/RetroArch/thumbnails/Sony - PlayStation 3/Named_Snaps",
+         "/Library/Application Support/RetroArch/thumbnails/Sony - PlayStation 3/Named_Titles",
          "/Library/Application Support/RetroArch/system/rpcs3/rpcs3.app/Contents/MacOS/rpcs3" // search Path for glob.
       };
 

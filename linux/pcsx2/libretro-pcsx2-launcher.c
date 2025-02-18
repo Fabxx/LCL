@@ -321,10 +321,10 @@ bool retro_load_game(const struct retro_game_info *info)
    char *dirs[] = {
          "/.config/retroarch/system/pcsx2",
          "/.config/retroarch/system/pcsx2/bios",
-         "/.config/retroarch/thumbnails/Sony - Playstation 2",
-         "/.config/retroarch/thumbnails/Sony - Playstation 2/Named_Boxarts",
-         "/.config/retroarch/thumbnails/Sony - Playstation 2/Named_Snaps",
-         "/.config/retroarch/thumbnails/Sony - Playstation 2/Named_Titles",
+         "/.config/retroarch/thumbnails/Sony - PlayStation 2",
+         "/.config/retroarch/thumbnails/Sony - PlayStation 2/Named_Boxarts",
+         "/.config/retroarch/thumbnails/Sony - PlayStation 2/Named_Snaps",
+         "/.config/retroarch/thumbnails/Sony - PlayStation 2/Named_Titles",
          "/.config/retroarch/system/pcsx2/pcsx2.AppImage" // search Path for glob.
       };
 

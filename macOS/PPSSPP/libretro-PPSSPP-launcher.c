@@ -331,10 +331,10 @@ bool retro_load_game(const struct retro_game_info *info)
    char *dirs[] = {
          "/Library/Application Support/RetroArch/system/PPSSPP",
          "/Library/Application Support/RetroArch/system/PPSSPP/bios",
-         "/Library/Application Support/RetroArch/thumbnails/Sony - Playstation Portable",
-         "/Library/Application Support/RetroArch/thumbnails/Sony - Playstation Portable/Named_Boxarts",
-         "/Library/Application Support/RetroArch/thumbnails/Sony - Playstation Portable/Named_Snaps",
-         "/Library/Application Support/RetroArch/thumbnails/Sony - Playstation Portable/Named_Titles",
+         "/Library/Application Support/RetroArch/thumbnails/Sony - PlayStation Portable",
+         "/Library/Application Support/RetroArch/thumbnails/Sony - PlayStation Portable/Named_Boxarts",
+         "/Library/Application Support/RetroArch/thumbnails/Sony - PlayStation Portable/Named_Snaps",
+         "/Library/Application Support/RetroArch/thumbnails/Sony - PlayStation Portable/Named_Titles",
          "/Library/Application Support/RetroArch/system/PPSSPP/PPSSPP.app/Contents/MacOS/PPSSPP" // search Path for glob.
       };
 

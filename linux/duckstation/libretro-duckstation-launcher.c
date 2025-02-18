@@ -321,10 +321,10 @@ bool retro_load_game(const struct retro_game_info *info)
    char *dirs[] = {
          "/.config/retroarch/system/duckstation",
          "/.config/retroarch/system/duckstation/bios",
-         "/.config/retroarch/thumbnails/Sony - Playstation",
-         "/.config/retroarch/thumbnails/Sony - Playstation/Named_Boxarts",
-         "/.config/retroarch/thumbnails/Sony - Playstation/Named_Snaps",
-         "/.config/retroarch/thumbnails/Sony - Playstation/Named_Titles",
+         "/.config/retroarch/thumbnails/Sony - PlayStation",
+         "/.config/retroarch/thumbnails/Sony - PlayStation/Named_Boxarts",
+         "/.config/retroarch/thumbnails/Sony - PlayStation/Named_Snaps",
+         "/.config/retroarch/thumbnails/Sony - PlayStation/Named_Titles",
          "/.config/retroarch/system/duckstation/duckstation.AppImage" // search Path for glob.
       };
 

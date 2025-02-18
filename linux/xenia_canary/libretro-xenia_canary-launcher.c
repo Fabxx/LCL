@@ -350,10 +350,10 @@ bool retro_load_game(const struct retro_game_info *info)
    char *dirs[] = {
          "/.config/retroarch/system/xenia_canary",
          "/.config/retroarch/system/xenia_canary/bios",
-         "/.config/retroarch/thumbnails/Nintendo - 3DS",
-         "/.config/retroarch/thumbnails/Nintendo - 3DS/Named_Boxarts",
-         "/.config/retroarch/thumbnails/Nintendo - 3DS/Named_Snaps",
-         "/.config/retroarch/thumbnails/Nintendo - 3DS/Named_Titles",
+         "/.config/retroarch/thumbnails/Microsoft - Xbox 360",
+         "/.config/retroarch/thumbnails/Microsoft - Xbox 360/Named_Boxarts",
+         "/.config/retroarch/thumbnails/Microsoft - Xbox 360/Named_Snaps",
+         "/.config/retroarch/thumbnails/Microsoft - Xbox 360/Named_Titles",
          "/.config/retroarch/system/xenia_canary/xenia_canary.exe" // search Path for glob.
       };
 

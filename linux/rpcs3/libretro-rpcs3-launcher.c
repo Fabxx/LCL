@@ -321,10 +321,10 @@ bool retro_load_game(const struct retro_game_info *info)
    char *dirs[] = {
          "/.config/retroarch/system/rpcs3",
          "/.config/retroarch/system/rpcs3/bios",
-         "/.config/retroarch/thumbnails/Sony - Playstation 3",
-         "/.config/retroarch/thumbnails/Sony - Playstation 3/Named_Boxarts",
-         "/.config/retroarch/thumbnails/Sony - Playstation 3/Named_Snaps",
-         "/.config/retroarch/thumbnails/Sony - Playstation 3/Named_Titles",
+         "/.config/retroarch/thumbnails/Sony - PlayStation 3",
+         "/.config/retroarch/thumbnails/Sony - PlayStation 3/Named_Boxarts",
+         "/.config/retroarch/thumbnails/Sony - PlayStation 3/Named_Snaps",
+         "/.config/retroarch/thumbnails/Sony - PlayStation 3/Named_Titles",
          "/.config/retroarch/system/rpcs3/rpcs3.AppImage" // search Path for glob.
       };
 

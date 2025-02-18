@@ -331,10 +331,10 @@ bool retro_load_game(const struct retro_game_info *info)
    char *dirs[] = {
          "/Library/Application Support/RetroArch/system/pcsx2",
          "/Library/Application Support/RetroArch/system/pcsx2/bios",
-         "/Library/Application Support/RetroArch/thumbnails/Sony - Playstation 2",
-         "/Library/Application Support/RetroArch/thumbnails/Sony - Playstation 2/Named_Boxarts",
-         "/Library/Application Support/RetroArch/thumbnails/Sony - Playstation 2/Named_Snaps",
-         "/Library/Application Support/RetroArch/thumbnails/Sony - Playstation 2/Named_Titles",
+         "/Library/Application Support/RetroArch/thumbnails/Sony - PlayStation 2",
+         "/Library/Application Support/RetroArch/thumbnails/Sony - PlayStation 2/Named_Boxarts",
+         "/Library/Application Support/RetroArch/thumbnails/Sony - PlayStation 2/Named_Snaps",
+         "/Library/Application Support/RetroArch/thumbnails/Sony - PlayStation 2/Named_Titles",
          "/Library/Application Support/RetroArch/system/pcsx2/pcsx2.app/Contents/MacOS/PCSX2" // search Path for glob.
       };
 

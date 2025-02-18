@@ -314,10 +314,10 @@ bool retro_load_game(const struct retro_game_info *info)
    char *dirs[] = {
          "C:\\RetroArch-Win64\\system\\duckstation",
          "C:\\RetroArch-Win64\\system\\duckstation\\bios",
-         "C:\\RetroArch-Win64\\thumbnails\\Sony - Playstation",
-         "C:\\RetroArch-Win64\\thumbnails\\Sony - Playstation\\Named_Boxarts",
-         "C:\\RetroArch-Win64\\thumbnails\\Sony - Playstation\\Named_Snaps",
-         "C:\\RetroArch-Win64\\thumbnails\\Sony - Playstation\\Named_Titles"
+         "C:\\RetroArch-Win64\\thumbnails\\Sony - PlayStation",
+         "C:\\RetroArch-Win64\\thumbnails\\Sony - PlayStation\\Named_Boxarts",
+         "C:\\RetroArch-Win64\\thumbnails\\Sony - PlayStation\\Named_Snaps",
+         "C:\\RetroArch-Win64\\thumbnails\\Sony - PlayStation\\Named_Titles"
       };
 
    size_t numPaths = sizeof(dirs)/sizeof(char*);

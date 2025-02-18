@@ -222,7 +222,7 @@ static bool downloader(char **dirs, char **downloaderDirs, char **githubUrls, ch
       } else { // If it's not the first download, fetch Link URL.
             snprintf(psCommand, sizeof(psCommand),
              "powershell -Command \"$response = Invoke-WebRequest -Uri '%s' -Headers @{Accept='application/json'}; "
-                     "$release = $response.Content | ConvertFrom-Json | Sort-Object -Property created_at -Descending; "
+                     "$release = $response.Content | ConvertFrom-Json | Sort-Object -Property published_at -Descending; "
                      "$tag = $release[0].tag_name; "
                      "$name = $release[0].assets[0].name; "
                      "$url = '%s' + $tag + '/' + $name; "
@@ -259,7 +259,7 @@ static bool downloader(char **dirs, char **downloaderDirs, char **githubUrls, ch
                   // Overwrite Current url.txt file with new download Link if download was successfull.
                   snprintf(psCommand, sizeof(psCommand),
              "powershell -Command \"$response = Invoke-WebRequest -Uri '%s' -Headers @{Accept='application/json'}; "
-                     "$release = $response.Content | ConvertFrom-Json | Sort-Object -Property created_at -Descending; "
+                     "$release = $response.Content | ConvertFrom-Json | Sort-Object -Property published_at -Descending; "
                      "$tag = $release[0].tag_name; "
                      "$name = $release[0].assets[0].name; "
                      "$url = '%s' + $tag + '/' + $name; "

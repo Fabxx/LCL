@@ -171,11 +171,7 @@ static char *setup(char **Paths, size_t numPaths, char *executable)
    }
 }
 
-/* in case of rpcs3, we get lastes release LINK from the official website. GitHub artifacts for windows are not available
-   a direct approach is to parse all available Links, and select the most recent one which contains
-   the lastes build.
-
-   Url link and url ID are saved in ASCII to avoid BOM bytes.
+/* in case of rpcs3 on windows the updater is integrated, just download the first object and then let the users update it.
 */
 static bool downloader(char **dirs, char **downloaderDirs, char **githubUrls, char *executable, size_t numPaths)
 {
@@ -219,62 +215,6 @@ static bool downloader(char **dirs, char **downloaderDirs, char **githubUrls, ch
             log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Download successful, extracting emulator.\n");
             return true;
          }
-      } else { // If it's not the first download, fetch Link URL.
-            snprintf(psCommand, sizeof(psCommand),
-             "powershell -Command \"$response = Invoke-WebRequest -Uri '%s' -Headers @{Accept='application/json'}; "
-                     "$release = $response.Content | ConvertFrom-Json | Sort-Object -Property published_at -Descending; "
-                     "$tag = $release[0].tag_name; "
-                     "$name = $release[0].assets[0].name; "
-                     "$url = '%s' + $tag + '/' + $name; "
-                     "[System.IO.File]::WriteAllText('%s', $url, [System.Text.Encoding]::ASCII)\"", 
-                     githubUrls[0], githubUrls[1], downloaderDirs[1]); 
-      
-      if (system(psCommand) != 0) {
-            log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed to fetch update, aborting.\n");
-            return false;
-         } else { // Extract URL, currentID and newID for comparison
-               FILE *urlFile = fopen(downloaderDirs[0], "r");
-               FILE *currentVersionFile = fopen(downloaderDirs[1], "r");
-   
-               if (!urlFile && !currentVersionFile) {
-                   log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Metadata files not found. Aborting.\n");
-                   return false;
-               }
-
-               fgets(url, sizeof(url), urlFile);
-               fgets(currentUrl, sizeof(currentUrl), currentVersionFile);
-
-               fclose(urlFile);
-               fclose(currentVersionFile);
-                
-               if (strcmp(url, currentUrl) != 0) {
-                  log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Update found. Downloading Update\n");
-                  snprintf(downloadCmd, sizeof(downloadCmd),
-                  "powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\rpcs3.7z'\"", url, dirs[0]);
-            
-               if (system(downloadCmd) != 0) {
-                  log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed to download update, aborting.\n");
-                  return false;
-               } else {
-                  // Overwrite Current url.txt file with new download Link if download was successfull.
-                  snprintf(psCommand, sizeof(psCommand),
-             "powershell -Command \"$response = Invoke-WebRequest -Uri '%s' -Headers @{Accept='application/json'}; "
-                     "$release = $response.Content | ConvertFrom-Json | Sort-Object -Property published_at -Descending; "
-                     "$tag = $release[0].tag_name; "
-                     "$name = $release[0].assets[0].name; "
-                     "$url = '%s' + $tag + '/' + $name; "
-                     "[System.IO.File]::WriteAllText('%s', $url, [System.Text.Encoding]::ASCII)\"", 
-                     githubUrls[0], githubUrls[1], downloaderDirs[0]); 
-                  
-                  if (system(psCommand) != 0) {
-                     log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed to update current version file. Aborting.\n");
-                     return false;
-                  }
-                  log_cb(RETRO_LOG_ERROR, "[LAUNCHER-INFO]: Download successful, extracting update.\n");
-                  return true;
-               }
-         } 
-      }
    }
    log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: No update found.\n");
    return false;

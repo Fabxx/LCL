@@ -29,7 +29,7 @@ jobs:
         LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
         COMMIT_COUNT=$(git rev-list ${LAST_TAG}..HEAD --count)
 
-        BASE_VERSION=0.0.1
+        BASE_VERSION=0.0.2
         COMMIT_HASH=$(git rev-parse --short HEAD)
 
         if [[ $COMMIT_COUNT -ge 100 ]]; then
@@ -55,7 +55,7 @@ jobs:
     - name: Build emulators for Linux
       run: |
         mkdir -p cores
-        for dir in linux/*/; do
+        for dir in cores/*; do
           if [ -f "$dir/Makefile" ]; then
             echo "Building $dir"
             make -C "$dir"
@@ -90,7 +90,7 @@ jobs:
         LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
         COMMIT_COUNT=$(git rev-list ${LAST_TAG}..HEAD --count)
 
-        BASE_VERSION=0.0.1
+        BASE_VERSION=0.0.2
         COMMIT_HASH=$(git rev-parse --short HEAD)
 
         if [[ $COMMIT_COUNT -ge 100 ]]; then
@@ -124,7 +124,7 @@ jobs:
       run: |
         mkdir -p cores
         mkdir -p info
-        for dir in windows/*/; do
+        for dir in cores/*; do
           if [ -f "$dir/Makefile" ]; then
             echo "Building $dir"
             make -C "$dir"
@@ -162,7 +162,7 @@ jobs:
         LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
         COMMIT_COUNT=$(git rev-list ${LAST_TAG}..HEAD --count)
 
-        BASE_VERSION=0.0.1
+        BASE_VERSION=0.0.2
         COMMIT_HASH=$(git rev-parse --short HEAD)
 
         if [[ $COMMIT_COUNT -ge 100 ]]; then
@@ -188,7 +188,7 @@ jobs:
     - name: Build emulators for macOS
       run: |
         mkdir -p cores
-        for dir in macOS/*/; do
+        for dir in cores/*; do
           if [ -d "$dir" ] && [ -f "$dir/Makefile" ]; then
             echo "Building $dir"
             make -C "$dir"

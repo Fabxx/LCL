@@ -451,7 +451,7 @@ static bool extractor(char **dirs)
 
   char *url = "https://www.7-zip.org/a/7z2409-mac.tar.xz";
 
-   snprintf(command, sizeof(command), "wget -O %s/7z.tar.xz %s", Paths[0], url);
+   snprintf(command, sizeof(command), "wget -O %s/7z.tar.xz %s", dirs[0], url);
 
    if (system(command) != 0) {
       log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed to obtain 7z for extraction, aborting.\n");

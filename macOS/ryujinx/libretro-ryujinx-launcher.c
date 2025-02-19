@@ -300,7 +300,7 @@ static bool extractor(char **Paths)
    snprintf(extractCmd, sizeof(extractCmd), 
     "mkdir %s/tmp_dir && "
            "tar -xvzf %s/ryujinx.tar.gz -C %s/tmp_dir && " 
-           "mv %s/tmp_dir/* %s/ryujinx.app && " \
+           "mv %s/tmp_dir/* %s && " \
            "rm -rf %s/tmp_dir && "
            "rm %s/ryujinx.tar.gz && "
            "chmod +x %s", 

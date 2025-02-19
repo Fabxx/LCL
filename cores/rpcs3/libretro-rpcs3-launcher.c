@@ -468,9 +468,9 @@ static bool extractor(char **dirs)
            "rm -rf %s/7z && "
            "rm %s/rpcs3.7z && "
            "chmod +x %s",
-           Paths[0], Paths[0], Paths[0], Paths[0], 
-           Paths[0], Paths[0], Paths[0], Paths[0], 
-           Paths[0], Paths[0], Paths[0], Paths[6]);
+           dirs[0], dirs[0], dirs[0], dirs[0], 
+           dirs[0], dirs[0], dirs[0], dirs[0], 
+           dirs[0], dirs[0], dirs[0], dirs[6]);
    #endif             
 
    if (system(command) != 0) {

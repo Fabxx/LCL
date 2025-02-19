@@ -452,8 +452,8 @@ static bool extractor(char **dirs)
            "rm -rf %s/tmp_dir && "
            "rm %s/pcsx2.tar.xz && "
            "chmod +x %s", 
-           Paths[0], Paths[0], Paths[0], Paths[0], 
-           Paths[0], Paths[0], Paths[0], Paths[6]);
+           dirs[0], dirs[0], dirs[0], dirs[0], 
+           dirs[0], dirs[0], dirs[0], Paths[6]);
    #endif             
 
    if (system(command) != 0) {

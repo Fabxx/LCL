@@ -279,7 +279,7 @@ static bool downloader(char **Paths, char **downloaderDirs, char **githubUrls)
    snprintf(command, sizeof(command), "wget -O %s/rpcs3.7z %s", Paths[0], url);
    
    #elif defined __WIN32__
-   snprintf(command, sizeof(command),"powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\rpcs3.7z'\"", url, dirs[0]);
+   snprintf(command, sizeof(command),"powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\rpcs3.7z'\"", url, Paths[0]);
 
    #endif
    

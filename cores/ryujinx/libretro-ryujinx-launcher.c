@@ -278,7 +278,7 @@ static bool downloader(char **Paths, char **downloaderDirs, char **githubUrls)
    snprintf(command, sizeof(command), "wget -O %s/Ryujinx.tar.gz %s", Paths[0], url);
    
    #elif defined __WIN32__
-      snprintf(command, sizeof(command),"powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\Ryujinx.zip'\"", url, dirs[0]);
+      snprintf(command, sizeof(command),"powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\Ryujinx.zip'\"", url, Paths[0]);
 
    #endif
    

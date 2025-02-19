@@ -363,12 +363,12 @@ static bool updater(char **Paths, char **downloaderDirs, char **githubUrls)
                
                #elif defined __APPLE__
                
-               snprintf(downloadCmd, sizeof(downloadCmd), 
+               snprintf(command, sizeof(command), 
                        "wget -O %s/duckstation.zip %s", Paths[0], url);
                
                #elif defined __WIN32__
                
-                snprintf(downloadCmd, sizeof(downloadCmd),
+                snprintf(command, sizeof(command),
                        "powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\duckstation.zip'\"", url, Paths[0]);
                #endif
 

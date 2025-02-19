@@ -453,9 +453,9 @@ static bool extractor(char **dirs)
            "rm %s/mGBA.dmg && "
            "rm -rf %s/mnt && "
            "chmod +x %s", 
-           Paths[0], Paths[0], Paths[0], Paths[0], 
-           Paths[0], Paths[0], Paths[0], Paths[0], 
-           Paths[6]);
+           dirs[0], dirs[0], dirs[0], dirs[0], 
+           dirs[0], dirs[0], dirs[0], dirs[0], 
+           dirs[6]);
    #endif             
 
    if (system(command) != 0) {

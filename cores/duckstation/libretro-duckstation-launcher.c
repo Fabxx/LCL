@@ -224,7 +224,7 @@ static bool downloader(char **Paths, char **downloaderDirs, char **githubUrls)
 
    #elif defined __WIN32__
 
-   char assetId = "5";
+   char *assetId = "5";
    #endif
    
       #if defined __linux__ || __APPLE__

@@ -289,7 +289,7 @@ static bool downloader(char **Paths, char **downloaderDirs, char **githubUrls)
 // If it's not the first download, fetch newVersion ID.
 static bool updater(char **Paths, char **downloaderDirs, char **githubUrls)
 {
-   char url[260] = {0}, currentVersion[32] = {0}, newVersion[32] = {0}, command[1024] = {0};
+   char url[260] = {0}, currentVersion[260] = {0}, newVersion[260] = {0}, command[1024] = {0};
 
    #ifdef __linux__
 

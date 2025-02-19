@@ -445,7 +445,7 @@ static bool extractor(char **dirs)
             dirs[0], dirs[0], dirs[0]);
 
    #elif defined __APPLE__
-   snprintf(extractCmd, sizeof(extractCmd), 
+   snprintf(command, sizeof(command), 
            "mkdir %s/tmp_dir && "
            "tar -xvzf %s/pcsx2.tar.xz -C %s/tmp_dir && " 
            "mv %s/tmp_dir/* %s && "

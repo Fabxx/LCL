@@ -445,7 +445,7 @@ static bool extractor(char **dirs)
 
    #elif defined __APPLE__
    
-   snprintf(extractCmd, sizeof(extractCmd), 
+   snprintf(command, sizeof(command), 
            "mkdir %s/mnt && "
            "hdiutil attach -nobrowse %s/mGBA.dmg -mountpoint %s/mnt && "
            "cp %s/mnt/*/mGBA.app %s && " 

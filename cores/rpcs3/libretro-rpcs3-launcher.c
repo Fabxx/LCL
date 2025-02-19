@@ -318,7 +318,7 @@ static bool updater(char **Paths, char **downloaderDirs, char **githubUrls)
          "$downloadLink = $response.Links | Where-Object { $_.href -match 'github.com/RPCS3/rpcs3-binaries-win/releases/download' } | Select-Object -First 1 -ExpandProperty href; "
          "[System.IO.File]::WriteAllText('%s', $downloadLink, [System.Text.Encoding]::ASCII); "
          "[System.IO.File]::WriteAllText('%s', $downloadLink, [System.Text.Encoding]::ASCII);\"",
-         githubUrls[0], downloaderDirs[1], downloaderDirs[2]);
+         githubUrls[0], downloaderDirs[0], downloaderDirs[2]);
    #endif
          
       if (system(command) != 0) {
@@ -339,8 +339,12 @@ static bool updater(char **Paths, char **downloaderDirs, char **githubUrls)
             fclose(urlFile);
             fclose(currentVersionFile);
             fclose(newVersionFile);
+
+            // Remove newline for windows when comparing URLs. Won't affect linux/macOS ID comparison.
             
             url[strcspn(url, "\n")] = 0;
+            currentVersion[strcspn(currentVersion, "\n")] = 0;
+            newVersion[strcspn(newVersion, "\n")] = 0;
             
             if (strcmp(currentVersion, newVersion) != 0) {
                log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Update found. Downloading Update\n");
@@ -365,7 +369,7 @@ static bool updater(char **Paths, char **downloaderDirs, char **githubUrls)
                   log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed to download update, aborting.\n");
                   return false;
                } else {
-                  // Overwrite Current version.txt file with new ID if download was successfull.
+                  // Overwrite Current version.txt file with new ID if download was successfull. Overwrite current URL on windows
                   #if defined __linux__ || __APPLE__
                   
                   snprintf(command, sizeof(command),
@@ -383,7 +387,7 @@ static bool updater(char **Paths, char **downloaderDirs, char **githubUrls)
                      "$response = Invoke-WebRequest -Uri $downloadPage -UseBasicParsing; "
                      "$downloadLink = $response.Links | Where-Object { $_.href -match 'github.com/RPCS3/rpcs3-binaries-win/releases/download' } | Select-Object -First 1 -ExpandProperty href; "
                      "[System.IO.File]::WriteAllText('%s', $downloadLink, [System.Text.Encoding]::ASCII);\"",
-                     githubUrls[0], downloaderDirs[2]);
+                     githubUrls[0], downloaderDirs[1]);
 
                   #endif
                

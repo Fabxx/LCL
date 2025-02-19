@@ -389,7 +389,7 @@ static bool updater(char **Paths, char **downloaderDirs, char **githubUrls)
 
                   #elif defined __WIN32__
                   
-                  snprintf(psCommand, sizeof(psCommand),
+                  snprintf(command, sizeof(command),
                            "powershell -Command \"$response = (Invoke-WebRequest -Uri '%s' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json; "
                            "$id   = $response.assets[%c].id;"
                            "[System.IO.File]::WriteAllText('%s', $id, [System.Text.Encoding]::ASCII); \"", 
@@ -564,6 +564,9 @@ bool retro_load_game(const struct retro_game_info *info)
       "C:\\RetroArch-Win64\\system\\xenia_canary\\1.CurrentVersion.txt",
       "C:\\RetroArch-Win64\\system\\xenia_canary\\2.NewVersion.txt",
    };
+
+   size_t numPaths = sizeof(dirs)/sizeof(char*);
+   size_t dirPaths = sizeof(downloaderDirs)/sizeof(char*);
 
    #endif
 

@@ -199,7 +199,7 @@ static bool setup(char **Paths, size_t numPaths, char *executable)
    hFind = FindFirstFile(searchPath, &findFileData);
 
    if (hFind != INVALID_HANDLE_VALUE) {
-         snprintf(executable, MAX_PATH+1, "%s\\%s", Paths[0], findFileData.cFileName);
+         snprintf(executable, MAX_PATH*2, "%s\\%s", Paths[0], findFileData.cFileName);
          FindClose(hFind);
          log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Found emulator: %s\n", executable);
          return true;
@@ -243,7 +243,7 @@ static bool downloader(char **Paths, char **downloaderDirs, char **githubUrls)
    
    #elif defined __WIN32__
    snprintf(command, sizeof(command),
-   "powershell -Command \"$response = (Invoke-WebRequest -Uri '%s' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json | Sort-Object published_at | ConvertTo-Json; "
+   "powershell -Command \"$response = (Invoke-WebRequest -Uri '%s' -Headers @{Accept='application/json'}).content | ConvertFrom-Json | Sort-Object published_at | ConvertTo-Json; "
    "$tag  = $response[%s].tag_name;"
    "$name = $response[%s].assets[%s].name;"
    "$id   = $response[%s].assets[%s].id;"
@@ -595,7 +595,6 @@ bool retro_load_game(const struct retro_game_info *info)
    };
 
    size_t numPaths = sizeof(dirs)/sizeof(char*);
-   size_t dirPaths = sizeof(downloaderDirs)/sizeof(char*);
 
    #endif
 

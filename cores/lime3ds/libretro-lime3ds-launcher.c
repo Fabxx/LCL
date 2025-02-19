@@ -199,7 +199,7 @@ static bool setup(char **Paths, size_t numPaths, char *executable)
    hFind = FindFirstFile(searchPath, &findFileData);
 
    if (hFind != INVALID_HANDLE_VALUE) {
-         snprintf(executable, MAX_PATH+1, "%s\\%s", Paths[0], findFileData.cFileName);
+         snprintf(executable, MAX_PATH*2, "%s\\%s", Paths[0], findFileData.cFileName);
          FindClose(hFind);
          log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Found emulator: %s\n", executable);
          return true;
@@ -421,8 +421,14 @@ static bool extractor(char **dirs)
    #ifdef __WIN32__
 
    snprintf(command, sizeof(command),
-            "powershell -Command \"Expand-Archive -Path '%s\\lime3ds.zip' -DestinationPath '%s' -Force; Remove-Item -Path '%s\\lime3ds.zip' -Force\"", 
-            dirs[0], dirs[0], dirs[0]);
+"powershell -Command \""
+      "Expand-Archive -Path '%s\\lime3ds.zip' -DestinationPath '%s' -Force; "
+      "Remove-Item -Path '%s\\lime3ds.zip' -Force; "
+      "Move-Item -Path '%s\\lime3ds*\\*' -Destination '%s' -Force; "
+      "Remove-Item -Path '%s\\lime3ds-2*' -Recurse -Force"
+      "\"",
+      dirs[0], dirs[0], dirs[0], dirs[0], 
+      dirs[0], dirs[0]);
    #elif defined __APPLE__
    
    snprintf(command, sizeof(command), 
@@ -553,7 +559,6 @@ bool retro_load_game(const struct retro_game_info *info)
    };
 
    size_t numPaths = sizeof(dirs)/sizeof(char*);
-   size_t dirPaths = sizeof(downloaderDirs)/sizeof(char*);
 
    #endif
 

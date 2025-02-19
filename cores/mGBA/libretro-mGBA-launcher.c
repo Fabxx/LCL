@@ -199,7 +199,7 @@ static bool setup(char **Paths, size_t numPaths, char *executable)
    hFind = FindFirstFile(searchPath, &findFileData);
 
    if (hFind != INVALID_HANDLE_VALUE) {
-         snprintf(executable, MAX_PATH+1, "%s\\%s", Paths[0], findFileData.cFileName);
+         snprintf(executable, MAX_PATH*2, "%s\\%s", Paths[0], findFileData.cFileName);
          FindClose(hFind);
          log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Found emulator: %s\n", executable);
          return true;
@@ -438,10 +438,16 @@ static bool extractor(char **dirs)
          log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: 7z module installed, extracting emulator.\n");
       }
    }
-
+   
    snprintf(command, sizeof(command),
-            "powershell -Command \"Expand-7zip -ArchiveFileName '%s\\mGBA.7z' -TargetPath '%s'; Remove-Item -Path '%s\\mGBA.7z' -Force\"", 
-            dirs[0], dirs[0], dirs[0]);
+"powershell -Command \""
+      "Expand-7zip -ArchiveFileName '%s\\mGBA.7z' -TargetPath '%s'; "
+      "Remove-Item -Path '%s\\mGBA.7z' -Force; "
+      "Move-Item -Path '%s\\mGBA*\\*' -Destination '%s' -Force; "
+      "Remove-Item -Path '%s\\mGBA-0*' -Recurse -Force"
+      "\"",
+      dirs[0], dirs[0], dirs[0], dirs[0], 
+      dirs[0], dirs[0]);
 
    #elif defined __APPLE__
    
@@ -565,7 +571,6 @@ bool retro_load_game(const struct retro_game_info *info)
    };
 
    size_t numPaths = sizeof(dirs)/sizeof(char*);
-   size_t dirPaths = sizeof(downloaderDirs)/sizeof(char*);
 
    #endif
 

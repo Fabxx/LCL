@@ -250,7 +250,7 @@ static bool downloader(char **Paths, char **downloaderDirs, char **githubUrls)
    "$url  = '%s' + $tag + '/' + $name; "
    "[System.IO.File]::WriteAllText('%s', $url, [System.Text.Encoding]::ASCII); "
    "[System.IO.File]::WriteAllText('%s', $id, [System.Text.Encoding]::ASCII); \"", 
-   githubUrls[0], assetId assetId, assetId, 
+   githubUrls[0], assetId, assetId, assetId, 
    assetId, assetId, githubUrls[1], downloaderDirs[0], 
    downloaderDirs[2]);
    #endif

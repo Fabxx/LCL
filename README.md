@@ -27,7 +27,6 @@ So i've made these cores to facilitate the usage of emulators, and to use the up
 - `jq` JSON parser package for Linux
 - `bash` interpreter for Linux
 - `powershell` for Windows
-- `7z4Powershell` module for Windows, to extract 7z archive. Needed by emulators released in `7z` format.
   
 # Usage
 

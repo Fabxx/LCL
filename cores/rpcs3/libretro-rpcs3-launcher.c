@@ -241,18 +241,15 @@ static bool downloader(char **Paths, char **downloaderDirs, char **githubUrls)
          githubUrls[0], assetId, assetId, githubUrls[1], 
          downloaderDirs[0], downloaderDirs[1]);
    
-   #elif defined __WIN32__
+   #elif defined __WIN32__ // On windows be like PPSSPP, extract URL directly from website.
+
    snprintf(command, sizeof(command),
-   "powershell -Command \"$response = (Invoke-WebRequest -Uri '%s' -Headers @{Accept='application/json'}).content | ConvertFrom-Json | Sort-Object published_at | ConvertTo-Json; "
-   "$tag  = $response[%s].tag_name;"
-   "$name = $response[%s].assets[%s].name;"
-   "$id   = $response[%s].assets[%s].id;"
-   "$url  = '%s' + $tag + '/' + $name; "
-   "[System.IO.File]::WriteAllText('%s', $url, [System.Text.Encoding]::ASCII); "
-   "[System.IO.File]::WriteAllText('%s', $id, [System.Text.Encoding]::ASCII); \"", 
-   githubUrls[0], assetId, assetId, assetId, 
-   assetId, assetId, githubUrls[1], downloaderDirs[0], 
-   downloaderDirs[2]);
+   "powershell -Command \"$downloadPage = '%s'; "
+   "$response = Invoke-WebRequest -Uri $downloadPage -UseBasicParsing; "
+   "$downloadLink = $response.Links | Where-Object { $_.href -match 'github.com/RPCS3/rpcs3-binaries-win/releases/download' } | Select-Object -First 1 -ExpandProperty href; "
+   "[System.IO.File]::WriteAllText('%s', $downloadLink, [System.Text.Encoding]::ASCII); \"",
+    githubUrls[0], downloaderDirs[0]);
+
    #endif
 
    if (system(command) != 0) {
@@ -323,16 +320,11 @@ static bool updater(char **Paths, char **downloaderDirs, char **githubUrls)
                githubUrls[0], assetId, assetId, githubUrls[1], downloaderDirs[0], downloaderDirs[2]);
    #elif defined __WIN32__
    snprintf(command, sizeof(command),
-               "powershell -Command \"$response = (Invoke-WebRequest -Uri '%s' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json | Sort-Object published_at | ConvertTo-Json; "
-               "$tag  = $response[%s].tag_name;"
-               "$name = $response[%s].assets[%s].name;"
-               "$id   = $response[%s].assets[%s].id;"
-               "$url  = '%s' + $tag + '/' + $name; "
-               "[System.IO.File]::WriteAllText('%s', $url, [System.Text.Encoding]::ASCII); "
-               "[System.IO.File]::WriteAllText('%s', $id, [System.Text.Encoding]::ASCII); \"", 
-               githubUrls[0], assetId, assetId, assetId, 
-               assetId, assetId, githubUrls[1], downloaderDirs[0], 
-               downloaderDirs[2]);
+   "powershell -Command \"$downloadPage = '%s'; "
+   "$response = Invoke-WebRequest -Uri $downloadPage -UseBasicParsing; "
+   "$downloadLink = $response.Links | Where-Object { $_.href -match 'github.com/RPCS3/rpcs3-binaries-win/releases/download' } | Select-Object -First 1 -ExpandProperty href; "
+   "[System.IO.File]::WriteAllText('%s', $downloadLink, [System.Text.Encoding]::ASCII); \"",
+    githubUrls[0], downloaderDirs[1]);
    #endif
          
       if (system(command) != 0) {
@@ -575,8 +567,7 @@ bool retro_load_game(const struct retro_game_info *info)
    #elif defined __WIN32__
 
    char *githubUrls[] = {
-      "https://api.github.com/repos/RPCS3/rpcs3-binaries-win/releases",
-      "https://github.com/RPCS3/rpcs3-binaries-win/releases/download"
+      "https://rpcs3.net/download",
    };
 
    char *dirs[] = {

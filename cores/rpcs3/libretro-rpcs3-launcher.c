@@ -221,10 +221,6 @@ static bool downloader(char **Paths, char **downloaderDirs, char **githubUrls)
    #elif defined __APPLE__
 
    char *assetId = "0";
-
-   #elif defined __WIN32__
-
-   char *assetId = "0";
    #endif
    
       #if defined __linux__ || __APPLE__
@@ -241,14 +237,15 @@ static bool downloader(char **Paths, char **downloaderDirs, char **githubUrls)
          githubUrls[0], assetId, assetId, githubUrls[1], 
          downloaderDirs[0], downloaderDirs[1]);
    
-   #elif defined __WIN32__ // On windows be like PPSSPP, extract URL directly from website.
+   #elif defined __WIN32__ // On windows be like PPSSPP, extract URL directly from website, save it in currentVersion.txt for comparison with updater
 
    snprintf(command, sizeof(command),
    "powershell -Command \"$downloadPage = '%s'; "
    "$response = Invoke-WebRequest -Uri $downloadPage -UseBasicParsing; "
    "$downloadLink = $response.Links | Where-Object { $_.href -match 'github.com/RPCS3/rpcs3-binaries-win/releases/download' } | Select-Object -First 1 -ExpandProperty href; "
-   "[System.IO.File]::WriteAllText('%s', $downloadLink, [System.Text.Encoding]::ASCII); \"",
-    githubUrls[0], downloaderDirs[0]);
+   "[System.IO.File]::WriteAllText('%s', $downloadLink, [System.Text.Encoding]::ASCII);"
+   "[System.IO.File]::WriteAllText('%s', $downloadLink, [System.Text.Encoding]::ASCII);\"",
+    githubUrls[0], downloaderDirs[0], downloaderDirs[1]);
 
    #endif
 
@@ -301,10 +298,6 @@ static bool updater(char **Paths, char **downloaderDirs, char **githubUrls)
    #elif defined __APPLE__
 
    char *assetId = "0";
-
-   #elif defined __WIN32__
-
-   char *assetId = "0";
    #endif
    
    #if defined __linux__ || __APPLE__
@@ -321,16 +314,17 @@ static bool updater(char **Paths, char **downloaderDirs, char **githubUrls)
    #elif defined __WIN32__
    snprintf(command, sizeof(command),
    "powershell -Command \"$downloadPage = '%s'; "
-   "$response = Invoke-WebRequest -Uri $downloadPage -UseBasicParsing; "
-   "$downloadLink = $response.Links | Where-Object { $_.href -match 'github.com/RPCS3/rpcs3-binaries-win/releases/download' } | Select-Object -First 1 -ExpandProperty href; "
-   "[System.IO.File]::WriteAllText('%s', $downloadLink, [System.Text.Encoding]::ASCII); \"",
-    githubUrls[0], downloaderDirs[1]);
+         "$response = Invoke-WebRequest -Uri $downloadPage -UseBasicParsing; "
+         "$downloadLink = $response.Links | Where-Object { $_.href -match 'github.com/RPCS3/rpcs3-binaries-win/releases/download' } | Select-Object -First 1 -ExpandProperty href; "
+         "[System.IO.File]::WriteAllText('%s', $downloadLink, [System.Text.Encoding]::ASCII); "
+         "[System.IO.File]::WriteAllText('%s', $downloadLink, [System.Text.Encoding]::ASCII);\"",
+         githubUrls[0], downloaderDirs[1], downloaderDirs[2]);
    #endif
          
       if (system(command) != 0) {
          log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed to fetch update, aborting.\n");
          return false;
-      } else { // Extract URL, currentID and newID for comparison
+      } else {
          FILE *urlFile = fopen(downloaderDirs[0], "r");
          FILE *currentVersionFile = fopen(downloaderDirs[1], "r");
          FILE *newVersionFile = fopen(downloaderDirs[2], "r");
@@ -347,7 +341,7 @@ static bool updater(char **Paths, char **downloaderDirs, char **githubUrls)
             fclose(newVersionFile);
             
             url[strcspn(url, "\n")] = 0;
-
+            
             if (strcmp(currentVersion, newVersion) != 0) {
                log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Update found. Downloading Update\n");
 
@@ -385,10 +379,11 @@ static bool updater(char **Paths, char **downloaderDirs, char **githubUrls)
                   #elif defined __WIN32__
                   
                   snprintf(command, sizeof(command),
-                           "powershell -Command \"$response = (Invoke-WebRequest -Uri '%s' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json | Sort-Object published_at | ConvertTo-Json; "
-                           "$id   = $response[%s].assets[%s].id;"
-                           "[System.IO.File]::WriteAllText('%s', $id, [System.Text.Encoding]::ASCII); \"", 
-                           githubUrls[0], assetId, assetId, downloaderDirs[1]);
+               "powershell -Command \"$downloadPage = '%s'; "
+                     "$response = Invoke-WebRequest -Uri $downloadPage -UseBasicParsing; "
+                     "$downloadLink = $response.Links | Where-Object { $_.href -match 'github.com/RPCS3/rpcs3-binaries-win/releases/download' } | Select-Object -First 1 -ExpandProperty href; "
+                     "[System.IO.File]::WriteAllText('%s', $downloadLink, [System.Text.Encoding]::ASCII);\"",
+                     githubUrls[0], downloaderDirs[2]);
 
                   #endif
                

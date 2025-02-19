@@ -216,15 +216,15 @@ static bool downloader(char **Paths, char **downloaderDirs, char **githubUrls)
    
    #ifdef __linux__
 
-   char assetId = '0';
+   char *assetId = "0";
 
    #elif defined __APPLE__
 
-   char assetId = '0';
+   char *assetId = "0";
 
    #elif defined __WIN32__
 
-   char assetId = '0';
+   char *assetId = "0";
    #endif
    
       #if defined __linux__ || __APPLE__
@@ -232,8 +232,8 @@ static bool downloader(char **Paths, char **downloaderDirs, char **githubUrls)
       snprintf(command, sizeof(command),
   "bash -c 'json_data=$(curl -s -H \"Accept: application/json\" \"%s\"); "
          "tag=$(echo \"$json_data\" | jq -r \".tag_name\"); "
-         "name=$(echo \"$json_data\" | jq -r \".assets[%c].name\"); "
-         "id=$(echo \"$json_data\" | jq -r \".assets[%c].id\"); "
+         "name=$(echo \"$json_data\" | jq -r \".assets[%s].name\"); "
+         "id=$(echo \"$json_data\" | jq -r \".assets[%s].id\"); "
          "if [ -z \"$tag\" ] || [ -z \"$name\" ] || [ \"$tag\" = \"null\" ] || [ \"$id\" = \"null\" ]  || [ \"$name\" = \"null\" ]; then exit 1; fi; "
          "url=\"%s$tag/$name\"; "
          "echo \"$url\" > \"%s\";"
@@ -244,9 +244,9 @@ static bool downloader(char **Paths, char **downloaderDirs, char **githubUrls)
    #elif defined __WIN32__
    snprintf(command, sizeof(command),
    "powershell -Command \"$response = (Invoke-WebRequest -Uri '%s' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json | Sort-Object published_at | ConvertTo-Json; "
-   "$tag  = $response[%c].tag_name;"
-   "$name = $response[%c].assets[%c].name;"
-   "$id   = $response[%c].assets[%c].id;"
+   "$tag  = $response[%s].tag_name;"
+   "$name = $response[%s].assets[%s].name;"
+   "$id   = $response[%s].assets[%s].id;"
    "$url  = '%s' + $tag + '/' + $name; "
    "[System.IO.File]::WriteAllText('%s', $url, [System.Text.Encoding]::ASCII); "
    "[System.IO.File]::WriteAllText('%s', $id, [System.Text.Encoding]::ASCII); \"", 
@@ -299,23 +299,23 @@ static bool updater(char **Paths, char **downloaderDirs, char **githubUrls)
 
    #ifdef __linux__
 
-   char assetId = '0';
+   char *assetId = "0";
 
    #elif defined __APPLE__
 
-   char assetId = '0';
+   char *assetId = "0";
 
    #elif defined __WIN32__
 
-   char assetId = '0';
+   char *assetId = "0";
    #endif
    
    #if defined __linux__ || __APPLE__
       snprintf(command, sizeof(command),
        "bash -c 'json_data=$(curl -s -H \"Accept: application/json\" \"%s\"); "
                "tag=$(echo \"$json_data\" | jq -r \".tag_name\"); "
-               "name=$(echo \"$json_data\" | jq -r \".assets[%c].name\"); "
-               "id=$(echo \"$json_data\" | jq -r \".assets[%c].id\"); "
+               "name=$(echo \"$json_data\" | jq -r \".assets[%s].name\"); "
+               "id=$(echo \"$json_data\" | jq -r \".assets[%s].id\"); "
                "if [ -z \"$tag\" ] || [ -z \"$name\" ] || [ \"$tag\" = \"null\" ] || [ \"$id\" = \"null\" ]  || [ \"$name\" = \"null\" ]; then exit 1; fi; "
                "url=\"%s$tag/$name\"; "
                "echo \"$url\" > \"%s\";"
@@ -324,9 +324,9 @@ static bool updater(char **Paths, char **downloaderDirs, char **githubUrls)
    #elif defined __WIN32__
    snprintf(command, sizeof(command),
                "powershell -Command \"$response = (Invoke-WebRequest -Uri '%s' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json | Sort-Object published_at | ConvertTo-Json; "
-               "$tag  = $response[%c].tag_name;"
-               "$name = $response[%c].assets[%c].name;"
-               "$id   = $response[%c].assets[%c].id;"
+               "$tag  = $response[%s].tag_name;"
+               "$name = $response[%s].assets[%s].name;"
+               "$id   = $response[%s].assets[%s].id;"
                "$url  = '%s' + $tag + '/' + $name; "
                "[System.IO.File]::WriteAllText('%s', $url, [System.Text.Encoding]::ASCII); "
                "[System.IO.File]::WriteAllText('%s', $id, [System.Text.Encoding]::ASCII); \"", 
@@ -384,7 +384,7 @@ static bool updater(char **Paths, char **downloaderDirs, char **githubUrls)
                   
                   snprintf(command, sizeof(command),
                   "bash -c 'json_data=$(curl -s -H \"Accept: application/json\" \"%s\"); "
-                        "id=$(echo \"$json_data\" | jq -r \".assets[%c].id\"); "
+                        "id=$(echo \"$json_data\" | jq -r \".assets[%s].id\"); "
                         "if [ \"$id\" = \"null\" ]; then exit 1; fi; "
                         "url=\"%s$tag/$name\"; "
                         "echo \"$id\"  > \"%s\"'",
@@ -394,7 +394,7 @@ static bool updater(char **Paths, char **downloaderDirs, char **githubUrls)
                   
                   snprintf(command, sizeof(command),
                            "powershell -Command \"$response = (Invoke-WebRequest -Uri '%s' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json | Sort-Object published_at | ConvertTo-Json; "
-                           "$id   = $response[%c].assets[%c].id;"
+                           "$id   = $response[%s].assets[%s].id;"
                            "[System.IO.File]::WriteAllText('%s', $id, [System.Text.Encoding]::ASCII); \"", 
                            githubUrls[0], assetId, assetId, downloaderDirs[1]);
 

@@ -453,7 +453,7 @@ static bool extractor(char **dirs)
            "rm %s/pcsx2.tar.xz && "
            "chmod +x %s", 
            dirs[0], dirs[0], dirs[0], dirs[0], 
-           dirs[0], dirs[0], dirs[0], Paths[6]);
+           dirs[0], dirs[0], dirs[0], dirs[6]);
    #endif             
 
    if (system(command) != 0) {

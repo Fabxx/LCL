@@ -570,6 +570,7 @@ bool retro_load_game(const struct retro_game_info *info)
    if (!setup(dirs, numPaths, executable)) {
       if (downloader(dirs, downloaderDirs, githubUrls)) {
          extractor(dirs);
+         setup(dirs, numPaths, executable);
       }
    } else {
       if (updater(dirs, downloaderDirs, githubUrls)) {
@@ -580,6 +581,7 @@ bool retro_load_game(const struct retro_game_info *info)
    #elif defined __linux__
    if (!setup(dirs, numPaths, executable)) {
       downloader(dirs, downloaderDirs, githubUrls);
+      setup(dirs, numPaths, executable);
    } else {
       updater(dirs, downloaderDirs, githubUrls);
    }

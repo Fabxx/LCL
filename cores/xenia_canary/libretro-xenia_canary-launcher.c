@@ -596,6 +596,7 @@ bool retro_load_game(const struct retro_game_info *info)
    if (!setup(dirs, numPaths, executable)) {
       if (downloader(dirs, downloaderDirs, githubUrls)) {
          if (extractor(dirs)) {
+            setup(dirs, numPaths, executable);
             patchDownloader(dirs, githubUrls);
          }
       }

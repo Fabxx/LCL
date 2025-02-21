@@ -22,6 +22,12 @@ So i've made these cores to facilitate the usage of emulators, and to use the up
 
 - macOS: `~/Library/Application Support/RetroArch/system`
 
+If you want a portable config, you can move the retroarch folder somewhere else, and then make a shortcut/symlink to where the folder is needed. Example:
+
+`ln -s "/mnt/media/fabx/WD 1TB/retroarch" "/home/fabx/.config"` for linux
+
+this will create a link to the folder and retroarch will be able to read your content even if you moved the folder elsewhere.
+
 # Dependencies
 
 - `jq` JSON parser package for Linux

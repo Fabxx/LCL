@@ -57,7 +57,7 @@ void retro_get_system_info(struct retro_system_info *info)
    info->library_name     = "rpcs3 Launcher";
    info->library_version  = "0.1a";
    info->need_fullpath    = true;
-   info->valid_extensions = "iso";
+   info->valid_extensions = "BIN";
 }
 
 static retro_video_refresh_t video_cb;

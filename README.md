@@ -29,16 +29,28 @@ So i've made these cores to facilitate the usage of emulators, and to use the up
 - `bash` interpreter for Linux
 - `powershell` for Windows
   
-# Usage
+# Core behavior
 
-The core does the following:
+1) Fetch (first boot):
+   - invoke a web request on github API, to fetch: `tag name`, `url`, `url id`, `asset name`.
+   - Compose the final URL by concatenating base url and the retreived details.
+   - download and extract the detected asset archive, and depending on the extension use the appropriate
+     extraction command, which can be: `tar`, `unzip`, `Expand-Archive`, `Expand-7zip`
+   - export url and IDs in txt files for updater.
 
-- Download the emulator files if it doesn't exist. It will always try to fetch the lastes release.
-- Setup thumbnail folders for boxarts, snaps and title images for the selected system
-- Create a `bios` folder under `retroarch/system/system name`
-- let the user run the core, with BIOS (if supported) or with a game from playlist
-- On next boot will check if an update is available by comparing the current and new URL ids used to fetch
-  the release, if they are different it means that a new release with a new url is out, and it will be downloaded.
+2) Update:
+   - If the binary is detected, contact the github API to retreive the new URL or URL id, and compare them.
+   - If URLs/IDs are different, a new download on the newest URL will be invoked.
+   - The current version will be overwritten for next comparisons.
+   - In case of RPCS3 For windows and PPSSPP, the URLs are directly retreived from the website HTML, which contain directly
+     the latest url.
+
+3) Thumnail Setup
+   - The cores automatically create the directories needed for artworks. See below for more info.
+4) Boot
+   - If choosing `Run core` the emulator will boot without the `info->path` which contains the path to the game.
+     and if supported it will run with the given BIOS.
+   - If running a game from a playlist `info->path` is given as a argument to the emulator executable.
 
 # Core installation
 
@@ -118,8 +130,6 @@ NOTE: Covers must be in `.png` and placed in `thumbnails/system name` folder of 
 
 Retroarch initializes `info` structure and `info->path` member to get the game to load. If no game is given structure is NULL, if a game is given,
 `info->path` can be passed as argument, both `info` and `info->path` must NOT be NULL.
-
-If no games are expected don't pass info->path, just string arguments.
 
 # Reporting Issues
 To check the error of a core, launch retroarch from terminal (linux) or enable console logging from windows.

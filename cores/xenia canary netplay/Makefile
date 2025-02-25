@@ -29,7 +29,7 @@ else ifneq ($(findstring MINGW,$(shell uname -a)),)
 	system_platform = win
 endif
 
-TARGET_NAME := xenia_netplay_launcher
+TARGET_NAME := xenia-canary-netplay_launcher
 LIBM		= -lm
 
 ifeq ($(ARCHFLAGS),)
@@ -111,7 +111,7 @@ else
    CFLAGS += -O3
 endif
 
-OBJECTS := libretro-xenia_netplay-launcher.o
+OBJECTS := libretro-xenia-canary-netplay-launcher.o
 CFLAGS += -Wall -pedantic $(fpic)
 
 ifneq (,$(findstring qnx,$(platform)))

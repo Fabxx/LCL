@@ -195,11 +195,11 @@ static bool setup(char **Paths, size_t numPaths, char *executable)
    }
 
    // Lookup for Emulator Executable inside Emulator folder. hFind resolves wildcard.
-   snprintf(searchPath, MAX_PATH, "%s\\xenia_canary.exe", Paths[0]);
+   snprintf(searchPath, MAX_PATH, "%s", Paths[6]);
    hFind = FindFirstFile(searchPath, &findFileData);
 
    if (hFind != INVALID_HANDLE_VALUE) {
-         snprintf(executable, MAX_PATH*2, "%s\\%s", Paths[0], findFileData.cFileName);
+         snprintf(executable, MAX_PATH*2, "%s", Paths[6]);
          FindClose(hFind);
          log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Found emulator: %s\n", executable);
          return true;
@@ -216,15 +216,15 @@ static bool downloader(char **Paths, char **downloaderDirs, char **githubUrls)
    
    #ifdef __linux__
 
-   char *assetId = "1";
+   char *assetId = "0";
 
    #elif defined __APPLE__
 
-   char *assetId = "1";
+   char *assetId = "0";
 
    #elif defined __WIN32__
 
-   char *assetId = "1";
+   char *assetId = "0";
    #endif
    
       #if defined __linux__ || __APPLE__
@@ -298,15 +298,15 @@ static bool updater(char **Paths, char **downloaderDirs, char **githubUrls)
 
    #ifdef __linux__
 
-   char *assetId = "1";
+   char *assetId = "0";
 
    #elif defined __APPLE__
 
-   char *assetId = "1";
+   char *assetId = "0";
 
    #elif defined __WIN32__
 
-   char *assetId = "1";
+   char *assetId = "0";
    #endif
    
    #if defined __linux__ || __APPLE__
@@ -489,7 +489,7 @@ bool retro_load_game(const struct retro_game_info *info)
          "/.config/retroarch/thumbnails/Microsoft - Xbox 360/Named_Boxarts",
          "/.config/retroarch/thumbnails/Microsoft - Xbox 360/Named_Snaps",
          "/.config/retroarch/thumbnails/Microsoft - Xbox 360/Named_Titles",
-         "/.config/retroarch/system/xenia_canary/xenia_canary.exe" // search Path for glob.
+         "/.config/retroarch/system/xenia_canary/xenia_canary_netplay.exe" // search Path for glob.
       };
    
    // Emulator build versions and URL to download. Content is generated from powershell cmds
@@ -525,7 +525,7 @@ bool retro_load_game(const struct retro_game_info *info)
          "/Library/Application Support/RetroArch/thumbnails/Microsoft - Xbox 360/Named_Boxarts",
          "/Library/Application Support/RetroArch/thumbnails/Microsoft - Xbox 360/Named_Snaps",
          "/Library/Application Support/RetroArch/thumbnails/Microsoft - Xbox 360/Named_Titles",
-         "/Library/Application Support/RetroArch/system/xenia_canary/xenia_canary.exe" // search Path for glob.
+         "/Library/Application Support/RetroArch/system/xenia_canary/xenia_canary_netplay.exe" // search Path for glob.
       };
 
    // Emulator build versions and URL to download. Content is generated from powershell cmds
@@ -556,7 +556,8 @@ bool retro_load_game(const struct retro_game_info *info)
          "C:\\RetroArch-Win64\\thumbnails\\Microsoft - Xbox 360",
          "C:\\RetroArch-Win64\\thumbnails\\Microsoft - Xbox 360\\Named_Boxarts",
          "C:\\RetroArch-Win64\\thumbnails\\Microsoft - Xbox 360\\Named_Snaps",
-         "C:\\RetroArch-Win64\\thumbnails\\Microsoft - Xbox 360\\Named_Titles"
+         "C:\\RetroArch-Win64\\thumbnails\\Microsoft - Xbox 360\\Named_Titles",
+         "C:\\RetroArch-Win64\\system\\xenia_canary\\xenia_canary_netplay.exe" //searchPath
       };
    
    char *downloaderDirs[] = {
@@ -570,18 +571,16 @@ bool retro_load_game(const struct retro_game_info *info)
    #endif
 
    char *githubUrls[] = {
-      "https://api.github.com/repos/xenia-canary/xenia-canary-releases/releases/latest",
-      "https://github.com/xenia-canary/xenia-canary-releases/releases/download/",
+      "https://api.github.com/repos/AdrianCassar/xenia-canary/releases/latest",
+      "https://github.com/AdrianCassar/xenia-canary/releases/download/",
       "https://github.com/xenia-canary/game-patches/releases/latest/download/game-patches.zip"
    };
 
    char executable[513] = {0};
 
    /**
-    * If no emulator was found, download and extract it (windows/macOS)
-    * if no emulator was found, download it and set execution permissions (linux)
-    * If emulator was found check for updates and extract them. (windows/macOS)
-    * If emulator was found check for updates and set execution permissions (linux)
+    * If no emulator was found, download and extract it
+    * If emulator was found check for updates and extract them.
     */
 
     #if defined __linux__ || __APPLE__

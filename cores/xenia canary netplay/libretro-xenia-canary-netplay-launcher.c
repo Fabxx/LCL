@@ -54,10 +54,10 @@ void retro_set_controller_port_device(unsigned port, unsigned device)
 void retro_get_system_info(struct retro_system_info *info)
 {
    memset(info, 0, sizeof(*info));
-   info->library_name     = "xenia_canary Launcher";
+   info->library_name     = "Xenia Canary Netplay Launcher";
    info->library_version  = "0.1a";
    info->need_fullpath    = true;
-   info->valid_extensions = "iso";
+   info->valid_extensions = "iso|xex|zar";
 }
 
 static retro_video_refresh_t video_cb;
@@ -132,7 +132,7 @@ void retro_reset(void)
 /**
  * libretro callback; Called every game tick.
  *
- * Once the core has run, we will attempt to exit, since xenia_canary is done.
+ * Once the core has run, we will attempt to exit, since Xenia Canary Netplay is done.
  */
 void retro_run(void)
 {
@@ -140,7 +140,7 @@ void retro_run(void)
    unsigned stride = 320;
    video_cb(frame_buf, 320, 240, stride << 2);
 
-   // Shutdown the environment now that xenia_canary has loaded and quit.
+   // Shutdown the environment now that Xenia Canary Netplay has loaded and quit.
    environ_cb(RETRO_ENVIRONMENT_SHUTDOWN, NULL);
 }
 
@@ -272,13 +272,13 @@ static bool downloader(char **Paths, char **downloaderDirs, char **githubUrls)
 
    #ifdef __linux__
    snprintf(command, sizeof(command), 
-   "wget -O %s/xenia_canary.zip %s", Paths[0], url);
+   "wget -O %s/Xenia Canary Netplay.zip %s", Paths[0], url);
    
    #elif defined __APPLE__
-   snprintf(command, sizeof(command), "wget -O %s/xenia_canary.zip %s", Paths[0], url);
+   snprintf(command, sizeof(command), "wget -O %s/Xenia Canary Netplay.zip %s", Paths[0], url);
    
    #elif defined __WIN32__
-      snprintf(command, sizeof(command),"powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\xenia_canary.zip'\"", url, Paths[0]);
+      snprintf(command, sizeof(command),"powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\Xenia Canary Netplay.zip'\"", url, Paths[0]);
 
    #endif
    
@@ -359,17 +359,17 @@ static bool updater(char **Paths, char **downloaderDirs, char **githubUrls)
                #ifdef __linux__
 
                snprintf(command, sizeof(command), 
-               "wget -O %s/xenia_canary.zip %s && chmod +x %s", Paths[0], url, Paths[6]);
+               "wget -O %s/Xenia Canary Netplay.zip %s && chmod +x %s", Paths[0], url, Paths[6]);
                
                #elif defined __APPLE__
                
                snprintf(command, sizeof(command), 
-                       "wget -O %s/xenia_canary.zip %s", Paths[0], url);
+                       "wget -O %s/Xenia Canary Netplay.zip %s", Paths[0], url);
                
                #elif defined __WIN32__
                
                 snprintf(command, sizeof(command),
-                       "powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\xenia_canary.zip'\"", url, Paths[0]);
+                       "powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\Xenia Canary Netplay.zip'\"", url, Paths[0]);
                #endif
 
                if (system(command) != 0) {
@@ -420,15 +420,15 @@ static bool extractor(char **dirs)
    #ifdef __WIN32__
    
    snprintf(command, sizeof(command),
-            "powershell -Command \"Expand-Archive -Path '%s\\xenia_canary.zip' -DestinationPath '%s' -Force; Remove-Item -Path '%s\\xenia_canary.zip' -Force\"", 
+            "powershell -Command \"Expand-Archive -Path '%s\\Xenia Canary Netplay.zip' -DestinationPath '%s' -Force; Remove-Item -Path '%s\\Xenia Canary Netplay.zip' -Force\"", 
             dirs[0], dirs[0], dirs[0]);
    #elif defined __APPLE__ || __linux__
    snprintf(command, sizeof(command), 
    "mkdir %s/tmp_dir && "
-           "unzip %s/xenia_canary.zip -d %s/tmp_dir && " 
+           "unzip %s/Xenia Canary Netplay.zip -d %s/tmp_dir && " 
            "mv %s/tmp_dir/* %s && " \
            "rm -rf %s/tmp_dir && "
-           "rm %s/xenia_canary.zip && "
+           "rm %s/Xenia Canary Netplay.zip && "
            "chmod +x %s", 
            dirs[0], dirs[0], dirs[0], dirs[0], 
            dirs[0], dirs[0], dirs[0], dirs[6]);
@@ -483,20 +483,20 @@ bool retro_load_game(const struct retro_game_info *info)
    const char *home = getenv("HOME");
 
    char *dirs[] = {
-         "/.config/retroarch/system/xenia_canary",
-         "/.config/retroarch/system/xenia_canary/bios",
+         "/.config/retroarch/system/Xenia Canary Netplay",
+         "/.config/retroarch/system/Xenia Canary Netplay/bios",
          "/.config/retroarch/thumbnails/Microsoft - Xbox 360",
          "/.config/retroarch/thumbnails/Microsoft - Xbox 360/Named_Boxarts",
          "/.config/retroarch/thumbnails/Microsoft - Xbox 360/Named_Snaps",
          "/.config/retroarch/thumbnails/Microsoft - Xbox 360/Named_Titles",
-         "/.config/retroarch/system/xenia_canary/xenia_canary_netplay.exe" // search Path for glob.
+         "/.config/retroarch/system/Xenia Canary Netplay/xenia_canary_netplay.exe" // search Path for glob.
       };
    
    // Emulator build versions and URL to download. Content is generated from powershell cmds
    char *downloaderDirs[] = {
-      "/.config/retroarch/system/xenia_canary/0.Url.txt",
-      "/.config/retroarch/system/xenia_canary/1.CurrentVersion.txt",
-      "/.config/retroarch/system/xenia_canary/2.NewVersion.txt",
+      "/.config/retroarch/system/Xenia Canary Netplay/0.Url.txt",
+      "/.config/retroarch/system/Xenia Canary Netplay/1.CurrentVersion.txt",
+      "/.config/retroarch/system/Xenia Canary Netplay/2.NewVersion.txt",
    };
 
    size_t numPaths = sizeof(dirs)/sizeof(char*);
@@ -519,20 +519,20 @@ bool retro_load_game(const struct retro_game_info *info)
    const char *home = getenv("HOME");
 
    char *dirs[] = {
-         "/Library/Application Support/RetroArch/system/xenia_canary",
-         "/Library/Application Support/RetroArch/system/xenia_canary/bios",
+         "/Library/Application Support/RetroArch/system/Xenia Canary Netplay",
+         "/Library/Application Support/RetroArch/system/Xenia Canary Netplay/bios",
          "/Library/Application Support/RetroArch/thumbnails/Microsoft - Xbox 360",
          "/Library/Application Support/RetroArch/thumbnails/Microsoft - Xbox 360/Named_Boxarts",
          "/Library/Application Support/RetroArch/thumbnails/Microsoft - Xbox 360/Named_Snaps",
          "/Library/Application Support/RetroArch/thumbnails/Microsoft - Xbox 360/Named_Titles",
-         "/Library/Application Support/RetroArch/system/xenia_canary/xenia_canary_netplay.exe" // search Path for glob.
+         "/Library/Application Support/RetroArch/system/Xenia Canary Netplay/xenia_canary_netplay.exe" // search Path for glob.
       };
 
    // Emulator build versions and URL to download. Content is generated from powershell cmds
    char *downloaderDirs[] = {
-      "/Library/Application Support/RetroArch/system/xenia_canary/0.Url.txt",
-      "/Library/Application Support/RetroArch/system/xenia_canary/1.CurrentVersion.txt",
-      "/Library/Application Support/RetroArch/system/xenia_canary/2.NewVersion.txt",
+      "/Library/Application Support/RetroArch/system/Xenia Canary Netplay/0.Url.txt",
+      "/Library/Application Support/RetroArch/system/Xenia Canary Netplay/1.CurrentVersion.txt",
+      "/Library/Application Support/RetroArch/system/Xenia Canary Netplay/2.NewVersion.txt",
    };
 
    size_t numPaths = sizeof(dirs)/sizeof(char*);
@@ -551,19 +551,19 @@ bool retro_load_game(const struct retro_game_info *info)
    #elif defined __WIN32__
 
    char *dirs[] = {
-         "C:\\RetroArch-Win64\\system\\xenia_canary",
-         "C:\\RetroArch-Win64\\system\\xenia_canary\\bios",
+         "C:\\RetroArch-Win64\\system\\Xenia Canary Netplay",
+         "C:\\RetroArch-Win64\\system\\Xenia Canary Netplay\\bios",
          "C:\\RetroArch-Win64\\thumbnails\\Microsoft - Xbox 360",
          "C:\\RetroArch-Win64\\thumbnails\\Microsoft - Xbox 360\\Named_Boxarts",
          "C:\\RetroArch-Win64\\thumbnails\\Microsoft - Xbox 360\\Named_Snaps",
          "C:\\RetroArch-Win64\\thumbnails\\Microsoft - Xbox 360\\Named_Titles",
-         "C:\\RetroArch-Win64\\system\\xenia_canary\\xenia_canary_netplay.exe" //searchPath
+         "C:\\RetroArch-Win64\\system\\Xenia Canary Netplay\\xenia_canary_netplay.exe" //searchPath
       };
    
    char *downloaderDirs[] = {
-      "C:\\RetroArch-Win64\\system\\xenia_canary\\0.Url.txt",
-      "C:\\RetroArch-Win64\\system\\xenia_canary\\1.CurrentVersion.txt",
-      "C:\\RetroArch-Win64\\system\\xenia_canary\\2.NewVersion.txt",
+      "C:\\RetroArch-Win64\\system\\Xenia Canary Netplay\\0.Url.txt",
+      "C:\\RetroArch-Win64\\system\\Xenia Canary Netplay\\1.CurrentVersion.txt",
+      "C:\\RetroArch-Win64\\system\\Xenia Canary Netplay\\2.NewVersion.txt",
    };
 
    size_t numPaths = sizeof(dirs)/sizeof(char*);
@@ -573,7 +573,7 @@ bool retro_load_game(const struct retro_game_info *info)
    char *githubUrls[] = {
       "https://api.github.com/repos/AdrianCassar/xenia-canary/releases/latest",
       "https://github.com/AdrianCassar/xenia-canary/releases/download/",
-      "https://github.com/xenia-canary/game-patches/releases/latest/download/game-patches.zip"
+      "https://github.com/xenia-netplay/game-patches/releases/latest/download/game-patches.zip"
    };
 
    char executable[513] = {0};
@@ -586,7 +586,7 @@ bool retro_load_game(const struct retro_game_info *info)
     #if defined __linux__ || __APPLE__
     
     if (system("wineboot") != 0 || system("winetricks --force dxvk vkd3d") != 0) {
-      log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: wine and winetricks are needed to run xenia canary.\n");
+      log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: wine and winetricks are needed to run xenia netplay.\n");
       return false;
     }
     #endif
@@ -615,10 +615,10 @@ bool retro_load_game(const struct retro_game_info *info)
       }
 
       if (system(executable) == 0) {
-         log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Finished running xenia_canary.\n");
+         log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Finished running Xenia Canary Netplay.\n");
          return true;
       } else {
-         log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed running xenia_canary.\n");
+         log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed running Xenia Canary Netplay.\n");
       }
    }
    return false;

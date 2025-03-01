@@ -44,6 +44,8 @@ So i've made these cores to facilitate the usage of emulators, and to use the up
    - The current version will be overwritten for next comparisons.
    - In case of RPCS3 For windows and PPSSPP, the URLs are directly retreived from the website HTML, which contain directly
      the latest url.
+   - In case of mGBA for macOS, the `.dmg` image is downloaded, then `hdiutil` mounts it to a `tmp_dir` with user privileges,
+     and then the needed content is copied.
 
 3) Thumnail Setup
    - The cores automatically create the directories needed for artworks. See below for more info.

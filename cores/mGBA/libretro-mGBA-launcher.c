@@ -12,7 +12,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-#elif defined __WIN32__
+#elif defined _WIN32
 #include <windows.h>
 #include <direct.h>
 #endif
@@ -179,7 +179,7 @@ static bool setup(char **Paths, size_t numPaths, char *executable)
          globfree(&buf);
       }
 
-   #elif defined __WIN32__
+   #elif defined _WIN32
 
    WIN32_FIND_DATA findFileData;
    HANDLE hFind;
@@ -222,7 +222,7 @@ static bool downloader(char **Paths, char **downloaderDirs, char **githubUrls)
 
    char *assetId = "3";
 
-   #elif defined __WIN32__
+   #elif defined _WIN32
 
    char *assetId = "17";
    #endif
@@ -241,7 +241,7 @@ static bool downloader(char **Paths, char **downloaderDirs, char **githubUrls)
          githubUrls[0], assetId, assetId, githubUrls[1], 
          downloaderDirs[0], downloaderDirs[1]);
    
-   #elif defined __WIN32__
+   #elif defined _WIN32
     snprintf(command, sizeof(command),
       "powershell -Command \"$response = (Invoke-WebRequest -Uri '%s' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json; "
       "$tag  = $response.tag_name;"
@@ -277,7 +277,7 @@ static bool downloader(char **Paths, char **downloaderDirs, char **githubUrls)
    #elif defined __APPLE__
    snprintf(command, sizeof(command), "wget -O %s/mGBA.dmg %s", Paths[0], url);
    
-   #elif defined __WIN32__
+   #elif defined _WIN32
    snprintf(command, sizeof(command),"powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\mGBA.7z'\"", url, Paths[0]);
 
    #endif
@@ -304,7 +304,7 @@ static bool updater(char **Paths, char **downloaderDirs, char **githubUrls)
 
    char *assetId = "3";
 
-   #elif defined __WIN32__
+   #elif defined _WIN32
 
    char *assetId = "17";
    #endif
@@ -320,7 +320,7 @@ static bool updater(char **Paths, char **downloaderDirs, char **githubUrls)
                "echo \"$url\" > \"%s\";"
                "echo \"$id\"  > \"%s\"'",
                githubUrls[0], assetId, assetId, githubUrls[1], downloaderDirs[0], downloaderDirs[2]);
-   #elif defined __WIN32__
+   #elif defined _WIN32
    snprintf(command, sizeof(command),
                "powershell -Command \"$response = (Invoke-WebRequest -Uri '%s' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json; "
                "$tag  = $response.tag_name;"
@@ -366,7 +366,7 @@ static bool updater(char **Paths, char **downloaderDirs, char **githubUrls)
                snprintf(command, sizeof(command), 
                        "wget -O %s/mGBA.dmg %s", Paths[0], url);
                
-               #elif defined __WIN32__
+               #elif defined _WIN32
                
                 snprintf(command, sizeof(command),
                        "powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\mGBA.7z'\"", url, Paths[0]);
@@ -387,7 +387,7 @@ static bool updater(char **Paths, char **downloaderDirs, char **githubUrls)
                         "echo \"$id\"  > \"%s\"'",
                         githubUrls[0], assetId, githubUrls[1], downloaderDirs[1]);
 
-                  #elif defined __WIN32__
+                  #elif defined _WIN32
                   
                   snprintf(command, sizeof(command),
                            "powershell -Command \"$response = (Invoke-WebRequest -Uri '%s' -Headers @{Accept='application/json'}).Content | ConvertFrom-Json; "
@@ -413,13 +413,13 @@ static bool updater(char **Paths, char **downloaderDirs, char **githubUrls)
    return false;
 }
 
-#if defined __APPLE__ || __WIN32__
+#if defined __APPLE__ || _WIN32
 
 static bool extractor(char **dirs)
 {
    char command[1024] = {0};
    
-   #ifdef __WIN32__
+   #ifdef _WIN32
    snprintf(command, sizeof(command), "powershell -Command \"Get-Module -ListAvailable -Name 7Zip4PowerShell\"");
 
    if (system(command) == 0) {
@@ -553,7 +553,7 @@ bool retro_load_game(const struct retro_game_info *info)
       asprintf(&downloaderDirs[i], "%s%s", home, tmp );
    }
 
-   #elif defined __WIN32__
+   #elif defined _WIN32
 
    char *dirs[] = {
          "C:\\RetroArch-Win64\\system\\mGBA",
@@ -588,7 +588,7 @@ bool retro_load_game(const struct retro_game_info *info)
     * If emulator was found check for updates and set execution permissions (linux)
     */
    
-   #if defined __WIN32__ || __APPLE__
+   #if defined _WIN32 || __APPLE__
    if (!setup(dirs, numPaths, executable)) {
       if (downloader(dirs, downloaderDirs, githubUrls)) {
          extractor(dirs);

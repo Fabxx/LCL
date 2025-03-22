@@ -12,7 +12,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-#elif defined __WIN32__
+#elif defined _WIN32
 #include <windows.h>
 #include <direct.h>
 #endif
@@ -179,7 +179,7 @@ static bool setup(char **Paths, size_t numPaths, char *executable)
          globfree(&buf);
       }
 
-   #elif defined __WIN32__
+   #elif defined _WIN32
 
    WIN32_FIND_DATA findFileData;
    HANDLE hFind;
@@ -237,7 +237,7 @@ static bool downloader(char **Paths, char **downloaderDirs, char **githubUrls)
          githubUrls[0], assetId, assetId, githubUrls[1], 
          downloaderDirs[0], downloaderDirs[1]);
    
-   #elif defined __WIN32__ // On windows be like PPSSPP, extract URL directly from website, save it in currentVersion.txt for comparison with updater
+   #elif defined _WIN32 // On windows be like PPSSPP, extract URL directly from website, save it in currentVersion.txt for comparison with updater
 
    snprintf(command, sizeof(command),
    "powershell -Command \"$downloadPage = '%s'; "
@@ -272,7 +272,7 @@ static bool downloader(char **Paths, char **downloaderDirs, char **githubUrls)
    #elif defined __APPLE__
    snprintf(command, sizeof(command), "wget -O %s/rpcs3.7z %s", Paths[0], url);
    
-   #elif defined __WIN32__
+   #elif defined _WIN32
    snprintf(command, sizeof(command),"powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\rpcs3.7z'\"", url, Paths[0]);
 
    #endif
@@ -311,7 +311,7 @@ static bool updater(char **Paths, char **downloaderDirs, char **githubUrls)
                "echo \"$url\" > \"%s\";"
                "echo \"$id\"  > \"%s\"'",
                githubUrls[0], assetId, assetId, githubUrls[1], downloaderDirs[0], downloaderDirs[2]);
-   #elif defined __WIN32__
+   #elif defined _WIN32
    snprintf(command, sizeof(command),
    "powershell -Command \"$downloadPage = '%s'; "
          "$response = Invoke-WebRequest -Uri $downloadPage -UseBasicParsing; "
@@ -359,7 +359,7 @@ static bool updater(char **Paths, char **downloaderDirs, char **githubUrls)
                snprintf(command, sizeof(command), 
                        "wget -O %s/rpcs3.7z %s", Paths[0], url);
                
-               #elif defined __WIN32__
+               #elif defined _WIN32
                
                 snprintf(command, sizeof(command),
                        "powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\rpcs3.7z'\"", url, Paths[0]);
@@ -380,7 +380,7 @@ static bool updater(char **Paths, char **downloaderDirs, char **githubUrls)
                         "echo \"$id\"  > \"%s\"'",
                         githubUrls[0], assetId, githubUrls[1], downloaderDirs[1]);
 
-                  #elif defined __WIN32__
+                  #elif defined _WIN32
                   
                   snprintf(command, sizeof(command),
                "powershell -Command \"$downloadPage = '%s'; "
@@ -408,12 +408,12 @@ static bool updater(char **Paths, char **downloaderDirs, char **githubUrls)
 }
 
 // Linux has directly appImage, no need to extract
-#if defined __WIN32__ || __APPLE__
+#if defined _WIN32 || __APPLE__
 static bool extractor(char **dirs)
 {
    char command[1024] = {0};
    
-   #ifdef __WIN32__
+   #ifdef _WIN32
    
   snprintf(command, sizeof(command), "powershell -Command \"Get-Module -ListAvailable -Name 7Zip4PowerShell\"");
 
@@ -563,7 +563,7 @@ bool retro_load_game(const struct retro_game_info *info)
       asprintf(&downloaderDirs[i], "%s%s", home, tmp );
    }
 
-   #elif defined __WIN32__
+   #elif defined _WIN32
 
    char *githubUrls[] = {
       "https://rpcs3.net/download",
@@ -598,7 +598,7 @@ bool retro_load_game(const struct retro_game_info *info)
     * If emulator was found check for updates and set execution permissions (linux)
     */
    
-   #if defined __WIN32__ || __APPLE__
+   #if defined _WIN32 || __APPLE__
    if (!setup(dirs, numPaths, executable)) {
       if (downloader(dirs, downloaderDirs, githubUrls)) {
          extractor(dirs);

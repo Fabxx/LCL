@@ -54,10 +54,10 @@ void retro_set_controller_port_device(unsigned port, unsigned device)
 void retro_get_system_info(struct retro_system_info *info)
 {
    memset(info, 0, sizeof(*info));
-   info->library_name     = "Xenia Launcher";
+   info->library_name     = "azahar Launcher";
    info->library_version  = "0.1a";
    info->need_fullpath    = true;
-   info->valid_extensions = "iso|xex|zar";
+   info->valid_extensions = "3ds|3dsx|elf|axf|cci|cxi|app";
 }
 
 static retro_video_refresh_t video_cb;
@@ -132,7 +132,7 @@ void retro_reset(void)
 /**
  * libretro callback; Called every game tick.
  *
- * Once the core has run, we will attempt to exit, since Xenia Canary Netplay is done.
+ * Once the core has run, we will attempt to exit, since xemu is done.
  */
 void retro_run(void)
 {
@@ -140,7 +140,7 @@ void retro_run(void)
    unsigned stride = 320;
    video_cb(frame_buf, 320, 240, stride << 2);
 
-   // Shutdown the environment now that Xenia Canary Netplay has loaded and quit.
+   // Shutdown the environment now that xemu has loaded and quit.
    environ_cb(RETRO_ENVIRONMENT_SHUTDOWN, NULL);
 }
 
@@ -171,7 +171,7 @@ static bool setup(char **Paths, size_t numPaths, char *executable)
          for (size_t i = 0; i < buf.gl_pathc; i++) {
             if (stat(buf.gl_pathv[i], &path_stat) == 0 && !S_ISDIR(path_stat.st_mode)) {
                      //Match size of 513 from retro_load_game() function.
-                     snprintf(executable, sizeof(executable)+505, "wine %s", buf.gl_pathv[i]);
+                     snprintf(executable, sizeof(executable)+505, "%s", buf.gl_pathv[i]);
                      log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Found emulator: %s\n", executable);
                      return true;
             }
@@ -195,11 +195,11 @@ static bool setup(char **Paths, size_t numPaths, char *executable)
    }
 
    // Lookup for Emulator Executable inside Emulator folder. hFind resolves wildcard.
-   snprintf(searchPath, MAX_PATH, "%s", Paths[6]);
+   snprintf(searchPath, MAX_PATH, "%s\\azahar.exe", Paths[0]);
    hFind = FindFirstFile(searchPath, &findFileData);
 
    if (hFind != INVALID_HANDLE_VALUE) {
-         snprintf(executable, MAX_PATH*2, "%s", Paths[6]);
+         snprintf(executable, MAX_PATH*2, "%s\\%s", Paths[0], findFileData.cFileName);
          FindClose(hFind);
          log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Found emulator: %s\n", executable);
          return true;
@@ -216,15 +216,15 @@ static bool downloader(char **Paths, char **downloaderDirs, char **githubUrls)
    
    #ifdef __linux__
 
-   char *assetId = "0";
+   char *assetId = "2";
 
    #elif defined __APPLE__
 
-   char *assetId = "0";
+   char *assetId = "3";
 
    #elif defined _WIN32
 
-   char *assetId = "0";
+   char *assetId = "5";
    #endif
    
       #if defined __linux__ || __APPLE__
@@ -272,13 +272,13 @@ static bool downloader(char **Paths, char **downloaderDirs, char **githubUrls)
 
    #ifdef __linux__
    snprintf(command, sizeof(command), 
-   "wget -O %s/xenia.zip %s", Paths[0], url);
+   "wget -O %s/azahar.tar.gz %s", Paths[0], url);
    
    #elif defined __APPLE__
-   snprintf(command, sizeof(command), "wget -O %s/xenia.zip %s", Paths[0], url);
+   snprintf(command, sizeof(command), "wget -O %s/azahar.zip %s", Paths[0], url);
    
    #elif defined _WIN32
-      snprintf(command, sizeof(command),"powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\xenia.zip'\"", url, Paths[0]);
+      snprintf(command, sizeof(command),"powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\azahar.zip'\"", url, Paths[0]);
 
    #endif
    
@@ -298,15 +298,15 @@ static bool updater(char **Paths, char **downloaderDirs, char **githubUrls)
 
    #ifdef __linux__
 
-   char *assetId = "0";
+   char *assetId = "2";
 
    #elif defined __APPLE__
 
-   char *assetId = "0";
+   char *assetId = "3";
 
    #elif defined _WIN32
 
-   char *assetId = "0";
+   char *assetId = "5";
    #endif
    
    #if defined __linux__ || __APPLE__
@@ -359,17 +359,17 @@ static bool updater(char **Paths, char **downloaderDirs, char **githubUrls)
                #ifdef __linux__
 
                snprintf(command, sizeof(command), 
-               "wget -O %s/xenia.zip %s && chmod +x %s", Paths[0], url, Paths[6]);
+               "wget -O %s/azahar.tar.gz %s", Paths[0], url);
                
                #elif defined __APPLE__
                
                snprintf(command, sizeof(command), 
-                       "wget -O %s/xenia.zip %s", Paths[0], url);
+                       "wget -O %s/azahar.zip %s", Paths[0], url);
                
                #elif defined _WIN32
                
                 snprintf(command, sizeof(command),
-                       "powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\xenia.zip'\"", url, Paths[0]);
+                       "powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\azahar.zip'\"", url, Paths[0]);
                #endif
 
                if (system(command) != 0) {
@@ -413,22 +413,41 @@ static bool updater(char **Paths, char **downloaderDirs, char **githubUrls)
    return false;
 }
 
+
 static bool extractor(char **dirs)
 {
    char command[1024] = {0};
    
    #ifdef _WIN32
-   
+
    snprintf(command, sizeof(command),
-            "powershell -Command \"Expand-Archive -Path '%s\\xenia.zip' -DestinationPath '%s' -Force; Remove-Item -Path '%s\\xenia.zip' -Force\"", 
-            dirs[0], dirs[0], dirs[0]);
-   #elif defined __APPLE__ || __linux__
+"powershell -Command \""
+      "Expand-Archive -Path '%s\\azahar.zip' -DestinationPath '%s' -Force; "
+      "Remove-Item -Path '%s\\azahar.zip' -Force; "
+      "Move-Item -Path '%s\\azahar*\\*' -Destination '%s' -Force; "
+      "Remove-Item -Path '%s\\azahar-2*' -Recurse -Force"
+      "\"",
+      dirs[0], dirs[0], dirs[0], dirs[0], 
+      dirs[0], dirs[0]);
+   #elif defined __APPLE__
+   
+   snprintf(command, sizeof(command), 
+           "mkdir %s/tmp_dir && "
+           "unzip %s/azahar.zip -d %s/tmp_dir && " 
+           "mv %s/tmp_dir/*/azahar.app %s && " \
+           "rm -rf %s/tmp_dir && "
+           "rm %s/azahar.zip && "
+           "chmod +x %s", 
+           dirs[0], dirs[0], dirs[0], dirs[0], 
+           dirs[0], dirs[0], dirs[0], dirs[6]);
+   #elif defined __linux__
+
    snprintf(command, sizeof(command), 
    "mkdir %s/tmp_dir && "
-           "unzip %s/xenia.zip -d %s/tmp_dir && " 
-           "mv %s/tmp_dir/* %s && " \
+           "tar -xvzf %s/azahar.tar.gz -C %s/tmp_dir && " 
+           "mv %s/tmp_dir/*/* %s && " \
            "rm -rf %s/tmp_dir && "
-           "rm %s/xenia.zip && "
+           "rm %s/azahar.tar.gz && "
            "chmod +x %s", 
            dirs[0], dirs[0], dirs[0], dirs[0], 
            dirs[0], dirs[0], dirs[0], dirs[6]);
@@ -441,32 +460,6 @@ static bool extractor(char **dirs)
       log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Success.\n");
       return true;
    }
-}
-
-static bool patchDownloader(char **Paths, char **githubUrls)
-{
-   char command[1024] = {0};
-
-   #if defined __linux__ || __APPLE__
-   snprintf(command, sizeof(command),  
-"wget -O %s/patches.zip %s && "
-       "unzip %s/patches.zip -d %s && "
-       "rm -rf %s/patches.zip", 
-       Paths[0], githubUrls[2], Paths[0], Paths[0],
-       Paths[0]);
-
-   #elif defined _WIN32
-   snprintf(command, sizeof(command),
-      "powershell -Command \"Invoke-WebRequest -Uri '%s' -OutFile '%s\\patches.zip';"
-      "Expand-Archive -Path '%s\\patches.zip' -DestinationPath '%s' -Force; Remove-Item -Path '%s\\patches.zip' -Force\"", 
-      githubUrls[2], Paths[0], Paths[0], Paths[0], Paths[0]);
-   #endif
-
-   if (system(command) != 0) {
-      log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed to download patches, aborting.\n");
-      return false;
-   }
-   return true;
 }
 
 /**
@@ -483,20 +476,20 @@ bool retro_load_game(const struct retro_game_info *info)
    const char *home = getenv("HOME");
 
    char *dirs[] = {
-         "/.config/retroarch/system/xenia",
-         "/.config/retroarch/system/xenia/bios",
-         "/.config/retroarch/thumbnails/Microsoft - Xbox 360",
-         "/.config/retroarch/thumbnails/Microsoft - Xbox 360/Named_Boxarts",
-         "/.config/retroarch/thumbnails/Microsoft - Xbox 360/Named_Snaps",
-         "/.config/retroarch/thumbnails/Microsoft - Xbox 360/Named_Titles",
-         "/.config/retroarch/system/xenia/xenia_canary_netplay.exe" // search Path for glob.
+         "/.config/retroarch/system/azahar",
+         "/.config/retroarch/system/azahar/bios",
+         "/.config/retroarch/thumbnails/Nintendo - Nintendo 3DS",
+         "/.config/retroarch/thumbnails/Nintendo - Nintendo 3DS/Named_Boxarts",
+         "/.config/retroarch/thumbnails/Nintendo - Nintendo 3DS/Named_Snaps",
+         "/.config/retroarch/thumbnails/Nintendo - Nintendo 3DS/Named_Titles",
+         "/.config/retroarch/system/azahar/azahar.AppImage" // search Path for glob.
       };
    
    // Emulator build versions and URL to download. Content is generated from powershell cmds
    char *downloaderDirs[] = {
-      "/.config/retroarch/system/xenia/0.Url.txt",
-      "/.config/retroarch/system/xenia/1.CurrentVersion.txt",
-      "/.config/retroarch/system/xenia/2.NewVersion.txt",
+      "/.config/retroarch/system/azahar/0.Url.txt",
+      "/.config/retroarch/system/azahar/1.CurrentVersion.txt",
+      "/.config/retroarch/system/azahar/2.NewVersion.txt",
    };
 
    size_t numPaths = sizeof(dirs)/sizeof(char*);
@@ -519,20 +512,20 @@ bool retro_load_game(const struct retro_game_info *info)
    const char *home = getenv("HOME");
 
    char *dirs[] = {
-         "/Library/Application Support/RetroArch/system/xenia",
-         "/Library/Application Support/RetroArch/system/xenia/bios",
-         "/Library/Application Support/RetroArch/thumbnails/Microsoft - Xbox 360",
-         "/Library/Application Support/RetroArch/thumbnails/Microsoft - Xbox 360/Named_Boxarts",
-         "/Library/Application Support/RetroArch/thumbnails/Microsoft - Xbox 360/Named_Snaps",
-         "/Library/Application Support/RetroArch/thumbnails/Microsoft - Xbox 360/Named_Titles",
-         "/Library/Application Support/RetroArch/system/xenia/xenia_canary_netplay.exe" // search Path for glob.
+         "/Library/Application Support/RetroArch/system/azahar",
+         "/Library/Application Support/RetroArch/system/azahar/bios",
+         "/Library/Application Support/RetroArch/thumbnails/Nintendo - Nintendo 3DS",
+         "/Library/Application Support/RetroArch/thumbnails/Nintendo - Nintendo 3DS/Named_Boxarts",
+         "/Library/Application Support/RetroArch/thumbnails/Nintendo - Nintendo 3DS/Named_Snaps",
+         "/Library/Application Support/RetroArch/thumbnails/Nintendo - Nintendo 3DS/Named_Titles",
+         "/Library/Application Support/RetroArch/system/azahar/azahar.app/Contents/MacOS/azahar" // search Path for glob.
       };
 
    // Emulator build versions and URL to download. Content is generated from powershell cmds
    char *downloaderDirs[] = {
-      "/Library/Application Support/RetroArch/system/xenia/0.Url.txt",
-      "/Library/Application Support/RetroArch/system/xenia/1.CurrentVersion.txt",
-      "/Library/Application Support/RetroArch/system/xenia/2.NewVersion.txt",
+      "/Library/Application Support/RetroArch/system/azahar/0.Url.txt",
+      "/Library/Application Support/RetroArch/system/azahar/1.CurrentVersion.txt",
+      "/Library/Application Support/RetroArch/system/azahar/2.NewVersion.txt",
    };
 
    size_t numPaths = sizeof(dirs)/sizeof(char*);
@@ -551,19 +544,18 @@ bool retro_load_game(const struct retro_game_info *info)
    #elif defined _WIN32
 
    char *dirs[] = {
-         "C:\\RetroArch-Win64\\system\\xenia",
-         "C:\\RetroArch-Win64\\system\\xenia\\bios",
-         "C:\\RetroArch-Win64\\thumbnails\\Microsoft - Xbox 360",
-         "C:\\RetroArch-Win64\\thumbnails\\Microsoft - Xbox 360\\Named_Boxarts",
-         "C:\\RetroArch-Win64\\thumbnails\\Microsoft - Xbox 360\\Named_Snaps",
-         "C:\\RetroArch-Win64\\thumbnails\\Microsoft - Xbox 360\\Named_Titles",
-         "C:\\RetroArch-Win64\\system\\xenia\\xenia_canary_netplay.exe" //searchPath
+         "C:\\RetroArch-Win64\\system\\azahar",
+         "C:\\RetroArch-Win64\\system\\azahar\\bios",
+         "C:\\RetroArch-Win64\\thumbnails\\Nintendo - Nintendo 3DS",
+         "C:\\RetroArch-Win64\\thumbnails\\Nintendo - Nintendo 3DS\\Named_Boxarts",
+         "C:\\RetroArch-Win64\\thumbnails\\Nintendo - Nintendo 3DS\\Named_Snaps",
+         "C:\\RetroArch-Win64\\thumbnails\\Nintendo - Nintendo 3DS\\Named_Titles"
       };
    
    char *downloaderDirs[] = {
-      "C:\\RetroArch-Win64\\system\\xenia\\0.Url.txt",
-      "C:\\RetroArch-Win64\\system\\xenia\\1.CurrentVersion.txt",
-      "C:\\RetroArch-Win64\\system\\xenia\\2.NewVersion.txt",
+      "C:\\RetroArch-Win64\\system\\azahar\\0.Url.txt",
+      "C:\\RetroArch-Win64\\system\\azahar\\1.CurrentVersion.txt",
+      "C:\\RetroArch-Win64\\system\\azahar\\2.NewVersion.txt",
    };
 
    size_t numPaths = sizeof(dirs)/sizeof(char*);
@@ -571,38 +563,25 @@ bool retro_load_game(const struct retro_game_info *info)
    #endif
 
    char *githubUrls[] = {
-      "https://api.github.com/repos/AdrianCassar/xenia-canary/releases/latest",
-      "https://github.com/AdrianCassar/xenia-canary/releases/download/",
-      "https://github.com/xenia-canary/game-patches/releases/latest/download/game-patches.zip"
+      "https://api.github.com/repos/azahar-emu/azahar/releases/latest",
+      "https://github.com/azahar-emu/azahar/releases/download/"
    };
 
    char executable[513] = {0};
 
    /**
     * If no emulator was found, download and extract it
-    * If emulator was found check for updates and extract them.
+    * If emulator was found check for updates and extract them. (windows/macOS)
     */
-
-    #if defined __linux__ || __APPLE__
-    
-    if (system("wineboot") != 0 || system("winetricks --force dxvk vkd3d") != 0) {
-      log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: wine and winetricks are needed to run xenia netplay.\n");
-      return false;
-    }
-    #endif
-
+   
    if (!setup(dirs, numPaths, executable)) {
       if (downloader(dirs, downloaderDirs, githubUrls)) {
-         if (extractor(dirs)) {
-            setup(dirs, numPaths, executable);
-            patchDownloader(dirs, githubUrls);
-         }
+         extractor(dirs);
+         setup(dirs, numPaths, executable);
       }
    } else {
       if (updater(dirs, downloaderDirs, githubUrls)) {
-         if (extractor(dirs)) {
-            patchDownloader(dirs, githubUrls);
-         }
+         extractor(dirs);
       }
    }
 
@@ -610,15 +589,15 @@ bool retro_load_game(const struct retro_game_info *info)
    if (strlen(executable) > 0) {
       if (info != NULL && info->path != NULL) {
          char args[512] = {0};
-         snprintf(args, sizeof(args), " --fullscreen=true \"%s\"", info->path);
+         snprintf(args, sizeof(args), " \"%s\"", info->path);
          strncat(executable, args, sizeof(executable)-1);
       }
 
       if (system(executable) == 0) {
-         log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Finished running Xenia.\n");
+         log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Finished running azahar.\n");
          return true;
       } else {
-         log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed running Xenia.\n");
+         log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR]: Failed running azahar.\n");
       }
    }
    return false;

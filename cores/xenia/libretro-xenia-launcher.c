@@ -171,7 +171,8 @@ static bool setup(char **Paths, size_t numPaths, char *executable)
          for (size_t i = 0; i < buf.gl_pathc; i++) {
             if (stat(buf.gl_pathv[i], &path_stat) == 0 && !S_ISDIR(path_stat.st_mode)) {
                      //Match size of 513 from retro_load_game() function.
-                     snprintf(executable, sizeof(executable)+505, "wine %s", buf.gl_pathv[i]);
+                     // make sure that wine command is executed where the executable is stored, to avoid path issues.
+                     snprintf(executable, sizeof(executable)+505, " cd %s; wine %s", Paths[0], buf.gl_pathv[i]);
                      log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Found emulator: %s\n", executable);
                      return true;
             }
@@ -613,7 +614,7 @@ bool retro_load_game(const struct retro_game_info *info)
          snprintf(args, sizeof(args), " --fullscreen=true \"%s\"", info->path);
          strncat(executable, args, sizeof(executable)-1);
       }
-
+      
       if (system(executable) == 0) {
          log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Finished running Xenia.\n");
          return true;

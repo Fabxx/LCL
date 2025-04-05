@@ -185,7 +185,7 @@ static bool setup(char **Paths, size_t numPaths, char *executable)
    HANDLE hFind;
    char searchPath[MAX_PATH] = {0};
 
-   for (size_t i = 0; i < numPaths; i++) {
+   for (size_t i = 0; i < numPaths-1; i++) {
       if (GetFileAttributes(Paths[i]) == INVALID_FILE_ATTRIBUTES) {
          _mkdir(Paths[i]);
          log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: created folder in %s\n", Paths[i]);

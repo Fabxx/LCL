@@ -4,8 +4,11 @@
 #include <stdarg.h>
 #include <string.h>
 #include "libretro.h"
+
+#ifdef _WIN32
 #include <windows.h>
 #include <direct.h>
+#endif
 
 static uint32_t *frame_buf;
 static struct retro_log_callback logging;
@@ -139,7 +142,7 @@ void retro_run(void)
  * If executable was not found then download it.
  * If executable was found check for updates.
  */
-
+#ifdef _WIN32
 static bool setup(char **Paths, size_t numPaths)
 {
    WIN32_FIND_DATA findFileData;
@@ -157,6 +160,7 @@ static bool setup(char **Paths, size_t numPaths)
 
    return true;
 }
+#endif
 
 /**
  * libretro callback; Called when a game is to be loaded.

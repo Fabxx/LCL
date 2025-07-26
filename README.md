@@ -97,6 +97,13 @@ NOTE: Covers must be in `.png` and placed in `thumbnails/system name` folder of 
 - Game and cover names must be identical if using manual scan.
 
 
+# Thumbnails
+
+Link: https://shorturl.at/uYUnG
+
+- Drag & drop the thumbnails folder inside the retroarch installation folder.
+
+
 # BIOS Notes
   - pcsx2 will run the configured BIOS through `run core` with `-bios` flag, but it must be configured first in pcsx2 GUI
     

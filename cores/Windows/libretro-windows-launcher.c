@@ -142,25 +142,26 @@ void retro_run(void)
  * If executable was not found then download it.
  * If executable was found check for updates.
  */
-#ifdef _WIN32
+
 static bool setup(char **Paths, size_t numPaths)
 {
-   WIN32_FIND_DATA findFileData;
-   HANDLE hFind;
-   char searchPath[MAX_PATH] = {0};
-
-   for (size_t i = 0; i < numPaths; i++) {
-      if (GetFileAttributes(Paths[i]) == INVALID_FILE_ATTRIBUTES) {
-         _mkdir(Paths[i]);
-         log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: created folder in %s\n", Paths[i]);
-      } else {
-         log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: %s folder already exists\n", Paths[i]);
+   #ifdef _WIN32
+      WIN32_FIND_DATA findFileData;
+      HANDLE hFind;
+      char searchPath[MAX_PATH] = {0};
+   
+      for (size_t i = 0; i < numPaths; i++) {
+         if (GetFileAttributes(Paths[i]) == INVALID_FILE_ATTRIBUTES) {
+            _mkdir(Paths[i]);
+            log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: created folder in %s\n", Paths[i]);
+         } else {
+            log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: %s folder already exists\n", Paths[i]);
+         }
       }
-   }
+   #endif
 
    return true;
 }
-#endif
 
 /**
  * libretro callback; Called when a game is to be loaded.

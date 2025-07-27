@@ -99,7 +99,7 @@ NOTE: Covers must be in `.png` and placed in `thumbnails/system name` folder of 
 
 # Thumbnails
 
-Link: https://shorturl.at/uYUnG
+Link: https://shorturl.at/HifC4
 
 - Drag & drop the thumbnails folder inside the retroarch installation folder.
 

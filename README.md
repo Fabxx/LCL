@@ -1,10 +1,3 @@
-# libretro-core-launchers
-Custom launchers to allow the execution of emulators instead of integrated cores.
-
-Initially based on this repo: https://github.com/new-penguin/libretro-xemu-launcher-antimicrox
-
-The code has been refactored to add support to windows/Linux in a more generic way.
-
 # DISCLAIMER
 The cores DO NOT integrate any emulator code. All they do is to download the official emulators from github sources, and then allow the user to use those from retroarch UI.
 
@@ -130,6 +123,7 @@ You should create a issue with these messages, it will help to understand the is
 Example when running xemu (BIOS Configured in xemu itself before launch)
 
 https://github.com/user-attachments/assets/eec0f0eb-acb3-4790-906f-57cd18cc122d
+
 
 
 

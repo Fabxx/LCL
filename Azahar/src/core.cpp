@@ -1,8 +1,4 @@
 #include "core.hpp"
-#include "curl/curl.h"
-#include "nlohmann/json.hpp"
-#include "libretro.h"
-
 #include <iostream>
 #include <filesystem>
 #include <fstream>
@@ -39,16 +35,18 @@ core::core()
         "C:\\RetroArch-Win64\\system\\azahar\\0.Url.txt",
         "C:\\RetroArch-Win64\\system\\azahar\\1.CurrentVersion.txt",
         "C:\\RetroArch-Win64\\system\\azahar\\2.NewVersion.txt",
+        "C:\\RetroArch-Win64\\system\\azahar\\azahar.zip"
     };
 
     _executable = "C:\\RetroArch-Win64\\system\\azahar\\azahar.exe";
     _asset_id = 4;
+	_url_asset_id = 0;
 
 #endif
 
     _urls = {
          "https://api.github.com/repos/azahar-emu/azahar/releases/latest",
-         "https://github.com/azahar-emu/azahar/releases"
+         "https://github.com/azahar-emu/azahar/releases/download"
     };
 }
 
@@ -72,123 +70,190 @@ bool core::retro_core_setup()
     return false;
 }
 
-bool core::retro_core_downloader()
+bool core::set_url(CURL* curl, CURLcode& res)
 {
-    CURL* curl = curl_easy_init();
     std::string jsonResponse;
 
     if (!curl) {
-		log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Failed to initialize cURL.\n");
+        log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Failed to initialize cURL.\n");
         return false;
     }
 
-    curl_easy_setopt(curl, CURLOPT_URL, _urls[0].c_str());
+    curl_easy_setopt(curl, CURLOPT_URL, _urls[_url_ids::LATEST_RELEASE_URL].c_str());
 
     struct curl_slist* headers = nullptr;
-    
     headers = curl_slist_append(headers, "Accept: application/json");
     headers = curl_slist_append(headers, "User-Agent: curl/7.88.1");
 
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &jsonResponse);
-    CURLcode res = curl_easy_perform(curl);
+    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+    curl_easy_setopt(curl, CURLOPT_VERBOSE, 0L);
+    res = curl_easy_perform(curl);
 
     curl_slist_free_all(headers);
-    curl_easy_cleanup(curl);
 
-    if (res != CURLE_OK) {
-		log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] cURL error: %s\n", curl_easy_strerror(res));
+    if (res != CURLE_OK || jsonResponse.empty()) {
+        log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Failed to fetch metadata: %s\n", curl_easy_strerror(res));
         return false;
-    }
-
-    if (jsonResponse.empty()) {
-        log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Empty response from server.\n");
-        return false;
-    } else {
-		log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Received JSON response: %s\n", jsonResponse.c_str());
     }
 
     json parsed;
 
     try {
         parsed = json::parse(jsonResponse);
-    } catch (json::exception e) {
-		log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] JSON parsing error: %s\n", e.what());
-		log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Response: %s\n", jsonResponse.c_str());
+    }
+    catch (const json::exception& e) {
+        log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] JSON parse error: %s\n", e.what());
         return false;
     }
 
-    if (!parsed.contains("tag_name") || !parsed.contains("assets")) {
-		log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] JSON does not contain expected fields.\n");
+    if (!parsed.contains("tag_name") || !parsed.contains("assets") || !parsed["assets"].is_array()) {
+        log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Invalid JSON structure.\n");
         return false;
     }
 
-    std::string tag = parsed["tag_name"];
+    _tag = parsed["tag_name"];
     const auto& assets = parsed["assets"];
 
-    if (assets.size() <= _asset_id) {
-		log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Asset ID %d is out of range.\n", _asset_id);
+    if (_asset_id >= assets.size()) {
+        log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Asset ID %d out of range.\n", _asset_id);
         return false;
     }
 
     std::string name = assets[_asset_id]["name"];
-    int id = assets[_asset_id]["id"];
-    std::string url = _urls[1] + tag + "/" + name;
+    _url_asset_id = assets[_asset_id]["id"];
+    _urls.push_back(_urls[_url_ids::BASE_URL] + "/" + _tag + "/" + name);
 
-    std::ofstream urlOut(_downloaderDirs[0]);
-    std::ofstream idOut(_downloaderDirs[1]);
+    // export final download URL
 
-    if (!urlOut || !idOut) {
-		log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Failed to open output files.\n");
-        return false;
+    std::ofstream urlOut(_downloaderDirs[_downloader_ids::URL_FILE]);
+
+    if (urlOut.is_open()) {
+        urlOut << _urls[_url_ids::DOWNLOAD_URL] << "\n";
+        urlOut.close();
+        log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Download URL saved: %s\n", _urls[_url_ids::DOWNLOAD_URL].c_str());
     }
+    else {
+        log_cb(RETRO_LOG_WARN, "[LAUNCHER-WARN] Could not write to URL file: %s\n", _downloaderDirs[_downloader_ids::URL_FILE].c_str());
+    }
+}
 
-    urlOut << url << "\n";
-    idOut << id << "\n";
-
-    urlOut.close();
-    idOut.close();
-
-    // Scarica l'emulatore
-    std::string outputFile;
-
-#ifdef _WIN32
-    outputFile = _directories[0] + "\\azahar.zip";
-#endif
-
-    // Scarica il file binario
-    curl = curl_easy_init();
+bool core::download(CURL *curl, CURLcode& res, std::string &url)
+{
     if (!curl) {
-		log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Failed to initialize cURL for download.\n");
+        log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Failed to initialize cURL for download.\n");
         return false;
     }
 
-    FILE* outFile = fopen(outputFile.c_str(), "wb");
+    FILE* outFile = fopen(_downloaderDirs[_downloader_ids::DOWNLOADED_FILE].c_str(), "wb");
+
     if (!outFile) {
-		log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Failed to open output file for writing: %s\n", outputFile.c_str());
+        log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Failed to open file: %s\n",
+            _downloaderDirs[_downloader_ids::DOWNLOADED_FILE].c_str());
         return false;
     }
 
+    struct curl_slist* download_headers = nullptr;
+    download_headers = curl_slist_append(download_headers, "User-Agent: curl/7.88.1");
+
+    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, download_headers);
     curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, outFile);
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, NULL);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, nullptr);
+    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+    curl_easy_setopt(curl, CURLOPT_VERBOSE, 0L);
+
     res = curl_easy_perform(curl);
+    curl_slist_free_all(download_headers);
     curl_easy_cleanup(curl);
     fclose(outFile);
 
     if (res != CURLE_OK) {
-        log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] cURL download error: %s\n", curl_easy_strerror(res));
-       return false;
+        log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Failed to download file: %s\n", curl_easy_strerror(res));
+        return false;
     }
-	log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Downloaded emulator to: %s\n", outputFile.c_str());
+
+    log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Download complete: %s\n", 
+        _downloaderDirs[_downloader_ids::DOWNLOADED_FILE].c_str());
     return true;
 }
 
-bool core::retro_core_updater()
+bool core::retro_core_downloader()
 {
-    // This function is not implemented in this example.
-    log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Core updater is not implemented.\n");
+    CURL* curl = curl_easy_init();
+    CURLcode res;
+
+    if (!set_url(curl, res)) {
+        return false;
+    }
+
+    std::string newVersionStr = std::to_string(_url_asset_id);
+    std::string currentVersionStr;
+
+    bool firstBoot = !std::filesystem::exists(_downloaderDirs[_downloader_ids::NEW_VERSION_FILE]);
+
+    if (firstBoot) {
+        log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] First boot detected, downloading emulator...\n");
+
+        if (!download(curl, res, _urls[_url_ids::DOWNLOAD_URL])) {
+            return false;
+        }
+
+        // Export current version ID in both files.
+        std::ofstream currentOut(_downloaderDirs[_downloader_ids::CURRENT_VERSION_FILE]);
+        std::ofstream newOut(_downloaderDirs[_downloader_ids::NEW_VERSION_FILE]);
+
+        if (currentOut.is_open() && newOut.is_open()) {
+            currentOut << newVersionStr << "\n";
+            newOut << newVersionStr << "\n";
+        }
+        else {
+            log_cb(RETRO_LOG_WARN, "[LAUNCHER-WARN] Could not write version files on first boot.\n");
+        }
+
+        return true;
+    }
+
+    // If it's not the first boot, check for updates.
+    std::ifstream currentIn(_downloaderDirs[_downloader_ids::CURRENT_VERSION_FILE]);
+    std::ifstream newIn(_downloaderDirs[_downloader_ids::NEW_VERSION_FILE]);
+
+    if (!currentIn.is_open() || !newIn.is_open()) {
+        log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Could not read version files.\n");
+        return false;
+    }
+
+    std::getline(currentIn, currentVersionStr);
+    
+    std::string newFileVersionStr;
+    std::getline(newIn, newFileVersionStr);
+
+    if (currentVersionStr != newVersionStr) {
+        log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] New version detected (current: %s, new: %s). Downloading update...\n",
+            currentVersionStr.c_str(), newVersionStr.c_str());
+
+        if (!download(curl, res, _urls[_url_ids::DOWNLOAD_URL])) {
+            return false;
+        }
+
+        // Aggiorna i file versione
+        std::ofstream currentOut(_downloaderDirs[_downloader_ids::CURRENT_VERSION_FILE]);
+        std::ofstream newOut(_downloaderDirs[_downloader_ids::NEW_VERSION_FILE]);
+
+        if (currentOut.is_open() && newOut.is_open()) {
+            currentOut << newVersionStr << "\n";
+            newOut << newVersionStr << "\n";
+        }
+        else {
+            log_cb(RETRO_LOG_WARN, "[LAUNCHER-WARN] Could not update version files after download.\n");
+        }
+    }
+    else {
+        log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Core is already up to date (version: %s).\n", currentVersionStr.c_str());
+    }
+
     return true;
 }
 
@@ -196,6 +261,13 @@ bool core::retro_core_extractor()
 {
     // This function is not implemented in this example.
     log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Core extractor is not implemented.\n");
+    return true;
+}
+
+bool core::retro_core_boot(struct retro_system_info* info)
+{
+    // This function is not implemented in this example.
+    log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Core boot is not implemented.\n");
     return true;
 }
 
@@ -321,8 +393,14 @@ bool retro_load_game(const struct retro_game_info* info)
 {
     core core;
 
+	// if first boot download emulator, else check for updates
     if (!core.retro_core_setup()) {
         core.retro_core_downloader();
+        core.retro_core_extractor();
+    }
+    else {
+        core.retro_core_downloader();
+        core.retro_core_extractor();
     }
     return true;
 }

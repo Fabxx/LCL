@@ -1,5 +1,4 @@
 #include "core.hpp"
-#include "portable-file-dialogs.h"
 #include <iostream>
 #include <filesystem>
 #include <fstream>
@@ -20,14 +19,8 @@ static size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::stri
 
 core::core()
 {
-    if (!std::filesystem::exists("system/azahar")) {
-		log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Select retroarch Folder.\n");
-       auto tmp = pfd::select_folder("Select Retroarch Folder").result();
-       _base_path = tmp;
-    } else {
-        _base_path = std::filesystem::current_path();
-		log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Using current path: %s\n", _base_path.string().c_str());
-	}
+   _base_path = std::filesystem::current_path();
+    log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Using current path: %s\n", _base_path.string().c_str());
 
     _directories = {
          (_base_path / "system" / "azahar").string(),
@@ -207,13 +200,13 @@ bool core::retro_core_downloader()
     CURL* curl = curl_easy_init();
     CURLcode res;
 
+    std::string newVersionStr;
+    std::string currentVersionStr;
+
     if (!set_url(curl, res)) {
 		log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Failed to set URL.\n");
         return false;
     }
-
-    std::string newVersionStr = std::to_string(_url_asset_id);
-    std::string currentVersionStr;
 
     bool firstBoot = !std::filesystem::exists(_downloaderDirs[_downloader_ids::NEW_VERSION_FILE]);
 
@@ -250,15 +243,14 @@ bool core::retro_core_downloader()
     }
 
     std::getline(currentIn, currentVersionStr);
-    
-    std::string newFileVersionStr;
-    std::getline(newIn, newFileVersionStr);
+    std::getline(newIn, newVersionStr);
 
     if (currentVersionStr != newVersionStr) {
         log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] New version detected (current: %s, new: %s). Downloading update...\n",
             currentVersionStr.c_str(), newVersionStr.c_str());
 
         if (!download(curl, res, _urls[_url_ids::DOWNLOAD_URL])) {
+			log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Failed to download update.\n");
             return false;
         }
 
@@ -276,6 +268,7 @@ bool core::retro_core_downloader()
     }
     else {
         log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Core is already up to date (version: %s).\n", currentVersionStr.c_str());
+		std::filesystem::remove(_downloaderDirs[_downloader_ids::DOWNLOADED_FILE]);
     }
 
     return true;

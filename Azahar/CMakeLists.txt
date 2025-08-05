@@ -4,6 +4,11 @@ project(libretro_azahar_launcher)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Allow compilation of static libraries on Unix-like systems
+if(LINUX)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
+endif()
+
 include(FetchContent)
 
 # --- JSON (header-only) ---
@@ -13,6 +18,15 @@ FetchContent_Declare(
   GIT_TAG v3.12.0
 )
 FetchContent_MakeAvailable(nlohmann_json)
+
+# --- Portable File Dialogs ---
+FetchContent_Declare(
+  portable_file_dialogs
+  GIT_REPOSITORY https://github.com/samhocevar/portable-file-dialogs.git
+  GIT_TAG        main
+)
+
+FetchContent_MakeAvailable(portable_file_dialogs)
 
 # --- CURL ---
 FetchContent_Declare(
@@ -26,6 +40,7 @@ set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build curl as static library" FORCE)
 set(CURL_STATICLIB ON CACHE BOOL "Build curl as static library" FORCE)
 set(BUILD_CURL_EXE OFF CACHE BOOL "Disable curl CLI" FORCE)
 set(BUILD_TESTING OFF CACHE BOOL "Disable curl tests" FORCE)
+set(CURL_DISABLE_TESTS ON CACHE BOOL "Disable curl-specific tests" FORCE)
 
 # Disable unnecessary protocols
 set(CURL_DISABLE_FTP ON CACHE BOOL "Disable FTP support" FORCE)
@@ -39,19 +54,33 @@ set(CURL_DISABLE_POP3 ON CACHE BOOL "Disable POP3 support" FORCE)
 set(CURL_DISABLE_MQTT ON CACHE BOOL "Disable MQTT support" FORCE)
 set(CURL_DISABLE_SMB ON CACHE BOOL "Disable SMB support" FORCE)
 set(CURL_DISABLE_LDAPS ON CACHE BOOL "Disable LDAPS support" FORCE)
-set(CURL_USE_LIBPSL OFF CACHE BOOL "Disable libpsl usage" FORCE)
+set(CURL_DISABLE_LIBPSL ON CACHE BOOL "Disable libpsl usage" FORCE)
 
 # Platform-specific TLS backend
+# For Linux/macOS, use OpenSSL or GnuTLS where available
 if(WIN32)
     set(CURL_USE_SCHANNEL ON CACHE BOOL "Use Windows native SSL backend" FORCE)
 else()
-    # For Linux/macOS, use OpenSSL (must be installed on system or provided)
-    set(OPENSSL_USE_STATIC_LIBS TRUE)
-    set(CMAKE_USE_OPENSSL ON)
+    find_package(OpenSSL QUIET)
+    if(OpenSSL_FOUND)
+        message(STATUS "Using OpenSSL for TLS")
+        set(OPENSSL_USE_STATIC_LIBS TRUE)
+        set(CMAKE_USE_OPENSSL ON CACHE BOOL "" FORCE)
+        set(USE_OPENSSL ON CACHE BOOL "" FORCE)
+    else()
+        find_package(GnuTLS QUIET)
+        if(GnuTLS_FOUND)
+            message(STATUS "Using GnuTLS for TLS")
+            set(GNUTLS_USE_STATIC_LIBS TRUE)
+            set(CMAKE_USE_GNUTLS ON CACHE BOOL "" FORCE)
+            set(USE_GNUTLS ON CACHE BOOL "" FORCE)
+        else()
+            message(FATAL_ERROR "No supported TLS backend (OpenSSL or GnuTLS) found!")
+        endif()
+    endif()
 endif()
 
 FetchContent_MakeAvailable(curl)
-
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
@@ -64,6 +93,11 @@ add_library(libretro_azahar_launcher SHARED ${SOURCES})
 target_compile_definitions(libretro_azahar_launcher PRIVATE
     CORE_AZAHAR_EXPORTS
     CURL_STATICLIB
+)
+
+target_include_directories(libretro_azahar_launcher PRIVATE
+    ${portable_file_dialogs_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
 target_link_libraries(libretro_azahar_launcher PRIVATE

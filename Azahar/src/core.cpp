@@ -1,4 +1,5 @@
 #include "core.hpp"
+#include "portable-file-dialogs.h"
 #include <iostream>
 #include <filesystem>
 #include <fstream>
@@ -17,37 +18,58 @@ static size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::stri
     return totalSize;
 }
 
-//TODO: make a system to let the user choose the base path of retro arch.
 core::core()
 {
-    std::string retreived_path;
+    if (!std::filesystem::exists("system/azahar")) {
+		log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Select retroarch Folder.\n");
+       auto tmp = pfd::select_folder("Select Retroarch Folder").result();
+       _base_path = tmp;
+    } else {
+        _base_path = std::filesystem::current_path();
+		log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Using current path: %s\n", _base_path.string().c_str());
+	}
 
-#ifdef _WIN32
     _directories = {
-        "C:\\RetroArch-Win64\\system\\azahar",
-        "C:\\RetroArch-Win64\\thumbnails\\Nintendo - Nintendo 3DS",
-        "C:\\RetroArch-Win64\\thumbnails\\Nintendo - Nintendo 3DS\\Named_Boxarts",
-        "C:\\RetroArch-Win64\\thumbnails\\Nintendo - Nintendo 3DS\\Named_Snaps",
-        "C:\\RetroArch-Win64\\thumbnails\\Nintendo - Nintendo 3DS\\Named_Titles"
+         (_base_path / "system" / "azahar").string(),
+         (_base_path / "thumbnails" / "Nintendo - Nintendo 3DS").string(),
+         (_base_path / "thumbnails" / "Nintendo - Nintendo 3DS" / "Named_Boxarts").string(),
+         (_base_path / "thumbnails" / "Nintendo - Nintendo 3DS" / "Named_Snaps").string(),
+         (_base_path / "thumbnails" / "Nintendo - Nintendo 3DS" / "Named_Titles").string()
     };
 
     _downloaderDirs = {
-        "C:\\RetroArch-Win64\\system\\azahar\\0.Url.txt",
-        "C:\\RetroArch-Win64\\system\\azahar\\1.CurrentVersion.txt",
-        "C:\\RetroArch-Win64\\system\\azahar\\2.NewVersion.txt",
-        "C:\\RetroArch-Win64\\system\\azahar\\azahar.zip"
+        (_base_path / "system" / "azahar" / "0.Url.txt").string(),
+        (_base_path / "system" / "azahar" / "1.CurrentVersion.txt").string(),
+        (_base_path / "system" / "azahar" / "2.NewVersion.txt").string(),
+        (_base_path / "system" / "azahar" / "azahar.zip").string()
     };
 
-    _executable = "C:\\RetroArch-Win64\\system\\azahar\\azahar.exe";
+#ifdef _WIN32
     _asset_id = 4;
-	_url_asset_id = 0;
-
+    _executable = (_base_path / "system" / "azahar" / "azahar.exe").string();
+#elif __APPLE__
+    _asset_id = 4;
+    _executable = (_base_path / "system" / "azahar" / "azahar").string();
+#else
+    _asset_id = 4;
+    _executable = (_base_path / "system" / "azahar" / "azahar").string();
 #endif
+    
+	_url_asset_id = 0;
 
     _urls = {
          "https://api.github.com/repos/azahar-emu/azahar/releases/latest",
          "https://github.com/azahar-emu/azahar/releases/download"
     };
+}
+
+bool core::check_retroarch_path()
+{
+    if (_base_path.empty()) {
+        return false;
+	}
+
+    return true;
 }
 
 bool core::retro_core_setup()
@@ -186,6 +208,7 @@ bool core::retro_core_downloader()
     CURLcode res;
 
     if (!set_url(curl, res)) {
+		log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Failed to set URL.\n");
         return false;
     }
 
@@ -198,6 +221,7 @@ bool core::retro_core_downloader()
         log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] First boot detected, downloading emulator...\n");
 
         if (!download(curl, res, _urls[_url_ids::DOWNLOAD_URL])) {
+			log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Failed to download emulator.\n");
             return false;
         }
 
@@ -259,8 +283,6 @@ bool core::retro_core_downloader()
 
 bool core::retro_core_extractor()
 {
-    // This function is not implemented in this example.
-    log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Core extractor is not implemented.\n");
     return true;
 }
 
@@ -392,6 +414,11 @@ void retro_run(void)
 bool retro_load_game(const struct retro_game_info* info)
 {
     core core;
+
+    if (!core.check_retroarch_path()) {
+        log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Invalid Retroarch path.\n");
+        return false;
+	}
 
 	// if first boot download emulator, else check for updates
     if (!core.retro_core_setup()) {

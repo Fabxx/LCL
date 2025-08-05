@@ -10,6 +10,7 @@ class core
 public:
 	core();
 
+	bool check_retroarch_path();
 	bool retro_core_setup();
 	bool retro_core_downloader();
 	bool retro_core_extractor();
@@ -26,6 +27,9 @@ private:
 	
 	std::string _executable;
 	std::string _tag;
+
+	// using path to not worry about separators
+	std::filesystem::path _base_path;
 
 	int _asset_id;
 	int _url_asset_id;

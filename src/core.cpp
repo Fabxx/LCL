@@ -20,9 +20,6 @@ static size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::stri
     return totalSize;
 }
 
-/* In case of retroarch cores, it returns the parent directory of the core.
- * Which is always the retroarch installarion folder.
- */
 core::core()
 {
    _base_path = std::filesystem::current_path();
@@ -45,7 +42,7 @@ core::core()
     };
 
 #ifdef _WIN32
-    _asset_id = WINDOWS;
+    _asset_id = _asset_ids::WINDOWS;
 #ifdef CORE == "azahar"  
 	_executable = (_base_path / "system" / CORE / "azahar.exe").string();
 #elif CORE == "duckstation"
@@ -56,27 +53,59 @@ core::core()
 	_executable = (_base_path / "system" / CORE / "melonDS.exe").string();
 #elif CORE == "pcsx2"
 	_executable = (_base_path / "system" / CORE / "pcsx2.exe").string();
-#endif
-
-#elif __APPLE__
-	_asset_id = MACOS;
-#ifdef CORE == "azahar"
-	_executable = (_base_path / "system" / CORE / CORE).string();
+#elif CORE == "xemu"
+	_executable = (_base_path / "system" / CORE / "xemu.exe").string();
+#elif CORE == "xenia"
+	_executable = (_base_path / "system" / CORE / "xenia_canary_netplay.exe").string();
 #endif
 
 #elif __linux__
-    _asset_id = LINUX;
+    _asset_id = _asset_ids::LINUX;
 #ifdef CORE == "azahar"
 	_executable = (_base_path / "system" / CORE / "azahar.AppImage").string();
+#elif CORE == "duckstation"
+    _executable = (_base_path / "system" / CORE / "DuckStation-x64.AppImage").string();
+#elif CORE == "mgba"
+    _executable = (_base_path / "system" / CORE / "mGBA-0.10.5-appimage-x64.appimage").string();
+#elif CORE == "melonDS"
+    _executable = (_base_path / "system" / CORE / "melonDS-x86_64.AppImage").string();
+#elif CORE == "pcsx2"
+    _executable = (_base_path / "system" / CORE / "pcsx2-v2.4.0-linux-appimage-x64-Qt.AppImage").string();
+#elif CORE == "xemu"
+    _executable = (_base_path / "system" / CORE / "xemu.exe").string();
+#elif CORE == "xenia"
+    _executable = (_base_path / "system" / CORE / "xenia_canary_netplay.exe").string();
 #endif
 #endif
     
-	_url_asset_id = 0;
+    _url_asset_id = 0;
 
-    _urls = {
+#ifdef CORE == "azahar"
+     _urls = {
          "https://api.github.com/repos/azahar-emu/azahar/releases/latest",
          "https://github.com/azahar-emu/azahar/releases/download"
     };
+#elif CORE == "duckstation"
+    _urls = {
+      "https://api.github.com/repos/stenzek/duckstation/releases/latest",
+      "https://github.com/stenzek/duckstation/releases/download/"
+    };
+#elif CORE == "mgba"
+    _urls = {
+      "https://api.github.com/repos/mGBA-emu/mGBA/releases/latest",
+      "https://github.com/mGBA-emu/mGBA/releases/download/"
+    };
+#elif CORE == "melonDS"
+    _urls = {
+      "https://api.github.com/repos/melonDS-emu/melonDS/releases/latest",
+      "https://github.com/melonDS-emu/melonDS/releases/download/"
+    };
+#elif CORE == "pcsx2"
+    _urls = {
+      "https://api.github.com/repos/PCSX2/pcsx2/releases/latest",
+      "https://github.com/PCSX2/pcsx2/releases/download/"
+    };
+#endif  
 }
 
 bool core::check_retroarch_path()
@@ -177,7 +206,10 @@ bool core::build_download_url(CURL* curl, CURLcode& res)
     }
     else {
         log_cb(RETRO_LOG_WARN, "[LAUNCHER-WARN] Could not write to URL file: %s\n", _downloaderDirs[_downloader_ids::URL_FILE].c_str());
+        return false;
     }
+
+    return true;
 }
 
 bool core::download_asset(CURL *curl, CURLcode& res, std::string &url)

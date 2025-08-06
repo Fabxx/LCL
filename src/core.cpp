@@ -11,13 +11,6 @@ static uint32_t* frame_buf;
 static struct retro_log_callback logging;
 static retro_log_printf_t log_cb;
 
-#ifndef CORE
-#error "CORE is not defined!"
-#endif
-
-#ifndef SYSTEM_NAME
-#error "SYSTEM is not defined!"
-#endif
 
 // libcurl callback
 static size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* output)
@@ -53,13 +46,29 @@ core::core()
 
 #ifdef _WIN32
     _asset_id = WINDOWS;
-    _executable = (_base_path / "system" / CORE / "azahar.exe").string();
+#ifdef CORE == "azahar"  
+	_executable = (_base_path / "system" / CORE / "azahar.exe").string();
+#elif CORE == "duckstation"
+	_executable = (_base_path / "system" / CORE / "duckstation-qt-x64-ReleaseLTCG.exe").string();
+#elif CORE == "mgba"
+	_executable = (_base_path / "system" / CORE / "mGBA.exe").string();
+#elif CORE == "melonDS"
+	_executable = (_base_path / "system" / CORE / "melonDS.exe").string();
+#elif CORE == "pcsx2"
+	_executable = (_base_path / "system" / CORE / "pcsx2.exe").string();
+#endif
+
 #elif __APPLE__
+	_asset_id = MACOS;
+#ifdef CORE == "azahar"
+	_executable = (_base_path / "system" / CORE / CORE).string();
+#endif
+
+#elif __linux__
     _asset_id = LINUX;
-    _executable = (_base_path / "system" / CORE / CORE).string();
-#else
-    _asset_id = MACOS;
-    _executable = (_base_path / "system" / "azahar" / "azahar").string();
+#ifdef CORE == "azahar"
+	_executable = (_base_path / "system" / CORE / "azahar.AppImage").string();
+#endif
 #endif
     
 	_url_asset_id = 0;
@@ -99,7 +108,7 @@ bool core::retro_core_setup()
     return false;
 }
 
-bool core::set_url(CURL* curl, CURLcode& res)
+bool core::build_download_url(CURL* curl, CURLcode& res)
 {
     std::string jsonResponse;
 
@@ -171,7 +180,7 @@ bool core::set_url(CURL* curl, CURLcode& res)
     }
 }
 
-bool core::download(CURL *curl, CURLcode& res, std::string &url)
+bool core::download_asset(CURL *curl, CURLcode& res, std::string &url)
 {
     if (!curl) {
         log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Failed to initialize cURL for download.\n");
@@ -211,12 +220,12 @@ bool core::download(CURL *curl, CURLcode& res, std::string &url)
     return true;
 }
 
-bool core::retro_core_downloader()
+bool core::retro_core_get()
 {
     CURL* curl = curl_easy_init();
     CURLcode res;
 
-    if (!set_url(curl, res)) {
+    if (!build_download_url(curl, res)) {
 		log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Failed to set URL.\n");
         return false;
     }
@@ -226,7 +235,7 @@ bool core::retro_core_downloader()
     if (firstBoot) {
         log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] First boot detected, downloading emulator...\n");
 
-        if (!download(curl, res, _urls[_url_ids::DOWNLOAD_URL])) {
+        if (!download_asset(curl, res, _urls[_url_ids::DOWNLOAD_URL])) {
 			log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Failed to download emulator.\n");
             return false;
         }
@@ -278,7 +287,7 @@ bool core::retro_core_downloader()
         log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] New version detected (current: %s, new: %s). Downloading update...\n",
             _current_version.c_str(), _new_version.c_str());
 
-        if (!download(curl, res, _urls[_url_ids::DOWNLOAD_URL])) {
+        if (!download_asset(curl, res, _urls[_url_ids::DOWNLOAD_URL])) {
 			log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Failed to download update.\n");
             return false;
         }
@@ -460,11 +469,11 @@ bool retro_load_game(const struct retro_game_info* info)
 
 	// if first boot download emulator, else check for updates
     if (!core.retro_core_setup()) {
-        core.retro_core_downloader();
+        core.retro_core_get();
         core.retro_core_extractor();
     }
     else {
-        core.retro_core_downloader();
+        core.retro_core_get();
         core.retro_core_extractor();
     }
     return true;

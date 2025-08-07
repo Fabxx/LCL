@@ -72,7 +72,7 @@ core::core()
 #elif CORE == "pcsx2"
     _executable = (_base_path / "system" / CORE / "pcsx2-v2.4.0-linux-appimage-x64-Qt.AppImage").string();
 #elif CORE == "xemu"
-    _executable = (_base_path / "system" / CORE / "xemu.exe").string();
+    _executable = (_base_path / "system" / CORE / "xemu.AppImage").string();
 #elif CORE == "xenia"
     _executable = (_base_path / "system" / CORE / "xenia_canary_netplay.exe").string();
 #endif

@@ -2,8 +2,8 @@
 #include <iostream>
 #include <filesystem>
 #include <fstream>
-//#include <archive.h>
-//#include <archive_entry.h>
+#include "archive.h"
+#include "archive_entry.h"
 
 using json = nlohmann::json;
 
@@ -38,24 +38,30 @@ core::core()
         (_base_path / "system" / CORE / "0.Url.txt").string(),
         (_base_path / "system" / CORE / "1.CurrentVersion.txt").string(),
         (_base_path / "system" / CORE / "2.NewVersion.txt").string(),
-        (_base_path / "system" / CORE / "emulator.zip").string()
     };
 
 #ifdef _WIN32
     _asset_id = _asset_ids::WINDOWS;
 #ifdef CORE == "azahar"  
+	_downloaderDirs.push_back((_base_path / "system" / CORE / "azahar.zip").string());
 	_executable = (_base_path / "system" / CORE / "azahar.exe").string();
 #elif CORE == "duckstation"
-	_executable = (_base_path / "system" / CORE / "duckstation-qt-x64-ReleaseLTCG.exe").string();
+    _downloaderDirs.push_back((_base_path / "system" / CORE / "DuckStation-x64.zip").string());
+	_executable = (_base_path / "system" / CORE / "duckstation.exe").string();
 #elif CORE == "mgba"
+    _downloaderDirs.push_back((_base_path / "system" / CORE / "mGBA.7z").string());
 	_executable = (_base_path / "system" / CORE / "mGBA.exe").string();
 #elif CORE == "melonDS"
+	_downloaderDirs.push_back((_base_path / "system" / CORE / "melonDS.zip").string());
 	_executable = (_base_path / "system" / CORE / "melonDS.exe").string();
 #elif CORE == "pcsx2"
+	_downloaderDirs.push_back((_base_path / "system" / CORE / "pcsx2.7z").string());
 	_executable = (_base_path / "system" / CORE / "pcsx2.exe").string();
 #elif CORE == "xemu"
+	_downloaderDirs.push_back((_base_path / "system" / CORE / "xemu.zip").string());
 	_executable = (_base_path / "system" / CORE / "xemu.exe").string();
 #elif CORE == "xenia"
+	_downloaderDirs.push_back((_base_path / "system" / CORE / "xenia_canary_netplay.zip").string());
 	_executable = (_base_path / "system" / CORE / "xenia_canary_netplay.exe").string();
 #endif
 
@@ -63,18 +69,25 @@ core::core()
     _asset_id = _asset_ids::LINUX;
 #ifdef CORE == "azahar"
 	_executable = (_base_path / "system" / CORE / "azahar.AppImage").string();
+	_downloaderDirs.push_back(_executable)
 #elif CORE == "duckstation"
-    _executable = (_base_path / "system" / CORE / "DuckStation-x64.AppImage").string();
+    _executable = (_base_path / "system" / CORE / "DuckStation.AppImage").string();
+    _downloaderDirs.push_back(_executable)
 #elif CORE == "mgba"
-    _executable = (_base_path / "system" / CORE / "mGBA-0.10.5-appimage-x64.appimage").string();
+    _executable = (_base_path / "system" / CORE / "mGBA.appimage").string();
+    _downloaderDirs.push_back(_executable)
 #elif CORE == "melonDS"
-    _executable = (_base_path / "system" / CORE / "melonDS-x86_64.AppImage").string();
+    _executable = (_base_path / "system" / CORE / "melonDS.AppImage").string();
+    _downloaderDirs.push_back(_executable)
 #elif CORE == "pcsx2"
-    _executable = (_base_path / "system" / CORE / "pcsx2-v2.4.0-linux-appimage-x64-Qt.AppImage").string();
+    _executable = (_base_path / "system" / CORE / "pcsx2.AppImage").string();
+    _downloaderDirs.push_back(_executable)
 #elif CORE == "xemu"
     _executable = (_base_path / "system" / CORE / "xemu.AppImage").string();
+    _downloaderDirs.push_back(_executable)
 #elif CORE == "xenia"
     _executable = (_base_path / "system" / CORE / "xenia_canary_netplay.exe").string();
+    _downloaderDirs.push_back(_executable)
 #endif
 #endif
     
@@ -114,7 +127,6 @@ core::core()
     _urls = {
       "https://api.github.com/repos/AdrianCassar/xenia-canary/releases/latest",
       "https://github.com/AdrianCassar/xenia-canary/releases/download/",
-      "https://github.com/xenia-canary/game-patches/releases/latest/download/game-patches.zip"
     };
 #endif
 }
@@ -347,24 +359,130 @@ bool core::retro_core_get()
         }
         else {
             log_cb(RETRO_LOG_WARN, "[LAUNCHER-WARN] Could not update version files after download.\n");
+            return false;
         }
     }
     else {
         log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Core is already up to date (version: %s).\n", _current_version.c_str());
 		std::filesystem::remove(_downloaderDirs[_downloader_ids::DOWNLOADED_FILE]);
+        return false;
     }
 
     return true;
 }
 
+static int archive_copy_data(struct archive* ar, struct archive* aw)
+{
+    const void* buff;
+    size_t size;
+    la_int64_t offset;
+
+    while (true) {
+        int r = archive_read_data_block(ar, &buff, &size, &offset);
+        if (r == ARCHIVE_EOF)
+            return ARCHIVE_OK;
+        if (r < ARCHIVE_OK)
+            return r;
+
+        r = archive_write_data_block(aw, buff, size, offset);
+        if (r < ARCHIVE_OK) {
+            log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Write error: %s\n", archive_error_string(aw));
+            return r;
+        }
+    }
+}
+
 bool core::retro_core_extractor()
 {
+    const std::filesystem::path archive_path = (_base_path / "system" / _downloaderDirs[_downloader_ids::DOWNLOADED_FILE]);
+    const std::string output_dir = (_base_path / "system" / CORE).string();
+    const std::string ext = archive_path.extension().string();
+
+    if (ext != ".zip" && ext != ".7z" && ext != ".tar") {
+        log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Not an archive, aborting extraction.\n");
+        return false;
+    }
+
+    log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Extracting archive: %s to %s\n", archive_path.c_str(), output_dir.c_str());
+
+    struct archive* a = archive_read_new();
+    struct archive* ext_archive = archive_write_disk_new();
+    struct archive_entry* entry;
+
+    archive_read_support_format_all(a);
+    archive_read_support_filter_all(a);
+
+    archive_write_disk_set_options(ext_archive,
+        ARCHIVE_EXTRACT_TIME |
+        ARCHIVE_EXTRACT_PERM |
+        ARCHIVE_EXTRACT_ACL |
+        ARCHIVE_EXTRACT_SECURE_NOABSOLUTEPATHS |
+        ARCHIVE_EXTRACT_FFLAGS);
+
+    archive_write_disk_set_standard_lookup(ext_archive);
+
+    int r = archive_read_open_filename(a, archive_path.string().c_str(), 10240);
+    if (r != ARCHIVE_OK) {
+        log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Failed to open archive: %s\n", archive_error_string(a));
+        archive_read_free(a);
+        archive_write_free(ext_archive);
+        return false;
+    }
+
+    while ((r = archive_read_next_header(a, &entry)) != ARCHIVE_EOF) {
+        if (r < ARCHIVE_WARN) {
+            log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Failed to read header: %s\n", archive_error_string(a));
+            break;
+        }
+
+        const char* currentFile = archive_entry_pathname(entry);
+        if (!currentFile || strlen(currentFile) == 0)
+            continue;
+
+        std::filesystem::path entryPath(currentFile);
+        std::filesystem::path relativePath;
+
+        auto it = entryPath.begin();
+        if (it != entryPath.end()) ++it;
+        for (; it != entryPath.end(); ++it)
+            relativePath /= *it;
+
+        std::filesystem::path fullOutputPath = std::filesystem::path(output_dir) / relativePath;
+        archive_entry_set_pathname(entry, fullOutputPath.string().c_str());
+
+        if (archive_entry_filetype(entry) != AE_IFREG)
+            continue;
+
+        // Crea directory genitore se mancante
+        std::filesystem::create_directories(fullOutputPath.parent_path());
+
+        r = archive_write_header(ext_archive, entry);
+        if (r < ARCHIVE_OK)
+            log_cb(RETRO_LOG_WARN, "[LAUNCHER-WARN] Write header failed: %s\n", archive_error_string(ext_archive));
+        else {
+            r = archive_copy_data(a, ext_archive);
+            if (r < ARCHIVE_OK)
+                log_cb(RETRO_LOG_WARN, "[LAUNCHER-WARN] Copy data failed: %s\n", archive_error_string(ext_archive));
+        }
+
+        r = archive_write_finish_entry(ext_archive);
+        if (r < ARCHIVE_OK)
+            log_cb(RETRO_LOG_WARN, "[LAUNCHER-WARN] Finish entry failed: %s\n", archive_error_string(ext_archive));
+    }
+
+    archive_read_close(a);
+    archive_read_free(a);
+    archive_write_close(ext_archive);
+    archive_write_free(ext_archive);
+
+    log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Archive extracted successfully to %s\n", output_dir.c_str());
+    std::filesystem::remove(archive_path);
     return true;
 }
 
+
 bool core::retro_core_boot(struct retro_system_info* info)
 {
-    // This function is not implemented in this example.
     log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Core boot is not implemented.\n");
     return true;
 }
@@ -533,8 +651,7 @@ bool retro_load_game(const struct retro_game_info* info)
         core.retro_core_get();
         core.retro_core_extractor();
     }
-    else {
-        core.retro_core_get();
+    else if (core.retro_core_get()) {
         core.retro_core_extractor();
     }
     return true;

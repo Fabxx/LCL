@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 4.00)
 
 # Require user to specify the CORE and the system name
 if(NOT DEFINED CORE)
@@ -15,7 +15,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Allow compilation of static libraries on Unix-like systems
-if(LINUX)
+if(UNIX OR APPLE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
 endif()
 
@@ -85,6 +85,41 @@ endif()
 
 FetchContent_MakeAvailable(curl)
 
+
+# --- Libarchive ---
+FetchContent_Declare(
+  libarchive
+  GIT_REPOSITORY https://github.com/libarchive/libarchive.git
+  GIT_TAG v3.8.1
+)
+
+set(ENABLE_TEST OFF CACHE BOOL "" FORCE)
+set(ENABLE_CPIO OFF CACHE BOOL "" FORCE)
+set(ENABLE_CAT OFF CACHE BOOL "" FORCE)
+set(ENABLE_XATTR OFF CACHE BOOL "" FORCE)
+set(ENABLE_ACL OFF CACHE BOOL "" FORCE)
+set(ENABLE_ICONV OFF CACHE BOOL "" FORCE)
+set(ENABLE_MTREE OFF CACHE BOOL "" FORCE)
+set(ENABLE_NETTLE OFF CACHE BOOL "" FORCE)
+set(ENABLE_OPENSSL OFF CACHE BOOL "" FORCE)
+set(ENABLE_EXPAT OFF CACHE BOOL "" FORCE)
+set(ENABLE_LIBXML2 OFF CACHE BOOL "" FORCE)
+set(ENABLE_LZO OFF CACHE BOOL "" FORCE)
+set(ENABLE_LZ4 OFF CACHE BOOL "" FORCE)
+set(ENABLE_LZMA OFF CACHE BOOL "" FORCE)
+set(ENABLE_ZSTD OFF CACHE BOOL "" FORCE)
+set(ENABLE_BZip2 OFF CACHE BOOL "" FORCE)
+set(ENABLE_ZLIB OFF CACHE BOOL "" FORCE)
+set(ENABLE_TAR ON CACHE BOOL "" FORCE)
+set(ENABLE_7Z ON CACHE BOOL "" FORCE)
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+set(ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
+
+FetchContent_MakeAvailable(libarchive)
+
+get_target_property(LIBARCHIVE_TYPE archive_static TYPE)
+message(STATUS "archive_static type: ${LIBARCHIVE_TYPE}")
+
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 # Source files
@@ -101,10 +136,14 @@ add_library(${TARGET_NAME} SHARED ${SOURCES})
 add_compile_definitions(CORE="${CORE}")
 add_compile_definitions(SYSTEM_NAME="${SYSTEM_NAME}")
 
+# Add definition for libarchive static linking
+target_compile_definitions(${TARGET_NAME} PRIVATE LIBARCHIVE_STATIC)
+
 # Link external dependencies
 target_link_libraries(${TARGET_NAME} PRIVATE
     nlohmann_json
     CURL::libcurl
+    archive_static
 )
 
 # Force correct output name

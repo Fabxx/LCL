@@ -105,7 +105,18 @@ core::core()
       "https://api.github.com/repos/PCSX2/pcsx2/releases/latest",
       "https://github.com/PCSX2/pcsx2/releases/download/"
     };
-#endif  
+#elif CORE == "xemu"
+    _urls = {
+      "https://api.github.com/repos/xemu-project/xemu/releases/latest",
+      "https://github.com/xemu-project/xemu/releases/download/"
+    };
+#elif CORE == "xenia"
+    _urls = {
+      "https://api.github.com/repos/AdrianCassar/xenia-canary/releases/latest",
+      "https://github.com/AdrianCassar/xenia-canary/releases/download/",
+      "https://github.com/xenia-canary/game-patches/releases/latest/download/game-patches.zip"
+    };
+#endif
 }
 
 bool core::check_retroarch_path()
@@ -347,21 +358,7 @@ bool core::retro_core_get()
 }
 
 bool core::retro_core_extractor()
-{/*
-    struct archive* a = archive_read_new();
-    archive_read_support_format_all(a);
-    archive_read_support_filter_all(a);
-
-    if (archive_read_open_filename(a, filename, 10240) == ARCHIVE_OK) {
-        struct archive_entry* entry;
-        while (archive_read_next_header(a, &entry) == ARCHIVE_OK) {
-            printf("Extracting: %s\n", archive_entry_pathname(entry));
-            archive_read_data_skip(a); // or archive_read_data() to extract
-        }
-    }
-    archive_read_free(a);
-    */
-
+{
     return true;
 }
 
@@ -405,10 +402,42 @@ void retro_set_controller_port_device(unsigned port, unsigned device)
 void retro_get_system_info(struct retro_system_info* info)
 {
     memset(info, 0, sizeof(*info));
+#ifdef CORE == "azahar"
     info->library_name = "Azahar Launcher";
     info->library_version = "0.1a";
     info->need_fullpath = true;
     info->valid_extensions = "3ds|3dsx|elf|axf|cci|cxi|app";
+#elif CORE == "duckstation"
+    info->library_name = "duckstation Launcher";
+    info->library_version = "0.1a";
+    info->need_fullpath = true;
+    info->valid_extensions = "cue|img|ecm|chd";
+#elif CORE == "mgba"
+    info->library_name = "mGBA Launcher";
+    info->library_version = "0.1a";
+    info->need_fullpath = true;
+    info->valid_extensions = "gba|gbc|gc";
+#elif CORE == "melonDS"
+    info->library_name = "melonDS Launcher";
+    info->library_version = "0.1a";
+    info->need_fullpath = true;
+    info->valid_extensions = "nds|ids|dsi";
+#elif CORE == "pcsx2"
+    info->library_name = "pcsx2 Launcher";
+    info->library_version = "0.1a";
+    info->need_fullpath = true;
+    info->valid_extensions = "iso|chd|elf|ciso|cso|bin|cue|mdf|nrg|dump|gz|img|m3u";
+#elif CORE == "xemu"
+    info->library_name = "xemu Launcher";
+    info->library_version = "0.1a";
+    info->need_fullpath = true;
+    info->valid_extensions = "iso";
+#elif CORE == "xenia"
+    info->library_name = "Xenia Launcher";
+    info->library_version = "0.1a";
+    info->need_fullpath = true;
+    info->valid_extensions = "iso|xex|zar";
+#endif
 }
 
 static retro_video_refresh_t video_cb;

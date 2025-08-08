@@ -27,7 +27,7 @@ core::core()
     _base_path = std::filesystem::current_path();
 
     log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Using current path: %s\n", _base_path.string().c_str());
-    log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Core name: $s\n", core_name);
+    log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Core name: %s\n", core_name);
 
     _directories = {
          (_base_path / "system" / core_name).string(),

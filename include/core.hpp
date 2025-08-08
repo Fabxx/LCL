@@ -19,7 +19,7 @@ public:
 	bool retro_core_setup();
 	bool retro_core_get();
 	bool retro_core_extractor();
-	bool retro_core_boot(struct retro_system_info* info);
+	bool retro_core_boot(const struct retro_game_info* info);
 
 	bool build_download_url(CURL* curl, CURLcode& res);
 	bool download_asset(CURL* curl, CURLcode& res, std::string& url);

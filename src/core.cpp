@@ -54,7 +54,7 @@ core::core()
     if (core_name == "duckstation") {
         _asset_id = _asset_ids::DUCKSTATION_WIN;
         _downloaderDirs.push_back((_base_path / "system" / core_name / "DuckStation-x64.zip").string());
-        _executable = (_base_path / "system" / core_name / "duckstation.exe").string();
+        _executable = (_base_path / "system" / core_name / "duckstation-qt-x64-ReleaseLTCG.exe").string();
     }
 
     if (core_name == "mgba") {
@@ -70,7 +70,7 @@ core::core()
     if (core_name == "pcsx2") {
         _asset_id = _asset_ids::PCSX2_WIN;
         _downloaderDirs.push_back((_base_path / "system" / core_name / "pcsx2.7z").string());
-        _executable = (_base_path / "system" / core_name / "pcsx2.exe").string();
+        _executable = (_base_path / "system" / core_name / "pcsx2-qt.exe").string();
     }
     if (core_name == "xemu") {
         _asset_id = _asset_ids::XEMU_WIN;
@@ -406,7 +406,7 @@ bool core::retro_core_extractor()
     const std::string ext = archive_path.extension().string();
     std::string command{};
 
-    const std::unordered_set<std::string> supported_exts = { ".zip", ".7z", ".tar" };
+    const std::unordered_set<std::string> supported_exts = { ".zip", ".7z" };
     const std::unordered_set<std::string> zip_emulators = { "azahar", "duckstation", "melonds", "xemu", "xenia" };
     const std::unordered_set<std::string> seven_zip_emulators = { "mgba", "pcsx2" };
 
@@ -546,10 +546,83 @@ bool core::retro_core_extractor()
 }
 #endif
 
-
-bool core::retro_core_boot(struct retro_system_info* info)
+// Compose the command to boot emulator + args, don't escape the args.
+bool core::retro_core_boot(const struct retro_game_info* info)
 {
-    log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Core boot is not implemented.\n");
+    std::string command{};
+    std::string args{};
+
+    if (core_name == "azahar") {
+        if (info != NULL && info->path != NULL) {
+            command = std::format("\"{} {}\"", _executable, info->path);
+        }
+        else {
+            command = std::format("\"{}\"", _executable);
+        }
+    }
+    else if (core_name == "duckstation") {
+        if (info != NULL && info->path != NULL) {
+            args = "-fullscreen";
+            command = std::format("\"{} {} {}\"", _executable, args, info->path);
+        }
+        else {
+            args = "-fullscreen -bios";
+            command = std::format("\"{} {}\"", _executable, args);
+        }
+    }
+    else if (core_name == "mgba") {
+        if (info != NULL && info->path != NULL) {
+            args = "-f";
+            command = std::format("\"{} {} {}\"", _executable, args, info->path);
+        }
+        else {
+            args = "-f";
+            command = std::format("\"{} {}\"", _executable, args);
+        }
+    }
+    else if (core_name == "melonds") {
+        if (info != NULL && info->path != NULL) {
+            args = "-f";
+            command = std::format("\"{} {} {}\"", _executable, args, info->path);
+        }
+        else {
+            args = "-f";
+            command = std::format("\"{} {}\"", _executable, args);
+        }
+    }
+    else if (core_name == "pcsx2") {
+        if (info != NULL && info->path != NULL) {
+            args = "-fullscreen";
+            command = std::format("\"{} {} {}\"", _executable, args, info->path);
+        }
+        else {
+            args = "-fullscreen -bios";
+            command = std::format("\"{} {}\"", _executable, args);
+        }
+    }
+    else if (core_name == "xemu") {
+        if (info != NULL && info->path != NULL) {
+            args = "-full-screen -dvd_path";
+            command = std::format("\"{} {} {}\"", _executable, args, info->path);
+        }
+        else {
+            args = "-full-screen";
+            command = std::format("\"{} {}\"", _executable, args);
+        }
+    }
+    else if (core_name == "xenia") {
+        if (info != NULL && info->path != NULL) {
+            args = "--fullscreen=true";
+            command = std::format("\"{} {} {}\"", _executable, args, info->path);
+        }
+        else {
+            args = "--fullscreen=true";
+            command = std::format("\"{} {}\"", _executable, args);
+        }
+    }
+
+	log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Booting emulator with command: %s\n", command.c_str());
+	system(command.c_str());
     return true;
 }
 
@@ -733,9 +806,10 @@ bool retro_load_game(const struct retro_game_info* info)
                 log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Failed to extract core.\n");
                 return false;
             }
-            return true;
         }
     }
+    core.retro_core_boot(info);
+    return true;
 }
 
 void retro_unload_game(void)

@@ -5,7 +5,7 @@ if(NOT DEFINED CORE)
     message(FATAL_ERROR "specify -DCORE=name_of_emulator (e.g., -DCORE=azahar)")
 endif()
 
-IF(NOT DEFINED SYSTEM_NAME)
+if(NOT DEFINED SYSTEM_NAME)
     message(FATAL_ERROR "specify -DSYSTEM_NAME=platform_name (e.g., -DSYSTEM_NAME=Nintendo - Nintendo 3DS)")
 ENDIF()
 
@@ -97,7 +97,7 @@ set(TARGET_NAME libretro_${CORE}_launcher)
 
 add_library(${TARGET_NAME} SHARED ${SOURCES})
 
-# Define string macros for the core and system. Core is exported in a string.
+# Define string macros for the core and system. Both are exported in a string.
 target_compile_definitions(${TARGET_NAME} PRIVATE CORE=\"${CORE}\" SYSTEM_NAME=\"${SYSTEM_NAME}\")
 
 # Link external dependencies

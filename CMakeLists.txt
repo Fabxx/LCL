@@ -38,7 +38,6 @@ FetchContent_Declare(
   GIT_TAG curl-8_15_0
 )
 
-
 # Common curl options
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build curl as static library" FORCE)
 set(CURL_STATICLIB ON CACHE BOOL "Build curl as static library" FORCE)
@@ -86,40 +85,6 @@ endif()
 FetchContent_MakeAvailable(curl)
 
 
-# --- Libarchive ---
-FetchContent_Declare(
-  libarchive
-  GIT_REPOSITORY https://github.com/libarchive/libarchive.git
-  GIT_TAG v3.8.1
-)
-
-set(ENABLE_TEST OFF CACHE BOOL "" FORCE)
-set(ENABLE_CPIO OFF CACHE BOOL "" FORCE)
-set(ENABLE_CAT OFF CACHE BOOL "" FORCE)
-set(ENABLE_XATTR OFF CACHE BOOL "" FORCE)
-set(ENABLE_ACL OFF CACHE BOOL "" FORCE)
-set(ENABLE_ICONV OFF CACHE BOOL "" FORCE)
-set(ENABLE_MTREE OFF CACHE BOOL "" FORCE)
-set(ENABLE_NETTLE OFF CACHE BOOL "" FORCE)
-set(ENABLE_OPENSSL OFF CACHE BOOL "" FORCE)
-set(ENABLE_EXPAT OFF CACHE BOOL "" FORCE)
-set(ENABLE_LIBXML2 OFF CACHE BOOL "" FORCE)
-set(ENABLE_LZO OFF CACHE BOOL "" FORCE)
-set(ENABLE_LZ4 OFF CACHE BOOL "" FORCE)
-set(ENABLE_LZMA OFF CACHE BOOL "" FORCE)
-set(ENABLE_ZSTD OFF CACHE BOOL "" FORCE)
-set(ENABLE_BZip2 OFF CACHE BOOL "" FORCE)
-set(ENABLE_ZLIB OFF CACHE BOOL "" FORCE)
-set(ENABLE_TAR ON CACHE BOOL "" FORCE)
-set(ENABLE_7Z ON CACHE BOOL "" FORCE)
-set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
-set(ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
-
-FetchContent_MakeAvailable(libarchive)
-
-get_target_property(LIBARCHIVE_TYPE archive_static TYPE)
-message(STATUS "archive_static type: ${LIBARCHIVE_TYPE}")
-
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 # Source files
@@ -132,18 +97,13 @@ set(TARGET_NAME libretro_${CORE}_launcher)
 
 add_library(${TARGET_NAME} SHARED ${SOURCES})
 
-# Define macros for the core and system name
-add_compile_definitions(CORE="${CORE}")
-add_compile_definitions(SYSTEM_NAME="${SYSTEM_NAME}")
-
-# Add definition for libarchive static linking
-target_compile_definitions(${TARGET_NAME} PRIVATE LIBARCHIVE_STATIC)
+# Define string macros for the core and system. Core is exported in a string.
+target_compile_definitions(${TARGET_NAME} PRIVATE CORE=\"${CORE}\" SYSTEM_NAME=\"${SYSTEM_NAME}\")
 
 # Link external dependencies
 target_link_libraries(${TARGET_NAME} PRIVATE
     nlohmann_json
     CURL::libcurl
-    archive_static
 )
 
 # Force correct output name

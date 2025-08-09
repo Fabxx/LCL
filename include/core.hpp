@@ -5,6 +5,7 @@
 #include <string_view>
 #include <filesystem>
 #include <fstream>
+#include <format>
 #include <unordered_set>
 
 #include "curl/curl.h"

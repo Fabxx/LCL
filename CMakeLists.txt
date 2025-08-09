@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 4.00)
+cmake_minimum_required(VERSION 3.31)
 
 # Require user to specify the CORE and the system name
 if(NOT DEFINED CORE)
@@ -10,7 +10,7 @@ if(NOT DEFINED SYSTEM_NAME)
 ENDIF()
 
 set(VALID_CORES azahar duckstation mgba melonds pcsx2 xemu xenia)
-list(FIND VALID_CORES "${CORE_LOWER}" CORE_INDEX)
+list(FIND VALID_CORES "${CORE}" CORE_INDEX)
 
 if(CORE_INDEX EQUAL -1)
     message(FATAL_ERROR "Invalid CORE '${CORE}'. Accepted values: ${VALID_CORES}")

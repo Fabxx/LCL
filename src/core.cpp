@@ -630,7 +630,9 @@ bool core::retro_core_boot(const struct retro_game_info* info)
 bool core::retro_core_updater()
 {
     std::vector<std::string> core_urls = {
-    }
+    };
+
+    return true;
 }
 
 static void fallback_log(enum retro_log_level level, const char* fmt, ...)

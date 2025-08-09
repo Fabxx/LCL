@@ -15,3 +15,9 @@ cmake -DCORE="pcsx2" -DSYSTEM_NAME="Sony - Playstation 2" .. && cmake --build .
 cmake -DCORE="xemu" -DSYSTEM_NAME="Microsoft - Xbox" .. && cmake --build .
 
 cmake -DCORE="xenia" -DSYSTEM_NAME="Microsoft - Xbox 360" .. && cmake --build .
+
+cd Debug
+
+Get-ChildItem -Path . -Recurse -File |
+    Where-Object { $_.Extension -notin ".dll", ".so" } |
+    Remove-Item -Force

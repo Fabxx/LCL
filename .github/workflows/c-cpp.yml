@@ -1,0 +1,142 @@
+name: CI/CD Pipeline for Retro Launchers
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    - name: Determine tag
+      id: tag
+      run: |
+        git pull --rebase origin main
+        LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+        COMMIT_COUNT=$(git rev-list ${LAST_TAG}..HEAD --count)
+
+        BASE_VERSION=2.0
+        COMMIT_HASH=$(git rev-parse --short HEAD)
+
+        if [[ $COMMIT_COUNT -ge 100 ]]; then
+          NEW_TAG="v${BASE_VERSION}-${COMMIT_HASH}"
+        else
+          NEW_TAG=$LAST_TAG
+        fi
+
+        echo "TAG_NAME=$NEW_TAG" >> $GITHUB_ENV
+
+    - name: Create or update Git tag
+      run: |
+        git tag -f ${{ env.TAG_NAME }}
+        git push -f origin ${{ env.TAG_NAME }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Install GCC 14 and CMake
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y g++-14 gcc-14
+        sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-14 100
+        sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-14 100
+        sudo apt-get install -y cmake zip
+
+    - name: Build for Linux
+      run: |
+        chmod +x ./build_all.sh && ./build_all.sh
+
+        mkdir -p Linux/cores
+        cp build/*.so Linux/cores || true
+        cp -r info Linux/ || true
+
+    - name: Create ZIP archive for Linux
+      run: zip -r Retro_Launchers_Linux_amd64.zip Linux
+
+    - name: Upload Linux ZIP release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ env.TAG_NAME }}
+        files: "Retro_Launchers_Linux_amd64.zip"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    - name: Determine tag
+      id: tag
+      run: |
+        git pull --rebase origin main
+        LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+        COMMIT_COUNT=$(git rev-list ${LAST_TAG}..HEAD --count)
+
+        BASE_VERSION=2.0
+        COMMIT_HASH=$(git rev-parse --short HEAD)
+
+        if [[ $COMMIT_COUNT -ge 100 ]]; then
+          NEW_TAG="v${BASE_VERSION}-${COMMIT_HASH}"
+        else
+          NEW_TAG=$LAST_TAG
+        fi
+
+        echo "TAG_NAME=$NEW_TAG" >> $GITHUB_ENV
+      shell: bash
+
+    - name: Create or update Git tag
+      run: |
+        git tag -f ${{ env.TAG_NAME }}
+        git push -f origin ${{ env.TAG_NAME }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Setup MSYS2 with GCC 13+
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: MINGW64
+        install: >-
+          mingw-w64-x86_64-gcc
+          mingw-w64-x86_64-cmake
+          mingw-w64-x86_64-make
+          base-devel
+        update: true
+
+    - name: Build for Windows
+      shell: msys2 {0}
+      run: |
+        chmod +x ./build_all.sh && ./build_all.sh
+
+        mkdir -p Windows/cores
+        cp build/*.dll Windows/cores || true
+        cp -r info Windows/ || true
+
+    - name: Create ZIP archive for Windows
+      run: |
+        Compress-Archive -Path Windows -DestinationPath Retro_Launchers_Win64.zip
+
+    - name: Upload Windows ZIP release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ env.TAG_NAME }}
+        files: "Retro_Launchers_Win64.zip"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

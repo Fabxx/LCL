@@ -115,4 +115,4 @@ target_link_libraries(${TARGET_NAME} PRIVATE
 )
 
 # Force correct output name
-set_target_properties(${TARGET_NAME} PROPERTIES OUTPUT_NAME "libretro_${CORE}_launcher")
+set_target_properties(${TARGET_NAME} PROPERTIES PREFIX "" OUTPUT_NAME "libretro_${CORE}_launcher")

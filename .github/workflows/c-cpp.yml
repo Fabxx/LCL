@@ -99,7 +99,7 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path Windows\cores | Out-Null
-          Copy-Item -Path build\*.dll -Destination Windows\cores\ -ErrorAction SilentlyContinue
+          Copy-Item -Path build\Debug\*.dll -Destination Windows\cores\ -ErrorAction SilentlyContinue
           Copy-Item -Recurse -Path info -Destination Windows\
 
       - name: Create ZIP archive for Windows

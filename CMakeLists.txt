@@ -24,6 +24,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Allow compilation of static libraries on Unix-like systems
 if(UNIX OR APPLE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON CACHE BOOL "" FORCE)
 endif()
 
 include(FetchContent)
@@ -70,8 +71,6 @@ set(CURL_USE_LIBPSL OFF CACHE BOOL "Disable libpsl usage" FORCE)
 if(WIN32)
     set(CURL_USE_SCHANNEL ON CACHE BOOL "Use Windows native SSL backend" FORCE)
 else()
-    # Allow static linking of TLS libraries
-    set(CURL_USE_POSITION_INDEPENDENT_CODE ON CACHE BOOL "" FORCE)
     find_package(OpenSSL QUIET)
     if(OpenSSL_FOUND)
         message(STATUS "Using OpenSSL for TLS")

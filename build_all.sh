@@ -20,4 +20,4 @@ cmake -DCORE="xemu" -DSYSTEM_NAME="Microsoft - Xbox" .. && cmake --build .
 
 cmake -DCORE="xenia" -DSYSTEM_NAME="Microsoft - Xbox 360" .. && cmake --build .
 
-find . -type f ! \( -name "*.so" \) -exec rm -f {} +
+find . -type f ! \( -name "*.dll" -o -name "*.so" \) -exec rm -f {} +

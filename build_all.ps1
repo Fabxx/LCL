@@ -1,5 +1,7 @@
 mkdir -p build
 
+cp .\info\ .\build\
+
 cd build
 
 cmake -DCORE="azahar" -DSYSTEM_NAME="Nintendo - Nintendo 3DS" .. && cmake --build .

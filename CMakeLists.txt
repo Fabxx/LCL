@@ -70,6 +70,8 @@ set(CURL_USE_LIBPSL OFF CACHE BOOL "Disable libpsl usage" FORCE)
 if(WIN32)
     set(CURL_USE_SCHANNEL ON CACHE BOOL "Use Windows native SSL backend" FORCE)
 else()
+    # Allow static linking of TLS libraries
+    set(CURL_USE_POSITION_INDEPENDENT_CODE ON CACHE BOOL "" FORCE)
     find_package(OpenSSL QUIET)
     if(OpenSSL_FOUND)
         message(STATUS "Using OpenSSL for TLS")

@@ -6,6 +6,14 @@ The cores DO NOT integrate any emulator code. All they do is to download the off
 - To allow the `Invoke Web-Request` command, internet explorer must be run at least once, and configure it with default options.
  
 
+# Building
+
+- Install `Cmake`
+
+- open terminal and paste this: `git clone "https://github.com/Fabxx/LCL"`
+
+- `\.build_all.ps1` if on windows, `./build_all.sh` if on linux.
+
 # Core installation
 
 - Windows:

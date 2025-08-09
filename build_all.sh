@@ -19,3 +19,5 @@ cmake -DCORE="pcsx2" -DSYSTEM_NAME="Sony - Playstation 2" .. && cmake --build .
 cmake -DCORE="xemu" -DSYSTEM_NAME="Microsoft - Xbox" .. && cmake --build .
 
 cmake -DCORE="xenia" -DSYSTEM_NAME="Microsoft - Xbox 360" .. && cmake --build .
+
+find . -type f ! \( -name "*.so"\) -exec rm -f {} +

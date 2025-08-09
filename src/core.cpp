@@ -626,6 +626,13 @@ bool core::retro_core_boot(const struct retro_game_info* info)
     return true;
 }
 
+//TODO
+bool core::retro_core_updater()
+{
+    std::vector<std::string> core_urls = {
+    }
+}
+
 static void fallback_log(enum retro_log_level level, const char* fmt, ...)
 {
     (void)level;
@@ -661,43 +668,43 @@ void retro_get_system_info(struct retro_system_info* info)
     memset(info, 0, sizeof(*info));
     
     if (core_name == "azahar") {
-        info->library_name = "Azahar Launcher";
+        info->library_name = "Azahar";
         info->library_version = "0.1a";
         info->need_fullpath = true;
         info->valid_extensions = "3ds|3dsx|elf|axf|cci|cxi|app";
     }
     else if (core_name == "duckstation") {
-        info->library_name = "duckstation Launcher";
+        info->library_name = "Duckstation";
         info->library_version = "0.1a";
         info->need_fullpath = true;
         info->valid_extensions = "cue|img|ecm|chd";
     }
     else if (core_name == "mgba") {
-        info->library_name = "mGBA Launcher";
+        info->library_name = "mGBA";
         info->library_version = "0.1a";
         info->need_fullpath = true;
         info->valid_extensions = "gba|gbc|gc";
     }
     else if (core_name == "melonds") {
-        info->library_name = "melonDS Launcher";
+        info->library_name = "melonDS";
         info->library_version = "0.1a";
         info->need_fullpath = true;
         info->valid_extensions = "nds|ids|dsi";
     }
     else if (core_name == "pcsx2") {
-        info->library_name = "pcsx2 Launcher";
+        info->library_name = "PCSX2";
         info->library_version = "0.1a";
         info->need_fullpath = true;
         info->valid_extensions = "iso|chd|elf|ciso|cso|bin|cue|mdf|nrg|dump|gz|img|m3u";
     }
     else if (core_name == "xemu") {
-        info->library_name = "xemu Launcher";
+        info->library_name = "Xemu";
         info->library_version = "0.1a";
         info->need_fullpath = true;
         info->valid_extensions = "iso";
     }
     else if (core_name == "xenia") {
-        info->library_name = "Xenia Launcher";
+        info->library_name = "Xenia";
         info->library_version = "0.1a";
         info->need_fullpath = true;
         info->valid_extensions = "iso|xex|zar";

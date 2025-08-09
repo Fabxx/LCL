@@ -29,7 +29,7 @@ jobs:
         LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
         COMMIT_COUNT=$(git rev-list ${LAST_TAG}..HEAD --count)
 
-        BASE_VERSION=0.0.2
+        BASE_VERSION=2.0
         COMMIT_HASH=$(git rev-parse --short HEAD)
 
         if [[ $COMMIT_COUNT -ge 100 ]]; then
@@ -50,28 +50,25 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential
+        sudo apt-get install -y build-essential cmake zip
 
-    - name: Build emulators for Linux
+    - name: Build for Linux
       run: |
-        mkdir -p Linux
+        chmod +x ./build_all.sh
+        ./build_all.sh
+
         mkdir -p Linux/cores
-        for dir in cores/*; do
-          if [ -f "$dir/Makefile" ]; then
-            echo "Building $dir"
-            make -C "$dir"
-            cp "$dir"/*.so "$dir"/*.info Linux/cores
-          fi
-        done
+        cp build/*.so Linux/cores || true
+        cp -r info Linux/ || true
 
     - name: Create ZIP archive for Linux
-      run: zip -r LCL_linux_x86_64.zip Linux
+      run: zip -r Retro_Launchers_Win64.zip Linux
 
     - name: Upload Linux ZIP release
       uses: softprops/action-gh-release@v1
       with:
         tag_name: ${{ env.TAG_NAME }}
-        files: "LCL_linux_x86_64.zip"
+        files: "Retro_Launchers_Linux_amd64.zip"
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -115,36 +112,31 @@ jobs:
       with:
         msystem: MINGW64
         install: >-
-          mingw-w64-x86_64-make
           mingw-w64-x86_64-gcc
-          mingw-w64-x86_64-libsystre
+          mingw-w64-x86_64-cmake
+          mingw-w64-x86_64-make
           base-devel
         update: true
 
-    - name: Build emulators for Windows
-      run: |
-        mkdir -p Windows
-        mkdir -p Windows/cores
-        mkdir -p Windows/info
-        for dir in cores/*; do
-          if [ -f "$dir/Makefile" ]; then
-            echo "Building $dir"
-            make -C "$dir"
-            cp "$dir"/*.dll "Windows/cores" || true  
-            cp "$dir"/*.info "Windows/info" || true
-          fi
-        done
+    - name: Build for Windows
       shell: msys2 {0}
-      
+      run: |
+        chmod +x ./build_all.sh
+        ./build_all.sh
+
+        mkdir -p Windows/cores
+        cp build/*.dll Windows/cores || true
+        cp -r info Windows/ || true
+
     - name: Create ZIP archive for Windows
       run: |
-        Compress-Archive -Path Windows -DestinationPath LCL_win64.zip
+        Compress-Archive -Path Windows -DestinationPath Retro_Launchers_Win64.zip
 
     - name: Upload Windows ZIP release
       uses: softprops/action-gh-release@v1
       with:
         tag_name: ${{ env.TAG_NAME }}
-        files: "LCL_win64.zip"
+        files: "Retro_Launchers_Win64.zip"
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -185,27 +177,24 @@ jobs:
 
     - name: Install dependencies
       run: |
-        brew install cmake ninja
+        brew install cmake ninja zip
 
-    - name: Build emulators for macOS
+    - name: Build for macOS
       run: |
-        mkdir -p MacOS
+        chmod +x ./build_all.sh
+        ./build_all.sh
+
         mkdir -p MacOS/cores
-        for dir in cores/*; do
-          if [ -d "$dir" ] && [ -f "$dir/Makefile" ]; then
-            echo "Building $dir"
-            make -C "$dir"
-            cp "$dir"/*.dylib "$dir"/*.info MacOS/cores || true
-          fi
-        done
-        
+        cp build/*.dylib MacOS/cores || true
+        cp -r info MacOS/ || true
+
     - name: Create ZIP archive for macOS
-      run: zip -r LCL_macOS_x86_64.zip MacOS
+      run: zip -r Retro_Launchers_macOS_x86_64.zip MacOS
     
     - name: Upload macOS ZIP release
       uses: softprops/action-gh-release@v1
       with:
         tag_name: ${{ env.TAG_NAME }}
-        files: "LCL_macOS_x86_64.zip"
+        files: "Retro_Launchers_macOS_x86_64.zip"
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -9,6 +9,13 @@ if(NOT DEFINED SYSTEM_NAME)
     message(FATAL_ERROR "specify -DSYSTEM_NAME=platform_name (e.g., -DSYSTEM_NAME=Nintendo - Nintendo 3DS)")
 ENDIF()
 
+set(VALID_CORES azahar duckstation mgba melonds pcsx2 xemu xenia)
+list(FIND VALID_CORES "${CORE_LOWER}" CORE_INDEX)
+
+if(CORE_INDEX EQUAL -1)
+    message(FATAL_ERROR "Invalid CORE '${CORE}'. Accepted values: ${VALID_CORES}")
+endif()
+
 project(libretro_${CORE}_launcher)
 
 set(CMAKE_CXX_STANDARD 20)

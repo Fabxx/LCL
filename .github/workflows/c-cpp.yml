@@ -47,12 +47,12 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Install GCC 15 and CMake
+    - name: Install GCC 14 and CMake
       run: |
         sudo apt-get update
-        sudo apt-get install -y g++-15 gcc-15
-        sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-15 100
-        sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-15 100
+        sudo apt-get install -y g++-14 gcc-14
+        sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-14 100
+        sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-14 100
         sudo apt-get install -y cmake zip
 
     - name: Build for Linux

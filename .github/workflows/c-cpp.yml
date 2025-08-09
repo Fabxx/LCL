@@ -92,9 +92,7 @@ jobs:
 
       - name: Build project with MSVC
         shell: pwsh
-        run: |
-          & "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          
+        run: 
           .\build_all.ps1
 
       - name: Copy build artifacts

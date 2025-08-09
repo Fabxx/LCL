@@ -85,61 +85,58 @@ jobs:
 
       - name: Determine tag
         id: tag
-        shell: bash
+        shell: pwsh
         run: |
           git pull --rebase origin main
-          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
-          COMMIT_COUNT=$(git rev-list ${LAST_TAG}..HEAD --count)
 
-          BASE_VERSION=2.0
-          COMMIT_HASH=$(git rev-parse --short HEAD)
+          $lastTag = (git describe --tags --abbrev=0 2>$null) -or 'v0.0.0'
+          $commitCount = (git rev-list $lastTag..HEAD --count)
 
-          if [[ $COMMIT_COUNT -ge 100 ]]; then
-            NEW_TAG="v${BASE_VERSION}-${COMMIT_HASH}"
-          else
-            NEW_TAG=$LAST_TAG
-          fi
+          $baseVersion = "2.0"
+          $commitHash = (git rev-parse --short HEAD)
 
-          echo "TAG_NAME=$NEW_TAG" >> $GITHUB_ENV
+          if ($commitCount -ge 100) {
+            $newTag = "v$baseVersion-$commitHash"
+          }
+          else {
+            $newTag = $lastTag
+          }
+
+          Write-Host "Determined tag: $newTag"
+          echo "TAG_NAME=$newTag" >> $env:GITHUB_ENV
 
       - name: Create or update Git tag
+        shell: pwsh
         run: |
-          git tag -f ${{ env.TAG_NAME }}
-          git push -f origin ${{ env.TAG_NAME }}
+          git tag -f $env:TAG_NAME
+          git push -f origin $env:TAG_NAME
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Configure project with MSVC
-        shell: cmd
-        run: |
-          REM Load MSVC environment
-          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-
-          REM Configure project to use Visual Studio generator
-          cmake -S . -B build -G "Visual Studio 17 2022" -A x64
-
       - name: Build project with MSVC
-        shell: cmd
+        shell: pwsh
         run: |
-          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          cmake --build build --config Release
+          & "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          
+          .\build_all.ps1
 
       - name: Copy build artifacts
-        shell: powershell
+        shell: pwsh
         run: |
-          mkdir Windows\cores
-          Copy-Item build\Release\*.dll Windows\cores\ -ErrorAction SilentlyContinue
-          Copy-Item -Recurse info Windows\
+          New-Item -ItemType Directory -Force -Path Windows\cores | Out-Null
+          Copy-Item -Path build\Release\*.dll -Destination Windows\cores\ -ErrorAction SilentlyContinue
+          Copy-Item -Recurse -Path info -Destination Windows\
 
       - name: Create ZIP archive for Windows
-        shell: powershell
+        shell: pwsh
         run: |
-          Compress-Archive -Path Windows -DestinationPath Retro_Launchers_Win64.zip
+          Compress-Archive -Path Windows\* -DestinationPath Retro_Launchers_Win64.zip -Force
 
       - name: Upload Windows ZIP release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ env.TAG_NAME }}
-          files: "Retro_Launchers_Win64.zip"
+          files: Retro_Launchers_Win64.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+

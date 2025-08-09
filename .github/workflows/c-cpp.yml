@@ -26,19 +26,8 @@ jobs:
       id: tag
       run: |
         git pull --rebase origin main
-        LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
-        COMMIT_COUNT=$(git rev-list ${LAST_TAG}..HEAD --count)
-
-        BASE_VERSION=2.0
-        COMMIT_HASH=$(git rev-parse --short HEAD)
-
-        if [[ $COMMIT_COUNT -ge 100 ]]; then
-          NEW_TAG="v${BASE_VERSION}-${COMMIT_HASH}"
-        else
-          NEW_TAG=$LAST_TAG
-        fi
-
-        echo "TAG_NAME=$NEW_TAG" >> $GITHUB_ENV
+        BASE_VERSION=2.0.0
+        echo "TAG_NAME=$BASE_VERSION" >> $GITHUB_ENV
 
     - name: Create or update Git tag
       run: |
@@ -89,21 +78,9 @@ jobs:
         run: |
           git pull --rebase origin main
 
-          $lastTag = (git describe --tags --abbrev=0 2>$null) -or 'v0.0.0'
-          $commitCount = (git rev-list $lastTag..HEAD --count)
-
           $baseVersion = "2.0"
-          $commitHash = (git rev-parse --short HEAD)
-
-          if ($commitCount -ge 100) {
-            $newTag = "v$baseVersion-$commitHash"
-          }
-          else {
-            $newTag = $lastTag
-          }
-
-          Write-Host "Determined tag: $newTag"
-          echo "TAG_NAME=$newTag" >> $env:GITHUB_ENV
+          
+          echo "TAG_NAME=$baseVersion" >> $env:GITHUB_ENV
 
       - name: Create or update Git tag
         shell: pwsh

@@ -186,11 +186,11 @@ bool core::retro_core_setup()
 
     if (std::filesystem::exists(_executable)) {
         log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Found Emulator in: %s\n", _executable.c_str());
-        return true;
+        return false;
     }
 
     log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Downloading emulator.\n");
-    return false;
+    return true;
 }
 
 bool core::build_download_url(CURL* curl, CURLcode& res)
@@ -798,27 +798,14 @@ bool retro_load_game(const struct retro_game_info* info)
     core core;
 
     // if first boot download emulator, else check for updates
-    if (!core.retro_core_setup()) {
-        if (core.retro_core_get()) {
-            if (core.retro_core_extractor()) {
-                log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Core setup completed successfully.\n");
-            }
-            else {
-                log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Failed to extract core.\n");
-                return false;
-            }
-        }
-        else if (core.retro_core_get()) {
-            if (core.retro_core_extractor()) {
-                log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Core setup completed successfully.\n");
-            }
-            else {
-                log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Failed to extract core.\n");
-                return false;
-            }
-        }
+    if (core.retro_core_setup()) {
+        core.retro_core_get();
+        core.retro_core_extractor();
     }
+    core.retro_core_get();
+    core.retro_core_extractor();
     core.retro_core_boot(info);
+
     return true;
 }
 

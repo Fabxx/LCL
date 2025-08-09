@@ -47,22 +47,25 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Install dependencies
+    - name: Install GCC 13 and CMake
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential cmake zip
+        sudo apt-get install -y g++-13 gcc-13
+        sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 100
+        sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-13 100
+        sudo apt-get install -y cmake zip
 
     - name: Build for Linux
       run: |
         chmod +x ./build_all.sh
-        ./build_all.sh
+        CXXFLAGS="-std=c++20" ./build_all.sh
 
         mkdir -p Linux/cores
         cp build/*.so Linux/cores || true
         cp -r info Linux/ || true
 
     - name: Create ZIP archive for Linux
-      run: zip -r Retro_Launchers_Win64.zip Linux
+      run: zip -r Retro_Launchers_Linux_amd64.zip Linux
 
     - name: Upload Linux ZIP release
       uses: softprops/action-gh-release@v1
@@ -107,7 +110,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Setup MSYS2
+    - name: Setup MSYS2 with GCC 13+
       uses: msys2/setup-msys2@v2
       with:
         msystem: MINGW64
@@ -122,7 +125,7 @@ jobs:
       shell: msys2 {0}
       run: |
         chmod +x ./build_all.sh
-        ./build_all.sh
+        CXXFLAGS="-std=c++20" ./build_all.sh
 
         mkdir -p Windows/cores
         cp build/*.dll Windows/cores || true
@@ -175,14 +178,14 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Install dependencies
+    - name: Install GCC and CMake
       run: |
-        brew install cmake ninja zip
+        brew install gcc cmake ninja zip
 
     - name: Build for macOS
       run: |
         chmod +x ./build_all.sh
-        ./build_all.sh
+        CXXFLAGS="-std=c++20" ./build_all.sh
 
         mkdir -p MacOS/cores
         cp build/*.dylib MacOS/cores || true

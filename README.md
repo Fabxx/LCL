@@ -1,41 +1,41 @@
 # DISCLAIMER
 The cores DO NOT integrate any emulator code. All they do is to download the official emulators from github sources, and then allow the user to use those from retroarch UI.
 
-# Default Paths
-
-- Windows: `C:\RetroArch-Win64\system`
-
-- Linux: `~/.config/retroarch/system`
-
-- macOS: `~/Library/Application Support/RetroArch/system`
-
-
-# Dependencies [Linux Only]
-
-- `jq` JSON parser package for Linux
-- `bash` interpreter for Linux
-
-# Dependencies [Windows Only]
+# Windows Only Setup
 
 - To allow the `Invoke Web-Request` command, internet explorer must be run at least once, and configure it with default options.
+ 
+
+# Building
+
+- Install `Cmake`
+
+- open terminal and paste this: `git clone "https://github.com/Fabxx/LCL"`
+
+- `\.build_all.ps1` if on windows, `./build_all.sh` if on linux.
+
+# Core installation
+
+- Windows:
+  - `.dll` files in `cores` folder of retroarch
+  - `.info` files in `info` folder of retroarch
+
+- Linux:
+  - `.so` and `.info` files in `cores` folder of retroarch
   
+ 
 # Core behavior
 
 - Fetch (first boot):
-   - invoke a web request on github API, to fetch: `tag name`, `url`, `url id`, `asset name`.
-   - Compose the final URL by concatenating base url and the retreived details.
-   - download and extract the detected asset archive, and depending on the extension use the appropriate
-     extraction command, which can be: `tar`, `unzip`, `Expand-Archive`, `Expand-7zip`
+   - invoke a web request on github API, to fetch: `tag name`, `url`, `url id`, `asset id`.
+   - Compose the final URL.
+   - download and extract the detected archive
    - export url and IDs in txt files for updater.
 
 - Update:
-   - If the binary is detected, contact the github API to retreive the new URL or URL id, and compare them.
+   - If the binary is detected, contact the github API to retreive the new URL id.
    - If URLs/IDs are different, a new download on the newest URL will be invoked.
    - The current version will be overwritten for next comparisons.
-   - In case of RPCS3 For windows and PPSSPP, the URLs are directly retreived from the website HTML, which contain directly
-     the latest url.
-   - In case of mGBA for macOS, the `.dmg` image is downloaded, then `hdiutil` mounts it to a `tmp_dir` with user privileges,
-     and then the needed content is copied.
 
 - Thumnail Setup
    -  Covers must be in `.png` and placed in `thumbnails/system name` folder of retroarch. Inside you will have:
@@ -53,17 +53,6 @@ The cores DO NOT integrate any emulator code. All they do is to download the off
      and if supported it will run with the given BIOS.
    - If running a game from a playlist `info->path` is given as a argument to the emulator executable.
 
-# Core installation
-
-- Windows:
-  - `.dll` files must go in `cores` folder of retroarch
-  -  `.info` files must go in `info` folder
-
-- Linux:
-  - `.so` and `.info` files must go in `cores` folder of retroarch
-
-- MacOS:
-  - `.dylib` and `.info` files must go in `cores` folder of retroarch
 
 
 # Creating a playlist [Directory Scan]
@@ -93,17 +82,6 @@ The cores DO NOT integrate any emulator code. All they do is to download the off
 
   - PPSSPP, xenia_canary, lime3DS do not provide a BIOS functionality yet.
 
-# Emulator Notes
-
-- you must configure the standalone emulators from their GUI (provide BIOS files, video settings and such.)
-
-- RPCS3 Launcher is currently unusable. You can filter by `.bin` but that would find thousands of files,
-  since RPCS3 requires you to decrypt and unpack the game files at the current state, and launch from `EBOOT.BIN`
-
-- Xenia canary requires wine and winetricks under `Linux/macOS`.
-  - This is handled by the core to check if `wine` or `winetricks` commands fail. 
-  - If they do, install them. On `macOS` you need `homebrew` in order to install wine and winetricks.
-
 
 # Dev notes
 
@@ -115,7 +93,7 @@ To check the error of a core, launch retroarch from terminal (linux) or enable c
 
 Launchers have their own log messages which can be `[LAUNCHER-INFO]` or `[LAUNCHER-ERROR]`
 
-You should create a issue with these messages, it will help to understand the issue.
+You should create an issue with these messages, it will help to understand the issue.
 
 
 # Showcase

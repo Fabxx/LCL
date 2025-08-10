@@ -802,8 +802,10 @@ bool retro_load_game(const struct retro_game_info* info)
         core.retro_core_get();
         core.retro_core_extractor();
     }
-    core.retro_core_get();
-    core.retro_core_extractor();
+    if (core.retro_core_get()) {
+        core.retro_core_extractor();
+    }
+
     core.retro_core_boot(info);
 
     return true;

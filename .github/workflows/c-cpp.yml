@@ -93,6 +93,8 @@ jobs:
         sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-14 100
         sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-14 100
         sudo apt-get install -y cmake zip pkg-config libgnutls28-dev
+        sudo apt-get remove -y libssl-dev
+
 
     - name: Build for Linux (GnuTLS)
       run: |

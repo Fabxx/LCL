@@ -546,7 +546,7 @@ bool core::retro_core_extractor()
 }
 #endif
 
-// Compose the command to boot emulator + args, don't escape the args.
+// Compose the command to boot emulator + args. Quote arguments that can have spaces.
 bool core::retro_core_boot(const struct retro_game_info* info)
 {
     std::string command{};
@@ -554,7 +554,7 @@ bool core::retro_core_boot(const struct retro_game_info* info)
 
     if (core_name == "azahar") {
         if (info != NULL && info->path != NULL) {
-            command = std::format("\"{}\" {}", _executable, info->path);
+            command = std::format("\"{}\" \"{}\"", _executable, info->path);
         }
         else {
             command = std::format("\"{}\"", _executable);
@@ -563,7 +563,7 @@ bool core::retro_core_boot(const struct retro_game_info* info)
     else if (core_name == "duckstation") {
         if (info != NULL && info->path != NULL) {
             args = "-fullscreen";
-            command = std::format("\"{}\" {} {}", _executable, args, info->path);
+            command = std::format("\"{}\" {} \"{}\"", _executable, args, info->path);
         }
         else {
             args = "-fullscreen -bios";
@@ -574,7 +574,7 @@ bool core::retro_core_boot(const struct retro_game_info* info)
     else if (core_name == "mgba") {
         if (info != NULL && info->path != NULL) {
             args = "-f";
-            command = std::format("\"{}\" {} {}", _executable, args, info->path);
+            command = std::format("\"{}\" {} \"{}\"", _executable, args, info->path);
         }
         else {
             args = "-f";
@@ -584,7 +584,7 @@ bool core::retro_core_boot(const struct retro_game_info* info)
     else if (core_name == "melonds") {
         if (info != NULL && info->path != NULL) {
             args = "-f";
-            command = std::format("\"{}\" {} {}", _executable, args, info->path);
+            command = std::format("\"{}\" {} \"{}\"", _executable, args, info->path);
         }
         else {
             args = "-f";
@@ -594,7 +594,7 @@ bool core::retro_core_boot(const struct retro_game_info* info)
     else if (core_name == "pcsx2") {
         if (info != NULL && info->path != NULL) {
             args = "-fullscreen";
-            command = std::format("\"{}\" {} {}", _executable, args, info->path);
+            command = std::format("\"{}\" {} \"{}\"", _executable, args, info->path);
         }
         else {
             args = "-fullscreen -bios";
@@ -604,7 +604,7 @@ bool core::retro_core_boot(const struct retro_game_info* info)
     else if (core_name == "xemu") {
         if (info != NULL && info->path != NULL) {
             args = "-full-screen -dvd_path";
-            command = std::format("\"{}\" {} {}", _executable, args, info->path);
+            command = std::format("\"{}\" {} \"{}\"", _executable, args, info->path);
         }
         else {
             args = "-full-screen";
@@ -614,7 +614,7 @@ bool core::retro_core_boot(const struct retro_game_info* info)
     else if (core_name == "xenia") {
         if (info != NULL && info->path != NULL) {
             args = "--fullscreen=true";
-            command = std::format("\"{}\" {} {}", _executable, args, info->path);
+            command = std::format("\"{}\" {} \"{}\"", _executable, args, info->path);
         }
         else {
             args = "--fullscreen=true";

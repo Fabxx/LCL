@@ -88,6 +88,10 @@ The cores DO NOT integrate any emulator code. All they do is to download the off
 - Retroarch initializes `info` structure and `info->path` member to get the game to load. If no game is given structure is NULL, if a game is given,
   `info->path` can be passed as argument, both `info` and `info->path` must NOT be NULL.
 
+- `.info` file names must match the string in `corename` field.
+
+- `.info` and `.dll`/`.so` files must have the same name.
+
 # Reporting Issues
 To check the error of a core, launch retroarch from terminal (linux) or enable console logging from windows.
 

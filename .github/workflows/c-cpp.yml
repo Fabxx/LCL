@@ -98,7 +98,7 @@ jobs:
 
     - name: Build for Linux (GnuTLS)
       run: |
-        chmod +x ./build_all.sh && ./build_all.sh -DCMAKE_USE_OPENSSL=OFF -DCMAKE_USE_GNUTLS=ON
+        chmod +x ./build_all.sh && ./build_all.sh
 
         mkdir -p Linux/cores
         cp build/*.so Linux/cores || true

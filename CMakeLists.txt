@@ -23,7 +23,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Allow compilation of static libraries on Unix-like systems
 if(UNIX OR APPLE)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
     set(CMAKE_POSITION_INDEPENDENT_CODE ON CACHE BOOL "" FORCE)
 endif()
 
@@ -36,7 +35,6 @@ FetchContent_Declare(
   GIT_TAG v3.12.0
 )
 FetchContent_MakeAvailable(nlohmann_json)
-
 
 
 # --- CURL ---
@@ -81,9 +79,6 @@ else()
         find_package(GnuTLS QUIET)
         if(GnuTLS_FOUND)
             message(STATUS "Using GnuTLS for TLS")
-            set(OPENSSL_USE_STATIC_LIBS FALSE)
-            set(CMAKE_USE_OPENSSL OFF CACHE BOOL "" FORCE)
-            set(USE_OPENSSL OFF CACHE BOOL "" FORCE)
             set(GNUTLS_USE_STATIC_LIBS TRUE)
             set(CMAKE_USE_GNUTLS ON CACHE BOOL "" FORCE)
             set(USE_GNUTLS ON CACHE BOOL "" FORCE)

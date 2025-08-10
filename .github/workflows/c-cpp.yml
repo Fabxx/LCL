@@ -63,7 +63,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  build-linux-gnutls:
+    build-linux-gnutls:
     runs-on: ubuntu-latest
 
     steps:
@@ -93,12 +93,12 @@ jobs:
         sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-14 100
         sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-14 100
         sudo apt-get install -y cmake zip pkg-config libgnutls28-dev
-        sudo apt-get remove -y libssl-dev
-
+        sudo apt-get remove -y libssl-dev || true
 
     - name: Build for Linux (GnuTLS)
       run: |
-        chmod +x ./build_all.sh && ./build_all.sh
+        chmod +x ./build_all.sh
+        ./build_all.sh -DCMAKE_USE_OPENSSL=OFF -DCMAKE_USE_GNUTLS=ON
 
         mkdir -p Linux/cores
         cp build/*.so Linux/cores || true

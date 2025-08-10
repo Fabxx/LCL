@@ -16,7 +16,7 @@ if(CORE_INDEX EQUAL -1)
     message(FATAL_ERROR "Invalid CORE '${CORE}'. Accepted values: ${VALID_CORES}")
 endif()
 
-project(libretro_${CORE}_launcher)
+project(${CORE})
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -99,7 +99,7 @@ set(SOURCES
 )
 
 # Define dynamic target name
-set(TARGET_NAME libretro_${CORE}_launcher)
+set(TARGET_NAME ${CORE})
 
 add_library(${TARGET_NAME} SHARED ${SOURCES})
 
@@ -113,4 +113,4 @@ target_link_libraries(${TARGET_NAME} PRIVATE
 )
 
 # Force correct output name
-set_target_properties(${TARGET_NAME} PROPERTIES PREFIX "" OUTPUT_NAME "libretro_${CORE}_launcher")
+set_target_properties(${TARGET_NAME} PROPERTIES PREFIX "" OUTPUT_NAME "${CORE}")

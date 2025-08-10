@@ -13,7 +13,7 @@ permissions:
   packages: write
 
 jobs:
-  build-linux:
+  build-linux-openSSL:
     runs-on: ubuntu-latest
 
     steps:
@@ -53,15 +53,66 @@ jobs:
         cp -r info Linux/ || true
 
     - name: Create ZIP archive for Linux
-      run: zip -r Retro_Launchers_Linux_amd64.zip Linux
+      run: zip -r Retro_Launchers_Linux_OpenSSL_amd64.zip Linux
 
     - name: Upload Linux ZIP release
       uses: softprops/action-gh-release@v1
       with:
         tag_name: ${{ env.TAG_NAME }}
-        files: "Retro_Launchers_Linux_amd64.zip"
+        files: "Retro_Launchers_Linux_OpenSSL_amd64.zip"
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-linux-gnutls:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    - name: Determine tag
+      id: tag
+      run: |
+        git pull --rebase origin main
+        BASE_VERSION=2.0
+        echo "TAG_NAME=$BASE_VERSION" >> $GITHUB_ENV
+
+    - name: Create or update Git tag
+      run: |
+        git tag -f ${{ env.TAG_NAME }}
+        git push -f origin ${{ env.TAG_NAME }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Install GCC 14, CMake and GnuTLS
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y g++-14 gcc-14
+        sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-14 100
+        sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-14 100
+        sudo apt-get install -y cmake zip pkg-config libgnutls28-dev
+
+    - name: Build for Linux (GnuTLS)
+      run: |
+        chmod +x ./build_all.sh && ./build_all.sh
+
+        mkdir -p Linux/cores
+        cp build/*.so Linux/cores || true
+        cp -r info Linux/ || true
+
+    - name: Create ZIP archive for Linux (GnuTLS)
+      run: zip -r Retro_Launchers_Linux_GnuTLS_amd64.zip Linux
+
+    - name: Upload Linux ZIP release (GnuTLS)
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ env.TAG_NAME }}
+        files: "Retro_Launchers_Linux_GnuTLS_amd64.zip"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 
   build-windows:
       runs-on: windows-latest

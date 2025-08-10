@@ -1,4 +1,4 @@
-display_name         = "Microsoft - Xbox 360 - Xenia"
+display_name         = "Xenia - Xbox 360"
 authors              = "Team Xenia"
 supported_extensions = "iso|xex|zar"
 corename             = "Xenia"

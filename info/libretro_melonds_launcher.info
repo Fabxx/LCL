@@ -1,4 +1,4 @@
-display_name         = "Nintendo - Nintendo DS - melonDS"
+display_name         = "melonDS - DS"
 authors              = "Team melonDS"
 supported_extensions = "nds|ids|nds"
 corename             = "melonDS"

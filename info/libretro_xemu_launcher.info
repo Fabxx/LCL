@@ -1,4 +1,4 @@
-display_name         = "Microsoft - Xbox - Xemu"
+display_name         = "Xemu - Xbox"
 authors              = "Team Xemu"
 supported_extensions = "iso"
 corename             = "Xemu"

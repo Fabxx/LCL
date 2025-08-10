@@ -1,4 +1,4 @@
-display_name         = "Nintendo - Game Boy Advance - mGBA"
+display_name         = "mGBA - Game Boy Advance"
 authors              = "Team mGBA"
 supported_extensions = "gba|gbc|gb"
 corename             = "mGBA"

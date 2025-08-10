@@ -1,4 +1,4 @@
-display_name         = "Nintendo - Switch - Ryujinx"
+display_name         = "Ryujinx - Switch"
 authors              = "Team Ryujinx"
 supported_extensions = "nsp|xci"
 corename             = "Ryujinx"

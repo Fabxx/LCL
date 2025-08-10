@@ -1,4 +1,4 @@
-display_name         = "Sony - PlayStation - Duckstation"
+display_name         = "Duckstation - Playstation"
 authors              = "Team Duckstation"
 supported_extensions = "exe|psexe|cue|bin|img|iso|chd|pbp|ecm|mds|psf|m3u"
 corename             = "Duckstation"

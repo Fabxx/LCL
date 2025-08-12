@@ -16,13 +16,7 @@ The cores DO NOT integrate any emulator code. All they do is to download the off
 
 # Core installation
 
-- Windows:
-  - `.dll` files in `cores` folder of retroarch
-  - `.info` files in `info` folder of retroarch
-
-- Linux:
-  - `.so` and `.info` files in `cores` folder of retroarch
-  
+Check your `Core` and `Info` path in `Settings > Folders` and place the files where indicated.
  
 # Core behavior
 

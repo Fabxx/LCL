@@ -27,7 +27,7 @@ core::core()
     _base_path = std::filesystem::current_path();
 
     log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Using current path: %s\n", _base_path.string().c_str());
-    log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Core name: %s\n", core_name);
+    log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Core name: %s\n", core_name.c_str());
 
     _directories = {
          (_base_path / "system" / core_name).string(),
@@ -392,7 +392,6 @@ bool core::retro_core_get()
     }
     else {
         log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Core is already up to date (version: %s).\n", _current_version.c_str());
-		std::filesystem::remove(_downloaderDirs[_downloader_ids::DOWNLOADED_FILE]);
         return false;
     }
 
@@ -437,6 +436,7 @@ bool core::retro_core_extractor()
         );
 
         system(command.c_str());
+        std::filesystem::remove(_downloaderDirs[_downloader_ids::DOWNLOADED_FILE]);
     }
     // Use 7z4PowerShell if 7z
     else if (seven_zip_emulators.contains(core_name)) {
@@ -486,6 +486,7 @@ bool core::retro_core_extractor()
         );
 
         system(command.c_str());
+        std::filesystem::remove(_downloaderDirs[_downloader_ids::DOWNLOADED_FILE]);
     }
 
     return true;
@@ -523,6 +524,7 @@ bool core::retro_core_extractor()
         );
 
         system(command.c_str());
+        std::filesystem::remove(_downloaderDirs[_downloader_ids::DOWNLOADED_FILE]);
     }
     else if (seven_zip_emulators.contains(core_name)) {
         command = std::format(
@@ -541,6 +543,7 @@ bool core::retro_core_extractor()
         );
 
         system(command.c_str());
+        std::filesystem::remove(_downloaderDirs[_downloader_ids::DOWNLOADED_FILE]);
     }
     return true;
 }
@@ -801,8 +804,7 @@ bool retro_load_game(const struct retro_game_info* info)
     if (core.retro_core_setup()) {
         core.retro_core_get();
         core.retro_core_extractor();
-    }
-    if (core.retro_core_get()) {
+    } else if (core.retro_core_get()) {
         core.retro_core_extractor();
     }
 

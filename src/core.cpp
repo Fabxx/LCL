@@ -106,7 +106,7 @@ core::core()
     if (core_name == "melonds") {
         _asset_id = _asset_ids::MELONDS_LINUX;
         _executable = (_base_path / "system" / core_name / "melonDS.AppImage").string();
-        _downloaderDirs.push_back(_executable);
+        _downloaderDirs.push_back(_executable + ".zip");
     }
     
     if (core_name == "pcsx2") {

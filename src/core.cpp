@@ -105,7 +105,7 @@ core::core()
     
     if (core_name == "melonds") {
         _asset_id = _asset_ids::MELONDS_LINUX;
-        _executable = (_base_path / "system" / core_name / "melonDS.AppImage").string();
+        _executable = (_base_path / "system" / core_name / "melonDS-x86_64.AppImage").string();
         _downloaderDirs.push_back(_executable + ".zip");
     }
     
@@ -318,7 +318,7 @@ bool core::retro_core_get()
         return false;
     }
 
-    bool firstBoot = !std::filesystem::exists(_downloaderDirs[_downloader_ids::NEW_VERSION_FILE]);
+    bool firstBoot = !std::filesystem::exists(_executable);
 
     if (firstBoot) {
         log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] First boot detected, downloading emulator...\n");

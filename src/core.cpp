@@ -532,7 +532,7 @@ bool core::retro_core_extractor()
             _downloaderDirs[_downloader_ids::DOWNLOADED_FILE],
             _directories[_directory_ids::EMULATOR_PATH],
             _directories[_directory_ids::EMULATOR_PATH],
-            _downloaderDirs[_downloader_ids::DOWNLOADED_FILE],
+            _directories[_directory_ids::EMULATOR_PATH],
             _executable
         );
 
@@ -554,7 +554,7 @@ bool core::retro_core_extractor()
             _downloaderDirs[_downloader_ids::DOWNLOADED_FILE],
             _directories[_directory_ids::EMULATOR_PATH],
             _directories[_directory_ids::EMULATOR_PATH],
-            _downloaderDirs[_downloader_ids::DOWNLOADED_FILE],
+            _directories[_directory_ids::EMULATOR_PATH],
             _executable
         );
 

@@ -506,7 +506,7 @@ bool core::retro_core_extractor()
     if (ext == ".AppImage") {
         command = std::format(
             "chmod +x '{}'",
-            _downloaderDirs[_downloader_ids::DOWNLOADED_FILE]
+            _executable
         );
         system(command.c_str());
     }

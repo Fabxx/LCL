@@ -504,10 +504,7 @@ bool core::retro_core_extractor()
     const std::unordered_set<std::string> seven_zip_emulators = { "mgba", "pcsx2" };
 
     if (ext == ".AppImage") {
-        command = std::format(
-            "chmod +x '{}'",
-            _executable
-        );
+        command = std::format("chmod +x '{}'", _executable);
         system(command.c_str());
     }
 

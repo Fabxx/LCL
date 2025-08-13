@@ -499,14 +499,24 @@ bool core::retro_core_extractor()
     const std::string ext = archive_path.extension().string();
     std::string command{};
 
-    const std::unordered_set<std::string> supported_exts = { ".zip", ".7z", ".tar" };
+    const std::unordered_set<std::string> supported_exts = { ".zip", ".7z", ".tar"};
     const std::unordered_set<std::string> zip_emulators = { "azahar", "duckstation", "melonds", "xemu", "xenia" };
     const std::unordered_set<std::string> seven_zip_emulators = { "mgba", "pcsx2" };
 
+    if (ext == ".AppImage") {
+        command = std::format(
+            "chmod +x '{}'",
+            _downloaderDirs[_downloader_ids::DOWNLOADED_FILE]
+        );
+        system(command.c_str());
+    }
+
+    // Caso archivi
     if (!supported_exts.contains(ext)) {
-        log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Not an archive, aborting extraction.\n");
+        log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Unsupported file type, aborting extraction.\n");
         return false;
     }
+
     if (zip_emulators.contains(core_name)) {
         command = std::format(
             "unzip -o '{}' -d '{}'; "
@@ -515,12 +525,15 @@ bool core::retro_core_extractor()
             "if [ -n \"$subfolder\" ]; then "
             "mv \"$subfolder\"/* '{}'; "
             "rm -rf \"$subfolder\"; "
-            "fi",
+            "fi; "
+            "chmod +x '{}/{}'",
             _downloaderDirs[_downloader_ids::DOWNLOADED_FILE],
             _directories[_directory_ids::EMULATOR_PATH],
             _downloaderDirs[_downloader_ids::DOWNLOADED_FILE],
             _directories[_directory_ids::EMULATOR_PATH],
-            _directories[_directory_ids::EMULATOR_PATH]
+            _directories[_directory_ids::EMULATOR_PATH],
+            _downloaderDirs[_downloader_ids::DOWNLOADED_FILE],
+            _executable
         );
 
         system(command.c_str());
@@ -534,12 +547,15 @@ bool core::retro_core_extractor()
             "if [ -n \"$subfolder\" ]; then "
             "mv \"$subfolder\"/* '{}'; "
             "rm -rf \"$subfolder\"; "
-            "fi",
+            "fi; "
+            "chmod +x '{}/{}'",
             _directories[_directory_ids::EMULATOR_PATH],
             _downloaderDirs[_downloader_ids::DOWNLOADED_FILE],
             _downloaderDirs[_downloader_ids::DOWNLOADED_FILE],
             _directories[_directory_ids::EMULATOR_PATH],
-            _directories[_directory_ids::EMULATOR_PATH]
+            _directories[_directory_ids::EMULATOR_PATH],
+            _downloaderDirs[_downloader_ids::DOWNLOADED_FILE],
+            _executable
         );
 
         system(command.c_str());
@@ -548,6 +564,7 @@ bool core::retro_core_extractor()
     return true;
 }
 #endif
+
 
 // Compose the command to boot emulator + args. Quote arguments that can have spaces.
 bool core::retro_core_boot(const struct retro_game_info* info)
@@ -571,7 +588,6 @@ bool core::retro_core_boot(const struct retro_game_info* info)
         else {
             args = "-fullscreen -bios";
             command = std::format("\"{}\" {}", _executable, args);
-
         }
     }
     else if (core_name == "mgba") {
@@ -580,8 +596,7 @@ bool core::retro_core_boot(const struct retro_game_info* info)
             command = std::format("\"{}\" {} \"{}\"", _executable, args, info->path);
         }
         else {
-            args = "-f";
-            command = std::format("\"{}\" {}", _executable, args);
+            command = std::format("\"{}\"", _executable);
         }
     }
     else if (core_name == "melonds") {
@@ -590,8 +605,7 @@ bool core::retro_core_boot(const struct retro_game_info* info)
             command = std::format("\"{}\" {} \"{}\"", _executable, args, info->path);
         }
         else {
-            args = "-f";
-            command = std::format("\"{}\" {}", _executable, args);
+            command = std::format("\"{}\"", _executable);
         }
     }
     else if (core_name == "pcsx2") {
@@ -620,8 +634,7 @@ bool core::retro_core_boot(const struct retro_game_info* info)
             command = std::format("\"{}\" {} \"{}\"", _executable, args, info->path);
         }
         else {
-            args = "--fullscreen=true";
-            command = std::format("\"{}\" {}", _executable, args);
+            command = std::format("\"{}\"", _executable);
         }
     }
 

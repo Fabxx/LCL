@@ -1,5 +1,6 @@
 ﻿#include "core.hpp"
 #include <iostream>
+#include <format>
 #include <fstream>
 #include <unordered_set>
 

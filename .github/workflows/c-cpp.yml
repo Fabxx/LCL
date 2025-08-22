@@ -201,7 +201,7 @@ jobs:
             zip
 
       - name: Build project
-        shell: msys2
+        shell: msys2 {0}
         run: 
           ./build_all.sh
 

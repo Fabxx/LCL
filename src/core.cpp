@@ -570,11 +570,11 @@ bool core::retro_core_boot(const struct retro_game_info* info)
 
     if (core_name == "azahar") {
         if (info != NULL && info->path != NULL) {
-            args.push_back(_executable);
-            args.push_back(info->path);
+            args.push_back(std::format("\"{}\" ", _executable));
+            args.push_back(std::format("\"{}\"", info->path));
         }
         else {
-            args.push_back(_executable);
+            args.push_back(std::format("\"{}\"", _executable));
         }
     }
     else if (core_name == "duckstation") {
@@ -646,18 +646,14 @@ bool core::retro_core_boot(const struct retro_game_info* info)
 
 	log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Booting emulator.\n");
 
-    reproc::arguments arguments(args);
-	_child_process_options.nonblocking = true;
-    _child_process_ec = _child_process.start(arguments, _child_process_options);
+    char cmd[4096]{};
     
     for (auto& arg : args) {
-        log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Arg: %s\n", arg.c_str());
-	}
-    
-    if (_child_process_ec) {
-        log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Process error: %s\n", _child_process_ec.message().c_str());
-        return false;
-    }
+		strcat(cmd, arg.c_str());
+	} 
+
+	log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Command: %s\n", cmd);
+    system(cmd);
 
     return true;
 }

@@ -1,6 +1,6 @@
 mkdir -p build
 
-cp .\info\ .\build\
+cp "info" "build"
 
 cd build
 

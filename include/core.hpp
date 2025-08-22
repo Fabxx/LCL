@@ -2,15 +2,12 @@
 
 #include <vector>
 #include <string>
-#include <string_view>
 #include <filesystem>
-#include <fstream>
-#include <format>
-#include <unordered_set>
 
 #include "curl/curl.h"
 #include "libretro.h"
 #include "nlohmann/json.hpp"
+#include "reproc++/reproc.hpp"
 
 class core
 {
@@ -40,15 +37,19 @@ private:
 	// using path to not worry about separators
 	std::filesystem::path _base_path;
 
+	reproc::process _child_process;
+	reproc::options _child_process_options;
+	std::error_code _child_process_ec;
+
 	int _asset_id;
 	int _url_asset_id;
 
 	// IDs for the assets in the GitHub release section
 	enum _asset_ids {
 		
-		AZAHAR_WIN = 4,
-		AZAHAR_LINUX = 9,
-		AZAHAR_MACOS = 2,
+		AZAHAR_WIN = 6,
+		AZAHAR_LINUX = 11,
+		AZAHAR_MACOS = 4,
 
 		DUCKSTATION_WIN = 9,
 		DUCKSTATION_LINUX = 13,

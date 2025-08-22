@@ -91,12 +91,25 @@ endif()
 FetchContent_MakeAvailable(curl)
 
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+# --- REPROC ---
+FetchContent_Declare(
+  reproc
+  GIT_REPOSITORY https://github.com/DaanDeMeyer/reproc.git
+  GIT_TAG v14.2.4
+)
+
+set(REPROC_BUILD_SHARED OFF CACHE BOOL "Build static reproc++" FORCE)
+set(REPROC_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(REPROC_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(REPROC_BUILD_INSTALL OFF CACHE BOOL "" FORCE)
+set(REPROC_BUILD_C_API ON CACHE BOOL "" FORCE)
+set(REPROC_BUILD_CPP_API ON CACHE BOOL "" FORCE)
+set(REPROC++ ON CACHE BOOL "" FORCE)
+
+FetchContent_MakeAvailable(reproc)
 
 # Source files
-set(SOURCES
-    src/core.cpp
-)
+set(SOURCES src/core.cpp)
 
 # Define dynamic target name
 set(TARGET_NAME ${CORE})
@@ -106,10 +119,16 @@ add_library(${TARGET_NAME} SHARED ${SOURCES})
 # Define string macros for the core and system. Both are exported in a string.
 target_compile_definitions(${TARGET_NAME} PRIVATE CORE=\"${CORE}\" SYSTEM_NAME=\"${SYSTEM_NAME}\")
 
+target_include_directories(${TARGET_NAME} PRIVATE 
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+
 # Link external dependencies
 target_link_libraries(${TARGET_NAME} PRIVATE
     nlohmann_json
     CURL::libcurl
+    reproc
+    reproc++
 )
 
 # Force correct output name

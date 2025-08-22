@@ -1,5 +1,8 @@
 ﻿#include "core.hpp"
+#include "reproc++/run.hpp"
 #include <iostream>
+#include <fstream>
+#include <unordered_set>
 
 using json = nlohmann::json;
 
@@ -560,81 +563,102 @@ bool core::retro_core_extractor()
 }
 #endif
 
-
-// Compose the command to boot emulator + args. Quote arguments that can have spaces.
+// Compose the command to boot emulator + args.
 bool core::retro_core_boot(const struct retro_game_info* info)
 {
-    std::string command{};
-    std::string args{};
+    std::vector<std::string> args;
 
     if (core_name == "azahar") {
         if (info != NULL && info->path != NULL) {
-            command = std::format("\"{}\" \"{}\"", _executable, info->path);
+            args.push_back(_executable);
+            args.push_back(info->path);
         }
         else {
-            command = std::format("\"{}\"", _executable);
+            args.push_back(_executable);
         }
     }
     else if (core_name == "duckstation") {
         if (info != NULL && info->path != NULL) {
-            args = "-fullscreen";
-            command = std::format("\"{}\" {} \"{}\"", _executable, args, info->path);
+            args.push_back(_executable);
+            args.push_back("-fullscreen");
+            args.push_back(info->path);
         }
         else {
-            args = "-fullscreen -bios";
-            command = std::format("\"{}\" {}", _executable, args);
+            args.push_back(_executable);
+            args.push_back("-fullscreen");
+            args.push_back("-bios");
         }
     }
     else if (core_name == "mgba") {
         if (info != NULL && info->path != NULL) {
-            args = "-f";
-            command = std::format("\"{}\" {} \"{}\"", _executable, args, info->path);
+            args.push_back(_executable);
+            args.push_back("-f");
+			args.push_back(info->path);
         }
         else {
-            command = std::format("\"{}\"", _executable);
+            args.push_back(_executable);
         }
     }
     else if (core_name == "melonds") {
         if (info != NULL && info->path != NULL) {
-            args = "-f";
-            command = std::format("\"{}\" {} \"{}\"", _executable, args, info->path);
+            args.push_back(_executable);
+            args.push_back("-f");
+            args.push_back(info->path);
         }
         else {
-            command = std::format("\"{}\"", _executable);
+            args.push_back(_executable);
         }
     }
     else if (core_name == "pcsx2") {
         if (info != NULL && info->path != NULL) {
-            args = "-fullscreen";
-            command = std::format("\"{}\" {} \"{}\"", _executable, args, info->path);
+            args.push_back(_executable);
+            args.push_back("-fullscreen");
+            args.push_back(info->path);
         }
         else {
-            args = "-fullscreen -bios";
-            command = std::format("\"{}\" {}", _executable, args);
+            args.push_back(_executable);
+            args.push_back("-fullscreen");
+            args.push_back("-bios");
         }
     }
     else if (core_name == "xemu") {
         if (info != NULL && info->path != NULL) {
-            args = "-full-screen -dvd_path";
-            command = std::format("\"{}\" {} \"{}\"", _executable, args, info->path);
+            args.push_back(_executable);
+            args.push_back("-full-screen");
+            args.push_back("-dvd_path");
+            args.push_back(info->path);
         }
         else {
-            args = "-full-screen";
-            command = std::format("\"{}\" {}", _executable, args);
+            args.push_back(_executable);
+            args.push_back("-full-screen");
         }
     }
     else if (core_name == "xenia") {
         if (info != NULL && info->path != NULL) {
-            args = "--fullscreen=true";
-            command = std::format("\"{}\" {} \"{}\"", _executable, args, info->path);
+            args.push_back(_executable);
+            args.push_back("--fullscreen=true");
+            args.push_back(info->path);
         }
         else {
-            command = std::format("\"{}\"", _executable);
+            args.push_back(_executable);
         }
     }
 
-	log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Booting emulator with command: %s\n", command.c_str());
-	system(command.c_str());
+	log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Booting emulator.\n");
+
+    reproc::arguments arguments(args);
+	_child_process_options.nonblocking = true;
+    _child_process_ec = _child_process.start(arguments, _child_process_options);
+    
+    for (auto& arg : args) {
+        log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Arg: %s\n", arg.c_str());
+	}
+    
+    if (_child_process_ec) {
+        log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Process error: %s\n", _child_process_ec.message().c_str());
+        return false;
+    }
+
     return true;
 }
 

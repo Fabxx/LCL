@@ -203,7 +203,7 @@ jobs:
       - name: Build project
         shell: msys2 {0}
         run: 
-          ./build_all.sh
+          ./build_all_mingw.sh
 
       - name: Copy build artifacts
         shell: pwsh

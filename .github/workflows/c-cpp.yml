@@ -193,12 +193,20 @@ jobs:
         with:
           update: true
           install: >
-            mingw-w64-x86_64-toolchain
-            mingw-w64-x86_64-cmake
-            mingw-w64-x86_64-ninja
-            mingw-w64-x86_64-openssl
-            mingw-w64-x86_64-gnutls
-            zip
+                mingw-w64-x86_64-cmake 
+                mingw-w64-x86_64-ninja
+                mingw-w64-x86_64-zlib
+                mingw-w64-x86_64-ca-certificates
+                mingw-w64-x86_64-openssl
+                mingw-w64-x86_64-gnutls
+                mingw-w64-x86_64-brotli
+                mingw-w64-x86_64-zstd
+                mingw-w64-x86_64-nghttp2
+                mingw-w64-x86_64-libidn2
+                mingw-w64-x86_64-libssh2
+                mingw-w64-x86_64-nghttp3
+                mingw-w64-x86_64-ngtcp2
+                zip
 
       - name: Build project
         shell: msys2 {0}

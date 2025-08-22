@@ -113,7 +113,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  build-windows:
+  build-windows-msvc:
       runs-on: windows-latest
 
       steps:
@@ -153,13 +153,76 @@ jobs:
       - name: Create ZIP archive for Windows
         shell: pwsh
         run: |
-          Compress-Archive -Path Windows\* -DestinationPath Retro_Launchers_Win64.zip -Force
+          Compress-Archive -Path Windows\* -DestinationPath LCL_Win64_MSVC.zip -Force
 
       - name: Upload Windows ZIP release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ env.TAG_NAME }}
-          files: Retro_Launchers_Win64.zip
+          files: LCL_Win64_MSVC.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+
+    build-windows-mingw:
+      runs-on: windows-latest
+
+      steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Determine tag
+        id: tag
+        shell: pwsh
+        run: |
+          git pull --rebase origin main
+          $baseVersion = "2.0"
+          echo "TAG_NAME=$baseVersion" >> $env:GITHUB_ENV
+
+      - name: Create or update Git tag
+        shell: pwsh
+        run: |
+          git tag -f $env:TAG_NAME
+          git push -f origin $env:TAG_NAME
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          update: true
+          install: >
+            mingw-w64-x86_64-toolchain
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-ninja
+            mingw-w64-x86_64-openssl
+            mingw-w64-x86_64-gnutls
+            zip
+
+      - name: Build project
+        shell: msys2
+        run: 
+          ./build_all.sh
+
+      - name: Copy build artifacts
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path Windows\cores | Out-Null
+          Copy-Item -Path build\Debug\*.dll -Destination Windows\cores\ -ErrorAction SilentlyContinue
+          Copy-Item -Recurse -Path info -Destination Windows\
+
+      - name: Create ZIP archive for Windows
+        shell: pwsh
+        run: |
+          Compress-Archive -Path Windows\* -DestinationPath LCL_Win64_MinGW.zip -Force
+
+      - name: Upload Windows ZIP release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ env.TAG_NAME }}
+          files: LCL_Win64_MinGW.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

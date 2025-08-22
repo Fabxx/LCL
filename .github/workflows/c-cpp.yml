@@ -53,13 +53,13 @@ jobs:
         cp -r info Linux/ || true
 
     - name: Create ZIP archive for Linux
-      run: zip -r Retro_Launchers_Linux_OpenSSL_amd64.zip Linux
+      run: zip -r LCL_Linux_OpenSSL_amd64.zip Linux
 
     - name: Upload Linux ZIP release
       uses: softprops/action-gh-release@v1
       with:
         tag_name: ${{ env.TAG_NAME }}
-        files: "Retro_Launchers_Linux_OpenSSL_amd64.zip"
+        files: "LCL_Linux_OpenSSL_amd64.zip"
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -103,13 +103,13 @@ jobs:
         cp -r info Linux/ || true
 
     - name: Create ZIP archive for Linux (GnuTLS)
-      run: zip -r Retro_Launchers_Linux_GnuTLS_amd64.zip Linux
+      run: zip -r LCL_Linux_GnuTLS_amd64.zip Linux
 
     - name: Upload Linux ZIP release (GnuTLS)
       uses: softprops/action-gh-release@v1
       with:
         tag_name: ${{ env.TAG_NAME }}
-        files: "Retro_Launchers_Linux_GnuTLS_amd64.zip"
+        files: "LCL_Linux_GnuTLS_amd64.zip"
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

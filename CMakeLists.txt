@@ -38,7 +38,7 @@ FetchContent_Declare(
   GIT_REPOSITORY https://github.com/nlohmann/json.git
   GIT_TAG v3.12.0
 )
-set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build curl as static library" FORCE)
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build json as static library" FORCE)
 FetchContent_MakeAvailable(nlohmann_json)
 
 

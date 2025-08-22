@@ -1,5 +1,4 @@
 ﻿#include "core.hpp"
-#include "reproc++/run.hpp"
 #include <iostream>
 #include <fstream>
 #include <unordered_set>
@@ -644,16 +643,17 @@ bool core::retro_core_boot(const struct retro_game_info* info)
         }
     }
 
-	log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Booting emulator.\n");
-
     char cmd[4096]{};
     
     for (auto& arg : args) {
 		strcat(cmd, arg.c_str());
 	} 
-
-	log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Command: %s\n", cmd);
-    system(cmd);
+    log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Booting emulator with command %s.\n", cmd);
+    
+    if (!system(cmd)) {
+        log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Failed to launch emulator.\n");
+		return false;
+    }
 
     return true;
 }

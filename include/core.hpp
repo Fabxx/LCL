@@ -7,7 +7,6 @@
 #include "curl/curl.h"
 #include "libretro.h"
 #include "nlohmann/json.hpp"
-#include "reproc++/reproc.hpp"
 
 class core
 {
@@ -36,10 +35,6 @@ private:
 
 	// using path to not worry about separators
 	std::filesystem::path _base_path;
-
-	reproc::process _child_process;
-	reproc::options _child_process_options;
-	std::error_code _child_process_ec;
 
 	int _asset_id;
 	int _url_asset_id;

@@ -627,7 +627,7 @@ bool core::retro_core_boot(const struct retro_game_info* info)
 
     log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Booting emulator with command %s.\n", cmd.c_str());
     
-    if (!system(cmd.c_str()) {
+    if (!system(cmd.c_str())) {
         log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Failed to launch emulator.\n");
 		return false;
     }

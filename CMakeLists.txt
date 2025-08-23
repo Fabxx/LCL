@@ -41,6 +41,15 @@ FetchContent_Declare(
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build json as static library" FORCE)
 FetchContent_MakeAvailable(nlohmann_json)
 
+# --- NGHTTP2 ---
+FetchContent_Declare(
+  nghttp2
+  GIT_REPOSITORY https://github.com/nghttp2/nghttp2.git
+  GIT_TAG v1.66.0
+)
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build nghttp2 static" FORCE)
+set(ENABLE_LIB_ONLY ON CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(nghttp2)
 
 # --- CURL ---
 FetchContent_Declare(
@@ -69,8 +78,6 @@ set(CURL_USE_MQTT OFF CACHE BOOL "Disable MQTT support" FORCE)
 set(CURL_USE_SMB OFF CACHE BOOL "Disable SMB support" FORCE)
 set(CURL_USE_LDAPS OFF CACHE BOOL "Disable LDAPS support" FORCE)
 set(CURL_USE_LIBPSL OFF CACHE BOOL "Disable libpsl usage" FORCE)
-set(CURL_USE_LIBSSH2 OFF CACHE BOOL "" FORCE)
-set(CURL_USE_NGHTTP2 OFF CACHE BOOL "Disable nghttp2 (HTTP/2)" FORCE)
 
 # Platform-specific TLS backend
 if(WIN32)

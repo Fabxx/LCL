@@ -211,8 +211,7 @@ jobs:
       - name: Build project
         shell: msys2 {0}
         env:
-            CC: gcc
-            CXX: g++
+            MSYSTEM: MINGW64
         run: 
           ./build_all.sh
 

@@ -570,58 +570,58 @@ bool core::retro_core_boot(const struct retro_game_info* info)
 
     if (core_name == "azahar") {
         if (info != NULL && info->path != NULL) {
-            cmd = std::format("\"{}\" {}", _executable, info->path));
+            cmd = std::format("\"{}\" {}", _executable, info->path);
         }
         else {
-            cmd = std::format("\"{}\"", _executable));
+            cmd = std::format("\"{}\"", _executable);
         }
     }
     else if (core_name == "duckstation") {
         if (info != NULL && info->path != NULL) {
-            cmd = std::format("\"{}\" -fullscreen {}", _executable, info->path));
+            cmd = std::format("\"{}\" -fullscreen {}", _executable, info->path);
         }
         else {
-            cmd = std::format("\"{}\" -fullscreen -bios", _executable));
+            cmd = std::format("\"{}\" -fullscreen -bios", _executable);
         }
     }
     else if (core_name == "mgba") {
         if (info != NULL && info->path != NULL) {
-            cmd = std::format("\"{}\" -f {}", _executable, info->path));
+            cmd = std::format("\"{}\" -f {}", _executable, info->path);
         }
         else {
-            cmd = std::format("\"{}\"", _executable));
+            cmd = std::format("\"{}\"", _executable);
         }
     }
     else if (core_name == "melonds") {
         if (info != NULL && info->path != NULL) {
-            cmd = std::format("\"{}\" -f {}", _executable, info->path));
+            cmd = std::format("\"{}\" -f {}", _executable, info->path);
         }
         else {
-			cmd = std::format("\"{}\"", _executable));
+			cmd = std::format("\"{}\"", _executable);
         }
     }
     else if (core_name == "pcsx2") {
         if (info != NULL && info->path != NULL) {
-            cmd = std::format("\"{}\" -fullscreen {}", _executable, info->path));
+            cmd = std::format("\"{}\" -fullscreen {}", _executable, info->path);
         }
         else {
-			cmd = std::format("\"{}\" -fullscreen -bios", _executable));
+			cmd = std::format("\"{}\" -fullscreen -bios", _executable);
         }
     }
     else if (core_name == "xemu") {
         if (info != NULL && info->path != NULL) {
-			cmd = std::format("\"{}\" -full-screen -dvd_path {}", _executable, info->path));
+			cmd = std::format("\"{}\" -full-screen -dvd_path {}", _executable, info->path);
         }
         else {
-			cmd = std::format("\"{}\" -full-screen", _executable));
+			cmd = std::format("\"{}\" -full-screen", _executable);
         }
     }
     else if (core_name == "xenia") {
         if (info != NULL && info->path != NULL) {
-			cmd = std::format("\"{}\" --fullscreen=true {}", _executable, info->path));
+			cmd = std::format("\"{}\" --fullscreen=true {}", _executable, info->path);
         }
         else {
-			cmd = std::format("\"{}\"", _executable));
+			cmd = std::format("\"{}\"", _executable);
         }
     }
 

@@ -566,92 +566,68 @@ bool core::retro_core_extractor()
 // Compose the command to boot emulator + args.
 bool core::retro_core_boot(const struct retro_game_info* info)
 {
-    std::vector<std::string> args;
+    std::string cmd{};
 
     if (core_name == "azahar") {
         if (info != NULL && info->path != NULL) {
-            args.push_back(std::format("\"{}\" ", _executable));
-            args.push_back(std::format("\"{}\"", info->path));
+            cmd = std::format("\"{}\" {}", _executable, info->path));
         }
         else {
-            args.push_back(std::format("\"{}\"", _executable));
+            cmd = std::format("\"{}\"", _executable));
         }
     }
     else if (core_name == "duckstation") {
         if (info != NULL && info->path != NULL) {
-            args.push_back(_executable);
-            args.push_back("-fullscreen");
-            args.push_back(info->path);
+            cmd = std::format("\"{}\" -fullscreen {}", _executable, info->path));
         }
         else {
-            args.push_back(_executable);
-            args.push_back("-fullscreen");
-            args.push_back("-bios");
+            cmd = std::format("\"{}\" -fullscreen -bios", _executable));
         }
     }
     else if (core_name == "mgba") {
         if (info != NULL && info->path != NULL) {
-            args.push_back(_executable);
-            args.push_back("-f");
-			args.push_back(info->path);
+            cmd = std::format("\"{}\" -f {}", _executable, info->path));
         }
         else {
-            args.push_back(_executable);
+            cmd = std::format("\"{}\"", _executable));
         }
     }
     else if (core_name == "melonds") {
         if (info != NULL && info->path != NULL) {
-            args.push_back(_executable);
-            args.push_back("-f");
-            args.push_back(info->path);
+            cmd = std::format("\"{}\" -f {}", _executable, info->path));
         }
         else {
-            args.push_back(_executable);
+			cmd = std::format("\"{}\"", _executable));
         }
     }
     else if (core_name == "pcsx2") {
         if (info != NULL && info->path != NULL) {
-            args.push_back(_executable);
-            args.push_back("-fullscreen");
-            args.push_back(info->path);
+            cmd = std::format("\"{}\" -fullscreen {}", _executable, info->path));
         }
         else {
-            args.push_back(_executable);
-            args.push_back("-fullscreen");
-            args.push_back("-bios");
+			cmd = std::format("\"{}\" -fullscreen -bios", _executable));
         }
     }
     else if (core_name == "xemu") {
         if (info != NULL && info->path != NULL) {
-            args.push_back(_executable);
-            args.push_back("-full-screen");
-            args.push_back("-dvd_path");
-            args.push_back(info->path);
+			cmd = std::format("\"{}\" -full-screen -dvd_path {}", _executable, info->path));
         }
         else {
-            args.push_back(_executable);
-            args.push_back("-full-screen");
+			cmd = std::format("\"{}\" -full-screen", _executable));
         }
     }
     else if (core_name == "xenia") {
         if (info != NULL && info->path != NULL) {
-            args.push_back(_executable);
-            args.push_back("--fullscreen=true");
-            args.push_back(info->path);
+			cmd = std::format("\"{}\" --fullscreen=true {}", _executable, info->path));
         }
         else {
-            args.push_back(_executable);
+			cmd = std::format("\"{}\"", _executable));
         }
     }
 
-    char cmd[4096]{};
+    log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Booting emulator with command %s.\n", cmd.c_str());
     
-    for (auto& arg : args) {
-		strcat(cmd, arg.c_str());
-	} 
-    log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Booting emulator with command %s.\n", cmd);
-    
-    if (!system(cmd)) {
+    if (!system(cmd.c_str()) {
         log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Failed to launch emulator.\n");
 		return false;
     }

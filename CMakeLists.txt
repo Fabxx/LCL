@@ -18,11 +18,15 @@ endif()
 
 project(${CORE})
 
+# Options
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(SOURCES src/core.cpp)
+set(TARGET_NAME ${CORE})
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 
 if (MINGW)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static -static-libgcc -static-libstdc++")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-libgcc -static-libstdc++")
 endif()
 
 # Allow compilation of static libraries on Unix-like systems
@@ -32,13 +36,12 @@ endif()
 
 include(FetchContent)
 
-# --- JSON (header-only) ---
+# --- JSON ---
 FetchContent_Declare(
   nlohmann_json
   GIT_REPOSITORY https://github.com/nlohmann/json.git
   GIT_TAG v3.12.0
 )
-set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build json as static library" FORCE)
 FetchContent_MakeAvailable(nlohmann_json)
 
 # --- NGHTTP2 ---
@@ -47,9 +50,12 @@ FetchContent_Declare(
   GIT_REPOSITORY https://github.com/nghttp2/nghttp2.git
   GIT_TAG v1.66.0
 )
-set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build nghttp2 static" FORCE)
-set(ENABLE_LIB_ONLY ON CACHE BOOL "" FORCE)
 
+#set(ENABLE_LIB_ONLY ON  CACHE BOOL "" FORCE)
+set(ENABLE_STATIC_LIB ON CACHE BOOL "" FORCE)
+set(ENABLE_SHARED_LIB OFF CACHE BOOL "" FORCE)
+# v1.61+ also respects BUILD_STATIC_LIBS
+set(BUILD_STATIC_LIBS ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(nghttp2)
 
 # --- CURL ---
@@ -60,7 +66,6 @@ FetchContent_Declare(
 )
 
 # Common curl options
-set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build curl as static library" FORCE)
 set(CURL_STATICLIB ON CACHE BOOL "Build curl as static library" FORCE)
 set(BUILD_CURL_EXE OFF CACHE BOOL "Disable curl CLI" FORCE)
 set(BUILD_TESTING OFF CACHE BOOL "Disable curl tests" FORCE)
@@ -104,12 +109,6 @@ else()
 endif()
 
 FetchContent_MakeAvailable(curl)
-
-# Source files
-set(SOURCES src/core.cpp)
-
-# Define dynamic target name
-set(TARGET_NAME ${CORE})
 
 add_library(${TARGET_NAME} SHARED ${SOURCES})
 

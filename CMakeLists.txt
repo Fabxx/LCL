@@ -69,6 +69,8 @@ set(CURL_USE_MQTT OFF CACHE BOOL "Disable MQTT support" FORCE)
 set(CURL_USE_SMB OFF CACHE BOOL "Disable SMB support" FORCE)
 set(CURL_USE_LDAPS OFF CACHE BOOL "Disable LDAPS support" FORCE)
 set(CURL_USE_LIBPSL OFF CACHE BOOL "Disable libpsl usage" FORCE)
+set(CURL_USE_LIBSSH2 OFF CACHE BOOL "" FORCE)
+set(CURL_USE_NGHTTP2 OFF CACHE BOOL "Disable nghttp2 (HTTP/2)" FORCE)
 
 # Platform-specific TLS backend
 if(WIN32)

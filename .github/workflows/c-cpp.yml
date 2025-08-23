@@ -207,12 +207,22 @@ jobs:
                 mingw-w64-x86_64-nghttp3
                 mingw-w64-x86_64-ngtcp2
                 zip
+      
+      - name: Remove MSVC from PATH
+        shell: pwsh
+        run: |
+            $newPath = ($env:PATH.Split(';') | Where-Object {$_ -notmatch "Microsoft Visual Studio"} ) -join ';'
+            echo "PATH=$newPath" >> $env:GITHUB_ENV
 
       - name: Build project
         shell: msys2 {0}
         env:
             MSYSTEM: MINGW64
-        run: 
+
+        run: |
+          echo "PATH=/mingw64/bin:$PATH" >> $GITHUB_ENV
+          which gcc
+          gcc --version
           ./build_all.sh
 
       - name: Copy build artifacts

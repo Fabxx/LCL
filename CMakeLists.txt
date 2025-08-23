@@ -49,6 +49,7 @@ FetchContent_Declare(
 )
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build nghttp2 static" FORCE)
 set(ENABLE_LIB_ONLY ON CACHE BOOL "" FORCE)
+
 FetchContent_MakeAvailable(nghttp2)
 
 # --- CURL ---
@@ -123,6 +124,7 @@ target_include_directories(${TARGET_NAME} PRIVATE
 target_link_libraries(${TARGET_NAME} PRIVATE
     nlohmann_json
     CURL::libcurl
+    nghttp2_static
 )
 
 # Force correct output name

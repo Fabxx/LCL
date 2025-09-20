@@ -443,7 +443,7 @@ bool core::retro_core_extractor()
     }
     // Use 7z4PowerShell if 7z
     else if (seven_zip_emulators.contains(core_name)) {
-		log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Extracting emulator from 7z archive.\n");
+		log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: 7z archive detected.\n");
         
         command = std::format(
             "powershell -Command \""
@@ -586,7 +586,7 @@ bool core::retro_core_boot(const struct retro_game_info* info)
     }
     else if (core_name == "mgba") {
         if (info != NULL && info->path != NULL) {
-            cmd = std::format("\"{}\" -f {}", _executable, info->path);
+            cmd = std::format("\"{}\" -f \"{}\"", _executable, info->path);
         }
         else {
             cmd = std::format("\"{}\"", _executable);

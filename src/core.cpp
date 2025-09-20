@@ -540,14 +540,17 @@ bool core::retro_core_extractor()
 }
 #endif
 
-// Compose the command to boot emulator + args.
+// Compose the command to boot emulator + args. On windows system() needs powershell, because info->path formatting breaks...
+// to escape and format string properly, first arg in powershell must have a dot to be considered as executable.
 bool core::retro_core_boot(const struct retro_game_info* info)
 {
     std::string cmd{};
+    std::string cmd_win{};
 
     if constexpr (core_name == "azahar") {
         if (info != NULL && info->path != NULL) {
-            cmd = std::format("\"{}\" {}", _executable, info->path);
+            cmd = std::format("'{}' '{}'", _executable, info->path);
+            cmd_win = std::format("powershell -c .'{}' '{}'", _executable, info->path);
         }
         else {
             cmd = std::format("\"{}\"", _executable);
@@ -555,7 +558,8 @@ bool core::retro_core_boot(const struct retro_game_info* info)
     }
     else if constexpr (core_name == "duckstation") {
         if (info != NULL && info->path != NULL) {
-            cmd = std::format("\"{}\" -fullscreen {}", _executable, info->path);
+            cmd = std::format("'{}' -fullscreen '{}'", _executable, info->path);
+            cmd_win = std::format("powershell -c .'{}' -fullscreen '{}'", _executable, info->path);
         }
         else {
             cmd = std::format("\"{}\" -fullscreen -bios", _executable);
@@ -563,7 +567,8 @@ bool core::retro_core_boot(const struct retro_game_info* info)
     }
     else if constexpr (core_name == "mgba") {
         if (info != NULL && info->path != NULL) {
-            cmd = std::format("\"{}\" -f \"{}\"", _executable, info->path);
+            cmd = std::format("'{}' -f '{}'", _executable, info->path);
+            cmd_win = std::format("powershell -c .'{}' -f '{}'", _executable, info->path);
         }
         else {
             cmd = std::format("\"{}\"", _executable);
@@ -571,7 +576,8 @@ bool core::retro_core_boot(const struct retro_game_info* info)
     }
     else if constexpr (core_name == "melonds") {
         if (info != NULL && info->path != NULL) {
-            cmd = std::format("\"{}\" -f {}", _executable, info->path);
+            cmd = std::format("'{}' -f '{}'", _executable, info->path);
+            cmd_win = std::format("powershell -c .'{}' -f '{}'", _executable, info->path);
         }
         else {
 			cmd = std::format("\"{}\"", _executable);
@@ -579,7 +585,8 @@ bool core::retro_core_boot(const struct retro_game_info* info)
     }
     else if constexpr (core_name == "pcsx2") {
         if (info != NULL && info->path != NULL) {
-            cmd = std::format("\"{}\" -fullscreen {}", _executable, info->path);
+            cmd = std::format("'{}' -fullscreen '{}'", _executable, info->path);
+            cmd_win = std::format("powershell -c .'{}' -fullscreen '{}'", _executable, info->path);
         }
         else {
 			cmd = std::format("\"{}\" -fullscreen -bios", _executable);
@@ -587,7 +594,8 @@ bool core::retro_core_boot(const struct retro_game_info* info)
     }
     else if constexpr (core_name == "xemu") {
         if (info != NULL && info->path != NULL) {
-			cmd = std::format("\"{}\" -full-screen -dvd_path {}", _executable, info->path);
+			cmd = std::format("'{}' -full-screen -dvd_path '{}'", _executable, info->path);
+            cmd_win = std::format("powershell -c .'{}' -full-screen -dvd_path '{}'", _executable, info->path);
         }
         else {
 			cmd = std::format("\"{}\" -full-screen", _executable);
@@ -595,7 +603,8 @@ bool core::retro_core_boot(const struct retro_game_info* info)
     }
     else if constexpr (core_name == "xenia") {
         if (info != NULL && info->path != NULL) {
-			cmd = std::format("\"{}\" --fullscreen=true {}", _executable, info->path);
+			cmd = std::format("'{}' --fullscreen=true '{}'", _executable, info->path);
+            cmd_win = std::format("powershell -c .'{}' --fullscreen=true '{}'", _executable, info->path);
         }
         else {
 			cmd = std::format("\"{}\"", _executable);
@@ -604,10 +613,18 @@ bool core::retro_core_boot(const struct retro_game_info* info)
 
     log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Booting emulator with command %s.\n", cmd.c_str());
     
+    #ifdef _WIN32
+    if (!system(cmd_win.c_str())) {
+        log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Failed to launch emulator.\n");
+		return false;
+    }
+
+    #elif __linux__
     if (!system(cmd.c_str())) {
         log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Failed to launch emulator.\n");
 		return false;
     }
+    #endif
 
     return true;
 }

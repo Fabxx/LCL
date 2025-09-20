@@ -301,9 +301,7 @@ bool core::retro_core_get()
         return false;
     }
 
-    bool firstBoot = !std::filesystem::exists(_executable);
-
-    if (firstBoot) {
+    if (!std::filesystem::exists(_executable)) {
         log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] First boot detected, downloading emulator...\n");
 
         if (!download_asset(curl, res, _urls[_url_ids::DOWNLOAD_URL])) {

@@ -12,13 +12,13 @@ static retro_log_printf_t log_cb;
 
 #ifdef CORE
 #ifdef SYSTEM_NAME
-std::string core_name = CORE;
-std::string system_name = SYSTEM_NAME;
+constexpr std::string_view core_name = CORE;
+constexpr std::string_view system_name = SYSTEM_NAME;
 #endif
 #endif
 
 // libcurl callback
-static size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* output)
+static inline size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* output)
 {
     size_t totalSize = size * nmemb;
     output->append((char*)contents, totalSize);
@@ -29,8 +29,8 @@ core::core()
 {
     _base_path = std::filesystem::current_path();
 
-    log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Using current path: %s\n", _base_path.string().c_str());
-    log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Core name: %s\n", core_name.c_str());
+    log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Using current path: %s\n", _base_path.string());
+    log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Core name: %s\n", core_name);
 
     _directories = {
          (_base_path / "system" / core_name).string(),
@@ -48,39 +48,31 @@ core::core()
 
 #ifdef _WIN32
 
-    if (core_name == "azahar") {
+   if constexpr (core_name == "azahar") {
         _asset_id = _asset_ids::AZAHAR_WIN;
         _downloaderDirs.push_back((_base_path / "system" / core_name / "azahar.zip").string());
         _executable = (_base_path / "system" / core_name / "azahar.exe").string();
-    }
-
-    if (core_name == "duckstation") {
+    } else if constexpr (core_name == "duckstation") {
         _asset_id = _asset_ids::DUCKSTATION_WIN;
         _downloaderDirs.push_back((_base_path / "system" / core_name / "DuckStation-x64.zip").string());
         _executable = (_base_path / "system" / core_name / "duckstation-qt-x64-ReleaseLTCG.exe").string();
-    }
-
-    if (core_name == "mgba") {
+    } else if constexpr (core_name == "mgba") {
         _asset_id = _asset_ids::MGBA_WIN;
         _downloaderDirs.push_back((_base_path / "system" / core_name / "mGBA.7z").string());
         _executable = (_base_path / "system" / core_name / "mGBA.exe").string();
-    }
-    if (core_name == "melonds") {
+    } else if constexpr (core_name == "melonds") {
         _asset_id = _asset_ids::MELONDS_WIN;
         _downloaderDirs.push_back((_base_path / "system" / core_name / "melonDS.zip").string());
         _executable = (_base_path / "system" / core_name / "melonDS.exe").string();
-    }
-    if (core_name == "pcsx2") {
+    } else if constexpr (core_name == "pcsx2") {
         _asset_id = _asset_ids::PCSX2_WIN;
         _downloaderDirs.push_back((_base_path / "system" / core_name / "pcsx2.7z").string());
         _executable = (_base_path / "system" / core_name / "pcsx2-qt.exe").string();
-    }
-    if (core_name == "xemu") {
+    } else if constexpr (core_name == "xemu") {
         _asset_id = _asset_ids::XEMU_WIN;
         _downloaderDirs.push_back((_base_path / "system" / core_name / "xemu.zip").string());
         _executable = (_base_path / "system" / core_name / "xemu.exe").string();
-    }
-    if (core_name == "xenia") {
+    } else if constexpr (core_name == "xenia") {
         _asset_id = _asset_ids::XENIA_WIN;
         _downloaderDirs.push_back((_base_path / "system" / core_name / "xenia_canary_netplay.zip").string());
         _executable = (_base_path / "system" / core_name / "xenia_canary_netplay.exe").string();
@@ -88,43 +80,31 @@ core::core()
 
 #elif __linux__
     
-    if (core_name == "azahar") {
+    if constexpr (core_name == "azahar") {
         _asset_id = _asset_ids::AZAHAR_LINUX;
         _executable = (_base_path / "system" / core_name / "azahar.AppImage").string();
         _downloaderDirs.push_back(_executable);
-    }
-
-    if (core_name == "duckstation") {
+    } else if constexpr (core_name == "duckstation") {
         _asset_id = _asset_ids::DUCKSTATION_LINUX;
         _executable = (_base_path / "system" / core_name / "duckstation.AppImage").string();
         _downloaderDirs.push_back(_executable);
-    }
-
-    if (core_name == "mgba") {
+    } else if constexpr (core_name == "mgba") {
         _asset_id = _asset_ids::MGBA_LINUX;
         _executable = (_base_path / "system" / core_name / "mGBA.AppImage").string();
         _downloaderDirs.push_back(_executable);
-    }
-    
-    if (core_name == "melonds") {
+    } else if constexpr (core_name == "melonds") {
         _asset_id = _asset_ids::MELONDS_LINUX;
         _executable = (_base_path / "system" / core_name / "melonDS-x86_64.AppImage").string();
         _downloaderDirs.push_back(_executable + ".zip");
-    }
-    
-    if (core_name == "pcsx2") {
+    } else if constexpr (core_name == "pcsx2") {
         _asset_id = _asset_ids::PCSX2_LINUX;
         _executable = (_base_path / "system" / core_name / "pcsx2.AppImage").string();
         _downloaderDirs.push_back(_executable);
-    }
-    
-    if (core_name == "xemu") {
+    } else if constexpr (core_name == "xemu") {
         _asset_id = _asset_ids::XEMU_LINUX;
         _executable = (_base_path / "system" / core_name / "xemu.AppImage").string();
         _downloaderDirs.push_back(_executable);
-    }
-    
-    if (core_name == "xenia") {
+    } else if constexpr (core_name == "xenia") {
         _asset_id = _asset_ids::XENIA_WIN;
         _downloaderDirs.push_back((_base_path / "system" / core_name / "xenia_canary_netplay.zip").string());
         _executable = (_base_path / "system" / core_name / "xenia_canary_netplay.exe").string();
@@ -133,42 +113,42 @@ core::core()
 
     _url_asset_id = 0;
 
-    if (core_name == "azahar") {
+    if constexpr (core_name == "azahar") {
         _urls = {
             "https://api.github.com/repos/azahar-emu/azahar/releases/latest",
             "https://github.com/azahar-emu/azahar/releases/download"
         };
     }
-    else if (core_name == "duckstation") {
+    else if constexpr (core_name == "duckstation") {
         _urls = {
           "https://api.github.com/repos/stenzek/duckstation/releases/latest",
           "https://github.com/stenzek/duckstation/releases/download"
         };
     }
-    else if (core_name == "mgba") {
+    else if constexpr (core_name == "mgba") {
         _urls = {
           "https://api.github.com/repos/mGBA-emu/mGBA/releases/latest",
           "https://github.com/mGBA-emu/mGBA/releases/download"
         };
     }
-    else if (core_name == "melonds") {
+    else if constexpr (core_name == "melonds") {
         _urls = {
           "https://api.github.com/repos/melonDS-emu/melonDS/releases/latest",
           "https://github.com/melonDS-emu/melonDS/releases/download"
         };
-    } else if (core_name == "pcsx2") {
+    } else if constexpr (core_name == "pcsx2") {
         _urls = {
          "https://api.github.com/repos/PCSX2/pcsx2/releases/latest",
          "https://github.com/PCSX2/pcsx2/releases/download"
         };
     }
-    else if (core_name == "xemu") {
+    else if constexpr (core_name == "xemu") {
         _urls = {
          "https://api.github.com/repos/xemu-project/xemu/releases/latest",
          "https://github.com/xemu-project/xemu/releases/download"
         };
     }
-    else if (core_name == "xenia") {
+    else if constexpr (core_name == "xenia") {
         _urls = {
         "https://api.github.com/repos/AdrianCassar/xenia-canary/releases/latest",
         "https://github.com/AdrianCassar/xenia-canary/releases/download",
@@ -408,9 +388,9 @@ bool core::retro_core_extractor()
     const std::string ext = archive_path.extension().string();
     std::string command{};
 
-    const std::unordered_set<std::string> supported_exts = { ".zip", ".7z" };
-    const std::unordered_set<std::string> zip_emulators = { "azahar", "duckstation", "melonds", "xemu", "xenia" };
-    const std::unordered_set<std::string> seven_zip_emulators = { "mgba", "pcsx2" };
+    const std::unordered_set<std::string_view> supported_exts = { ".zip", ".7z" };
+    const std::unordered_set<std::string_view> zip_emulators = { "azahar", "duckstation", "melonds", "xemu", "xenia" };
+    const std::unordered_set<std::string_view> seven_zip_emulators = { "mgba", "pcsx2" };
 
     if (!supported_exts.contains(ext)) {
         log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Not an archive, aborting extraction.\n");
@@ -502,16 +482,15 @@ bool core::retro_core_extractor()
     const std::string ext = archive_path.extension().string();
     std::string command{};
 
-    const std::unordered_set<std::string> supported_exts = { ".zip", ".7z", ".tar"};
-    const std::unordered_set<std::string> zip_emulators = { "azahar", "duckstation", "melonds", "xemu", "xenia" };
-    const std::unordered_set<std::string> seven_zip_emulators = { "mgba", "pcsx2" };
+    const std::unordered_set<std::string_view> supported_exts = { ".zip", ".7z", ".tar"};
+    const std::unordered_set<std::string_view> zip_emulators = { "azahar", "duckstation", "melonds", "xemu", "xenia" };
+    const std::unordered_set<std::string_view> seven_zip_emulators = { "mgba", "pcsx2" };
 
     if (ext == ".AppImage") {
         command = std::format("chmod +x '{}'", _executable);
         system(command.c_str());
     }
 
-    // Caso archivi
     if (!supported_exts.contains(ext)) {
         log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Unsupported file type, aborting extraction.\n");
         return false;
@@ -568,7 +547,7 @@ bool core::retro_core_boot(const struct retro_game_info* info)
 {
     std::string cmd{};
 
-    if (core_name == "azahar") {
+    if constexpr (core_name == "azahar") {
         if (info != NULL && info->path != NULL) {
             cmd = std::format("\"{}\" {}", _executable, info->path);
         }
@@ -576,7 +555,7 @@ bool core::retro_core_boot(const struct retro_game_info* info)
             cmd = std::format("\"{}\"", _executable);
         }
     }
-    else if (core_name == "duckstation") {
+    else if constexpr (core_name == "duckstation") {
         if (info != NULL && info->path != NULL) {
             cmd = std::format("\"{}\" -fullscreen {}", _executable, info->path);
         }
@@ -584,7 +563,7 @@ bool core::retro_core_boot(const struct retro_game_info* info)
             cmd = std::format("\"{}\" -fullscreen -bios", _executable);
         }
     }
-    else if (core_name == "mgba") {
+    else if constexpr (core_name == "mgba") {
         if (info != NULL && info->path != NULL) {
             cmd = std::format("\"{}\" -f \"{}\"", _executable, info->path);
         }
@@ -592,7 +571,7 @@ bool core::retro_core_boot(const struct retro_game_info* info)
             cmd = std::format("\"{}\"", _executable);
         }
     }
-    else if (core_name == "melonds") {
+    else if constexpr (core_name == "melonds") {
         if (info != NULL && info->path != NULL) {
             cmd = std::format("\"{}\" -f {}", _executable, info->path);
         }
@@ -600,7 +579,7 @@ bool core::retro_core_boot(const struct retro_game_info* info)
 			cmd = std::format("\"{}\"", _executable);
         }
     }
-    else if (core_name == "pcsx2") {
+    else if constexpr (core_name == "pcsx2") {
         if (info != NULL && info->path != NULL) {
             cmd = std::format("\"{}\" -fullscreen {}", _executable, info->path);
         }
@@ -608,7 +587,7 @@ bool core::retro_core_boot(const struct retro_game_info* info)
 			cmd = std::format("\"{}\" -fullscreen -bios", _executable);
         }
     }
-    else if (core_name == "xemu") {
+    else if constexpr (core_name == "xemu") {
         if (info != NULL && info->path != NULL) {
 			cmd = std::format("\"{}\" -full-screen -dvd_path {}", _executable, info->path);
         }
@@ -616,7 +595,7 @@ bool core::retro_core_boot(const struct retro_game_info* info)
 			cmd = std::format("\"{}\" -full-screen", _executable);
         }
     }
-    else if (core_name == "xenia") {
+    else if constexpr (core_name == "xenia") {
         if (info != NULL && info->path != NULL) {
 			cmd = std::format("\"{}\" --fullscreen=true {}", _executable, info->path);
         }
@@ -678,43 +657,43 @@ void retro_get_system_info(struct retro_system_info* info)
 {
     memset(info, 0, sizeof(*info));
     
-    if (core_name == "azahar") {
+    if constexpr (core_name == "azahar") {
         info->library_name = "Azahar";
         info->library_version = "0.1a";
         info->need_fullpath = true;
         info->valid_extensions = "3ds|3dsx|elf|axf|cci|cxi|app";
     }
-    else if (core_name == "duckstation") {
+    else if constexpr (core_name == "duckstation") {
         info->library_name = "Duckstation";
         info->library_version = "0.1a";
         info->need_fullpath = true;
         info->valid_extensions = "cue|img|ecm|chd";
     }
-    else if (core_name == "mgba") {
+    else if constexpr (core_name == "mgba") {
         info->library_name = "mGBA";
         info->library_version = "0.1a";
         info->need_fullpath = true;
         info->valid_extensions = "gba|gbc|gc";
     }
-    else if (core_name == "melonds") {
+    else if constexpr (core_name == "melonds") {
         info->library_name = "melonDS";
         info->library_version = "0.1a";
         info->need_fullpath = true;
         info->valid_extensions = "nds|ids|dsi";
     }
-    else if (core_name == "pcsx2") {
+    else if constexpr (core_name == "pcsx2") {
         info->library_name = "PCSX2";
         info->library_version = "0.1a";
         info->need_fullpath = true;
         info->valid_extensions = "iso|chd|elf|ciso|cso|bin|cue|mdf|nrg|dump|gz|img|m3u";
     }
-    else if (core_name == "xemu") {
+    else if constexpr (core_name == "xemu") {
         info->library_name = "Xemu";
         info->library_version = "0.1a";
         info->need_fullpath = true;
         info->valid_extensions = "iso";
     }
-    else if (core_name == "xenia") {
+    else if constexpr (core_name == "xenia") {
         info->library_name = "Xenia";
         info->library_version = "0.1a";
         info->need_fullpath = true;

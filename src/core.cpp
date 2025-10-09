@@ -554,6 +554,7 @@ bool core::retro_core_boot(const struct retro_game_info* info)
         }
         else {
             cmd = std::format("\"{}\"", _executable);
+            cmd_win = std::format("\"{}\"", _executable);
         }
     }
     else if constexpr (core_name == "duckstation") {
@@ -563,6 +564,7 @@ bool core::retro_core_boot(const struct retro_game_info* info)
         }
         else {
             cmd = std::format("\"{}\" -fullscreen -bios", _executable);
+            cmd_win = std::format("\"{}\" -fullscreen -bios", _executable);
         }
     }
     else if constexpr (core_name == "mgba") {
@@ -572,6 +574,7 @@ bool core::retro_core_boot(const struct retro_game_info* info)
         }
         else {
             cmd = std::format("\"{}\"", _executable);
+            cmd_win = std::format("\"{}\"", _executable);
         }
     }
     else if constexpr (core_name == "melonds") {
@@ -581,6 +584,7 @@ bool core::retro_core_boot(const struct retro_game_info* info)
         }
         else {
 			cmd = std::format("\"{}\"", _executable);
+            cmd_win = std::format("\"{}\"", _executable);
         }
     }
     else if constexpr (core_name == "pcsx2") {
@@ -590,6 +594,7 @@ bool core::retro_core_boot(const struct retro_game_info* info)
         }
         else {
 			cmd = std::format("\"{}\" -fullscreen -bios", _executable);
+            cmd_win = std::format("\"{}\" -fullscreen -bios", _executable);
         }
     }
     else if constexpr (core_name == "xemu") {
@@ -599,6 +604,7 @@ bool core::retro_core_boot(const struct retro_game_info* info)
         }
         else {
 			cmd = std::format("\"{}\" -full-screen", _executable);
+            cmd_win = std::format("\"{}\" -full-screen", _executable);
         }
     }
     else if constexpr (core_name == "xenia") {
@@ -608,6 +614,7 @@ bool core::retro_core_boot(const struct retro_game_info* info)
         }
         else {
 			cmd = std::format("\"{}\"", _executable);
+            cmd_win = std::format("\"{}\"", _executable);
         }
     }
 

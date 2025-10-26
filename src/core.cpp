@@ -2,6 +2,7 @@
 #include <iostream>
 #include <format>
 #include <fstream>
+#include <memory>
 #include <unordered_set>
 
 using json = nlohmann::json;
@@ -28,9 +29,6 @@ static inline size_t WriteCallback(void* contents, size_t size, size_t nmemb, st
 core::core()
 {
     _base_path = std::filesystem::current_path();
-
-    log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Using current path: %s\n", _base_path.string());
-    log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Core name: %s\n", core_name);
 
     _directories = {
          (_base_path / "system" / core_name).string(),
@@ -486,7 +484,13 @@ bool core::retro_core_extractor()
 
     if (ext == ".AppImage") {
         command = std::format("chmod +x '{}'", _executable);
-        system(command.c_str());
+        if (system(command.c_str())) {
+            log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Permission set for appImage.\n");
+            return true;
+        } else {
+            log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Failed to set permission for appImage.\n");
+            return false;
+        }
     }
 
     if (!supported_exts.contains(ext)) {
@@ -804,17 +808,17 @@ void retro_run(void)
 
 bool retro_load_game(const struct retro_game_info* info)
 {
-    core core;
+    auto core_obj = std::make_unique<core>();
 
     // if first boot download emulator, else check for updates
-    if (core.retro_core_setup()) {
-        core.retro_core_get();
-        core.retro_core_extractor();
-    } else if (core.retro_core_get()) {
-        core.retro_core_extractor();
+    if (core_obj->retro_core_setup()) {
+        core_obj->retro_core_get();
+        core_obj->retro_core_extractor();
+    } else if (core_obj->retro_core_get()) {
+        core_obj->retro_core_extractor();
     }
 
-    core.retro_core_boot(info);
+    core_obj->retro_core_boot(info);
 
     return true;
 }

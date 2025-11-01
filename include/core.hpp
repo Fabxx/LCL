@@ -18,7 +18,6 @@ public:
 	bool retro_core_extractor();
 	bool retro_core_updater();
 	bool retro_core_boot(const struct retro_game_info* info);
-
 	bool build_download_url(CURL* curl, CURLcode& res);
 	bool download_asset(CURL* curl, CURLcode& res, std::string& url);
 
@@ -38,6 +37,8 @@ private:
 
 	int _asset_id;
 	int _url_asset_id;
+
+	bool _is_flatpak;
 
 	// IDs for the assets in the GitHub release section
 	enum _asset_ids {

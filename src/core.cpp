@@ -1,8 +1,12 @@
 ﻿#include "core.hpp"
+#include <cerrno>
+#include <cstddef>
+#include <cstdlib>
 #include <iostream>
 #include <format>
 #include <fstream>
 #include <memory>
+#include <system_error>
 #include <unordered_set>
 
 using json = nlohmann::json;
@@ -28,6 +32,7 @@ static inline size_t WriteCallback(void* contents, size_t size, size_t nmemb, st
 
 core::core()
 {
+    _is_flatpak = false;
     _base_path = std::filesystem::current_path();
 
     _directories = {
@@ -106,6 +111,23 @@ core::core()
         _asset_id = _asset_ids::XENIA_WIN;
         _downloaderDirs.push_back((_base_path / "system" / core_name / "xenia_canary_netplay.zip").string());
         _executable = (_base_path / "system" / core_name / "xenia_canary_netplay.exe").string();
+    }
+
+    /*flatpak check*/
+    if (std::getenv("container") != nullptr) {
+        const char *flatpak_path = "/run/host/usr/bin/fusermount";
+        const char *flatpak_var = "FUSERMOUNT_PROG";
+        int flag = 1;
+
+        _is_flatpak = true;
+
+        log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] User under flatpak, setting env variable %s to %s\n", flatpak_var, flatpak_path);
+
+        if (setenv(flatpak_var, flatpak_path, flag) == EXIT_SUCCESS) {
+            log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Setup done.\n");
+        } else {
+            log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Flatpak setup failed with error %d\n.", errno);
+        }
     }
 #endif
 
@@ -550,79 +572,99 @@ bool core::retro_core_boot(const struct retro_game_info* info)
 {
     std::string cmd{};
     std::string cmd_win{};
+    std::string cmd_flatpak{};
 
     if constexpr (core_name == "azahar") {
         if (info != NULL && info->path != NULL) {
             cmd = std::format("'{}' '{}'", _executable, info->path);
             cmd_win = std::format("powershell -c .'{}' '{}'", _executable, info->path);
+            cmd_flatpak = std::format("'{}' --appimage-extract-and-run '{}'", _executable, info->path);
         }
         else {
             cmd = std::format("\"{}\"", _executable);
             cmd_win = std::format("\"{}\"", _executable);
+            cmd_flatpak = std::format("'{}' --appimage-extract-and-run", _executable);
         }
     }
     else if constexpr (core_name == "duckstation") {
         if (info != NULL && info->path != NULL) {
             cmd = std::format("'{}' -fullscreen '{}'", _executable, info->path);
             cmd_win = std::format("powershell -c .'{}' -fullscreen '{}'", _executable, info->path);
+            cmd_flatpak = std::format("'{}' --appimage-extract-and-run -fullscreen '{}'", _executable, info->path);
         }
         else {
             cmd = std::format("\"{}\" -fullscreen -bios", _executable);
             cmd_win = std::format("\"{}\" -fullscreen -bios", _executable);
+            cmd_flatpak = std::format("'{}' --appimage-extract-and-run -fullscreen -bios", _executable);
         }
     }
     else if constexpr (core_name == "mgba") {
         if (info != NULL && info->path != NULL) {
             cmd = std::format("'{}' -f '{}'", _executable, info->path);
             cmd_win = std::format("powershell -c .'{}' -f '{}'", _executable, info->path);
+            cmd_flatpak = std::format("'{}' --appimage-extract-and-run -f '{}'", _executable, info->path);
         }
         else {
             cmd = std::format("\"{}\"", _executable);
             cmd_win = std::format("\"{}\"", _executable);
+            cmd_flatpak = std::format("'{}' --appimage-extract-and-run", _executable);
         }
     }
     else if constexpr (core_name == "melonds") {
         if (info != NULL && info->path != NULL) {
             cmd = std::format("'{}' -f '{}'", _executable, info->path);
             cmd_win = std::format("powershell -c .'{}' -f '{}'", _executable, info->path);
+            cmd_flatpak = std::format("'{}' --appimage-extract-and-run -f '{}'", _executable, info->path);
         }
         else {
 			cmd = std::format("\"{}\"", _executable);
             cmd_win = std::format("\"{}\"", _executable);
+            cmd_flatpak = std::format("'{}' --appimage-extract-and-run", _executable);
         }
     }
     else if constexpr (core_name == "pcsx2") {
         if (info != NULL && info->path != NULL) {
             cmd = std::format("'{}' -fullscreen '{}'", _executable, info->path);
             cmd_win = std::format("powershell -c .'{}' -fullscreen '{}'", _executable, info->path);
+            cmd_flatpak = std::format("'{}' --appimage-extract-and-run -fullscreen '{}'", _executable, info->path);
         }
         else {
 			cmd = std::format("\"{}\" -fullscreen -bios", _executable);
             cmd_win = std::format("\"{}\" -fullscreen -bios", _executable);
+            cmd_flatpak = std::format("'{}' --appimage-extract-and-run -fullscreen -bios", _executable);
         }
     }
     else if constexpr (core_name == "xemu") {
         if (info != NULL && info->path != NULL) {
 			cmd = std::format("'{}' -full-screen -dvd_path '{}'", _executable, info->path);
             cmd_win = std::format("powershell -c .'{}' -full-screen -dvd_path '{}'", _executable, info->path);
+            cmd_flatpak = std::format("'{}' --appimage-extract-and-run -full-screen -dvd_path '{}'", _executable, info->path);
         }
         else {
 			cmd = std::format("\"{}\" -full-screen", _executable);
             cmd_win = std::format("\"{}\" -full-screen", _executable);
+            cmd_flatpak = std::format("'{}' --appimage-extract-and-run -full-screen", _executable);
         }
     }
     else if constexpr (core_name == "xenia") {
         if (info != NULL && info->path != NULL) {
 			cmd = std::format("'{}' --fullscreen=true '{}'", _executable, info->path);
             cmd_win = std::format("powershell -c .'{}' --fullscreen=true '{}'", _executable, info->path);
+            cmd_flatpak = cmd;
         }
         else {
 			cmd = std::format("\"{}\"", _executable);
             cmd_win = std::format("\"{}\"", _executable);
+            cmd_flatpak = cmd;
         }
     }
 
-    log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Booting emulator with command %s.\n", cmd.c_str());
+    if (_is_flatpak) {
+        log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Booting emulator with command %s.\n", cmd_flatpak.c_str());
+    } else {
+        log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Booting emulator with command %s.\n", cmd.c_str());
+    }
+    
     
     #ifdef _WIN32
     if (!system(cmd_win.c_str())) {
@@ -631,10 +673,18 @@ bool core::retro_core_boot(const struct retro_game_info* info)
     }
 
     #elif __linux__
-    if (!system(cmd.c_str())) {
-        log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Failed to launch emulator.\n");
-		return false;
+    if (!_is_flatpak) {
+        if (!system(cmd.c_str())) {
+            log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Failed to launch emulator.\n");
+            return false;
+        }
+    } else {
+          if (!system(cmd_flatpak.c_str())) {
+            log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Failed to launch emulator under flatpak.\n");
+            return false;
+        }
     }
+    
     #endif
 
     return true;

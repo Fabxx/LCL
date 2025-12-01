@@ -77,8 +77,8 @@ core::core()
         _executable = (_base_path / "system" / core_name / "xemu.exe").string();
     } else if constexpr (core_name == "xenia") {
         _asset_id = _asset_ids::XENIA_WIN;
-        _downloaderDirs.push_back((_base_path / "system" / core_name / "xenia_canary_netplay.zip").string());
-        _executable = (_base_path / "system" / core_name / "xenia_canary_netplay.exe").string();
+        _downloaderDirs.push_back((_base_path / "system" / core_name / "xenia_edge.zip").string());
+        _executable = (_base_path / "system" / core_name / "xenia_edge.exe").string();
     }
 
 #elif __linux__
@@ -108,9 +108,9 @@ core::core()
         _executable = (_base_path / "system" / core_name / "xemu.AppImage").string();
         _downloaderDirs.push_back(_executable);
     } else if constexpr (core_name == "xenia") {
-        _asset_id = _asset_ids::XENIA_WIN;
-        _downloaderDirs.push_back((_base_path / "system" / core_name / "xenia_canary_netplay.zip").string());
-        _executable = (_base_path / "system" / core_name / "xenia_canary_netplay.exe").string();
+        _asset_id = _asset_ids::XENIA_LINUX;
+        _executable = (_base_path / "system" / core_name / "xenia.AppImage").string();
+        _downloaderDirs.push_back((_base_path / "system" / core_name / "xenia_edge.zip").string());
     }
 
     /*flatpak check*/
@@ -170,8 +170,8 @@ core::core()
     }
     else if constexpr (core_name == "xenia") {
         _urls = {
-        "https://api.github.com/repos/AdrianCassar/xenia-canary/releases/latest",
-        "https://github.com/AdrianCassar/xenia-canary/releases/download",
+        "https://api.github.com/repos/has207/xenia-edge/releases/latest",
+        "https://github.com/has207/xenia-edge/releases/download",
         };
     }
 }

@@ -67,8 +67,9 @@ private:
 		XEMU_LINUX = 6,
 		XEMU_MACOS = 2,
 		
-		XENIA_WIN = 0,
-		//XENIA_LINUX = 0 not available yet.
+		// Referres to Xenia Edge
+		XENIA_LINUX = 0,
+		XENIA_WIN = 1
 	};
 
    enum _directory_ids {

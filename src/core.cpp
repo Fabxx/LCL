@@ -110,7 +110,7 @@ core::core()
     } else if constexpr (core_name == "xenia") {
         _asset_id = _asset_ids::XENIA_LINUX;
         _executable = (_base_path / "system" / core_name / "xenia.AppImage").string();
-        _downloaderDirs.push_back((_base_path / "system" / core_name / "xenia_edge.zip").string());
+        _downloaderDirs.push_back((_executable));
     }
 
     /*flatpak check*/

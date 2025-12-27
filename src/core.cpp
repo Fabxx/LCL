@@ -852,7 +852,12 @@ void retro_run(void)
     unsigned stride = 320;
     video_cb(frame_buf, 320, 240, stride << 2);
     environ_cb(RETRO_ENVIRONMENT_SHUTDOWN, NULL);
-    system("pause");
+
+    // This pause is needed on windows only, until i make a better way to handle retroarch UI.
+#ifdef _WIN32
+     system("pause");
+#endif
+   
 }
 
 bool retro_load_game(const struct retro_game_info* info)

@@ -851,9 +851,8 @@ void retro_run(void)
     // Clear the display.
     unsigned stride = 320;
     video_cb(frame_buf, 320, 240, stride << 2);
-
-    // Shutdown the environment now that xemu has loaded and quit.
     environ_cb(RETRO_ENVIRONMENT_SHUTDOWN, NULL);
+    system("pause");
 }
 
 bool retro_load_game(const struct retro_game_info* info)

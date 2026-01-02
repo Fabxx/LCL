@@ -63,8 +63,8 @@ private:
 		PCSX2_LINUX = 0,
 		PCSX2_MACOS = 2,
 		
-		XEMU_WIN = 11,
-		XEMU_LINUX = 6,
+		XEMU_WIN = 16,
+		XEMU_LINUX = 7,
 		XEMU_MACOS = 2,
 		
 		// Referres to Xenia Edge

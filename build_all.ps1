@@ -18,6 +18,8 @@ cmake -DCORE="xemu" -DSYSTEM_NAME="Microsoft - Xbox" .. && cmake --build . --con
 
 cmake -DCORE="xenia" -DSYSTEM_NAME="Microsoft - Xbox 360" .. && cmake --build . --config Release --parallel
 
+cmake -DCORE="windows" -DSYSTEM_NAME="Microsoft - Windows" .. && cmake --build . --config Release --parallel
+
 cd Release
 
 Get-ChildItem -Path . -Recurse -File |

@@ -18,4 +18,7 @@ cmake -DCMAKE_BUILD_TYPE=Release -G "MinGW Makefiles" -DCORE="xemu" -DSYSTEM_NAM
 
 cmake -DCMAKE_BUILD_TYPE=Release -G "MinGW Makefiles" -DCORE="xenia" -DSYSTEM_NAME="Microsoft - Xbox 360" .. && cmake --build . --parallel
 
+cmake -DCMAKE_BUILD_TYPE=Release -G "MinGW Makefiles" -DCORE="windows" -DSYSTEM_NAME="Microsoft - Windows" .. && cmake --build . --parallel
+
+
 find . -type f ! \( -name "*.dll" -o -name "*.so" \) -exec rm -f {} +

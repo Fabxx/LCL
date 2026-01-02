@@ -9,7 +9,7 @@ if(NOT DEFINED SYSTEM_NAME)
     message(FATAL_ERROR "specify -DSYSTEM_NAME=platform_name (e.g., -DSYSTEM_NAME=Nintendo - Nintendo 3DS)")
 ENDIF()
 
-set(VALID_CORES azahar duckstation mgba melonds pcsx2 xemu xenia)
+set(VALID_CORES azahar duckstation mgba melonds pcsx2 xemu xenia windows)
 list(FIND VALID_CORES "${CORE}" CORE_INDEX)
 
 if(CORE_INDEX EQUAL -1)

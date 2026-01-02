@@ -187,12 +187,15 @@ bool core::retro_core_setup()
         }
     }
 
-    if (std::filesystem::exists(_executable)) {
-        log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Found Emulator in: %s\n", _executable.c_str());
-        return false;
-    }
+    // If executing windows shortcuts there is no need to search or download an emulator.
+    if (core_name != "windows") {
+        if (std::filesystem::exists(_executable)) {
+            log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Found Emulator in: %s\n", _executable.c_str());
+            return false;
+        }
 
-    log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Downloading emulator.\n");
+        log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Downloading emulator.\n");
+    }
     return true;
 }
 
@@ -657,6 +660,16 @@ bool core::retro_core_boot(const struct retro_game_info* info)
             cmd_win = std::format("\"{}\"", _executable);
             cmd_flatpak = cmd;
         }
+        
+    }
+     else if constexpr (core_name == "windows") {
+        if (info != NULL && info->path != NULL) {
+            cmd_win = std::format("powershell -c . '{}'", info->path);
+        }
+        else {
+            cmd_win = "";
+        }
+        
     }
 
     if (_is_flatpak) {
@@ -774,6 +787,11 @@ void retro_get_system_info(struct retro_system_info* info)
         info->library_version = "0.1a";
         info->need_fullpath = true;
         info->valid_extensions = "iso|xex|zar";
+    }  else if constexpr (core_name == "windows") {
+        info->library_name = "Windows";
+        info->library_version = "0.1a";
+        info->need_fullpath = true;
+        info->valid_extensions = "lnk";
     }
 }
 
@@ -863,6 +881,12 @@ void retro_run(void)
 bool retro_load_game(const struct retro_game_info* info)
 {
     auto core_obj = std::make_unique<core>();
+
+    if (core_name == "windows") {
+        core_obj->retro_core_setup();
+        core_obj->retro_core_boot(info);
+        return true;
+    }
 
     // if first boot download emulator, else check for updates
     if (core_obj->retro_core_setup()) {

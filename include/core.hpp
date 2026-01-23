@@ -63,7 +63,7 @@ private:
 		PCSX2_LINUX = 0,
 		PCSX2_MACOS = 2,
 		
-		XEMU_WIN = 16,
+		XEMU_WIN = 13,
 		XEMU_LINUX = 7,
 		XEMU_MACOS = 2,
 		

@@ -6,7 +6,7 @@ The cores DO NOT integrate any emulator code. All they do is to download the off
 - To allow the `Invoke Web-Request` command, internet explorer must be run at least once, and configure it with default options.
  
 
-# Building
+# Building [for developers only]
 
 - Install `Cmake`
 
@@ -99,6 +99,7 @@ You should create an issue with these messages, it will help to understand the i
 Example when running xemu (BIOS Configured in xemu itself before launch)
 
 https://github.com/user-attachments/assets/eec0f0eb-acb3-4790-906f-57cd18cc122d
+
 
 
 

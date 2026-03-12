@@ -39,7 +39,7 @@ Check your `Core` and `Info` path in `Settings > Folders` and place the files wh
         
   - Game names and covers must NOT have special characters like dash, ampersand, apostrophe etc
   - Game and cover names must be identical if using manual scan.
-  - You can get some thumbnails from here (boxarts): https://shorturl.at/E89j5
+  - You can get some thumbnails from here (boxarts): https://shorturl.at/WNnij
     - Drag & drop the thumbnails folder inside the retroarch installation folder.
 
 - Boot
@@ -99,6 +99,7 @@ You should create an issue with these messages, it will help to understand the i
 Example when running xemu (BIOS Configured in xemu itself before launch)
 
 https://github.com/user-attachments/assets/eec0f0eb-acb3-4790-906f-57cd18cc122d
+
 
 
 

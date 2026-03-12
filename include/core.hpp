@@ -43,13 +43,13 @@ private:
 	// IDs for the assets in the GitHub release section
 	enum _asset_ids {
 		
-		AZAHAR_WIN = 6,
-		AZAHAR_LINUX = 11,
+		AZAHAR_WIN = 8,
+		AZAHAR_LINUX = 15,
 		AZAHAR_MACOS = 4,
 
-		DUCKSTATION_WIN = 8,
+		DUCKSTATION_WIN = 10,
 		DUCKSTATION_LINUX = 13,
-		DUCKSTATION_MACOS = 3,
+		DUCKSTATION_MACOS = 15,
 		
 		MGBA_WIN = 16,
 		MGBA_LINUX = 2,
@@ -64,7 +64,7 @@ private:
 		PCSX2_MACOS = 2,
 		
 		XEMU_WIN = 13,
-		XEMU_LINUX = 7,
+		XEMU_LINUX = 14,
 		XEMU_MACOS = 2,
 		
 		// Referres to Xenia Edge

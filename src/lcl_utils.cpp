@@ -790,6 +790,10 @@ bool retro_load_game(const struct retro_game_info* info)
 {
     auto core_obj = std::make_unique<lcl_utils>();
 
+    if (!core_obj->lcl_check_config_file()) {
+        return false;
+    }
+
     // If running windows .lnk, skip url and ID setup.
     if (core_name == "windows") {
         core_obj->lcl_setup_dirs();

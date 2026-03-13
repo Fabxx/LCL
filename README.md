@@ -17,7 +17,20 @@ The cores DO NOT integrate any emulator code. All they do is to download the off
 # Core installation
 
 Check your `Core` and `Info` path in `Settings > Folders` and place the files where indicated.
+
+Place the file `LCL.cfg` in the root folder of retroarch, where `Retroarch.exe` is.
  
+# Core configuration
+
+Through the `LCL.cfg` file, it is now possible to configure the following:
+
+- Asset ids: they represent the position of the archive to download in the release section.
+  - If an ID is subject to change, you must go to the github release section of the emulator,
+    then you count the positions of the archives until you reach the one you need. 
+    Place that position number in the CFG.
+- Api and github url where to fetch and parse the available assets.
+- Emulator Arguments
+
 # Core behavior
 
 - Fetch (first boot):

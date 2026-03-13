@@ -597,20 +597,24 @@ bool lcl_utils::lcl_core_boot(const struct retro_game_info* info) {
     }
     
     if (info != NULL && info->path != NULL) {
-        cmd_win = std::format("powershell -c \"& '{}' '{}' {}\"", _executable, info->path, args);
-        cmd = std::format("'{}' '{}' '{}'", _executable, info->path, args);
+        cmd_win = std::format("powershell -c \"& '{}' '{}' {}\"", _executable, args, info->path);
+        cmd = std::format("'{}' '{}' '{}'", _executable, args, info->path);
     } else {
         cmd_win = std::format("\"{}\" {}", _executable, args);
         cmd = std::format("\"{}\" '{}'", _executable, args);
     }
 
 #ifdef _WIN32
+    log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Booting emulator with command: %s\n", cmd_win.c_str());
+    
     if (system(cmd_win.c_str()) != 0) {
         log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Failed to launch emulator.\n");
 		return false;
     }
 
 #elif __linux__
+    log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Booting emulator with command: %s\n", cmd.c_str());
+
     if (!system(cmd_flatpak.c_str()) != 0) {
         log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Failed to launch emulator under flatpak.\n");
         return false;

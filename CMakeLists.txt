@@ -21,7 +21,9 @@ project(${CORE})
 # Options
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(SOURCES src/core.cpp)
+set(SOURCES 
+    src/lcl_utils.cpp
+)
 set(TARGET_NAME ${CORE})
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 

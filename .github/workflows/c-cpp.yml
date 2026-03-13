@@ -51,6 +51,7 @@ jobs:
         mkdir -p Linux/cores
         cp build/*.so Linux/cores || true
         cp -r info Linux/ || true
+        cp LCL.cfg Linux/ || true
 
     - name: Create ZIP archive for Linux
       run: zip -r LCL_Linux_OpenSSL_amd64.zip Linux
@@ -101,6 +102,7 @@ jobs:
         mkdir -p Linux/cores
         cp build/*.so Linux/cores || true
         cp -r info Linux/ || true
+        cp LCL.cfg Linux/ || true
 
     - name: Create ZIP archive for Linux (GnuTLS)
       run: zip -r LCL_Linux_GnuTLS_amd64.zip Linux
@@ -149,6 +151,7 @@ jobs:
           New-Item -ItemType Directory -Force -Path Windows\cores | Out-Null
           Copy-Item -Path build\Release\*.dll -Destination Windows\cores\ -ErrorAction SilentlyContinue
           Copy-Item -Recurse -Path info -Destination Windows\
+          Copy-Item -Recurse -Path LCL.cfg -Destination Windows\
 
       - name: Create ZIP archive for Windows
         shell: pwsh
@@ -232,6 +235,7 @@ jobs:
           New-Item -ItemType Directory -Force -Path Windows\cores | Out-Null
           Copy-Item -Path build\*.dll -Destination Windows\cores\ -ErrorAction SilentlyContinue
           Copy-Item -Recurse -Path info -Destination Windows\
+          Copy-Item -Recurse -Path LCL.cfg -Destination Windows\
 
       - name: Create ZIP archive for Windows
         shell: pwsh

@@ -6,14 +6,17 @@
 
 #include "curl/curl.h"
 #include "libretro.h"
-#include "nlohmann/json.hpp"
+
 
 class core
 {
 public:
 	core();
 
-	bool retro_core_setup();
+	
+	bool retro_core_setup_dirs();
+	bool retro_core_setup_urls_ids();
+
 	bool retro_core_get();
 	bool retro_core_extractor();
 	bool retro_core_updater();
@@ -41,37 +44,8 @@ private:
 	bool _is_flatpak;
 
 	// IDs for the assets in the GitHub release section
-	enum _asset_ids {
-		
-		AZAHAR_WIN = 8,
-		AZAHAR_LINUX = 15,
-		AZAHAR_MACOS = 4,
-
-		DUCKSTATION_WIN = 10,
-		DUCKSTATION_LINUX = 13,
-		DUCKSTATION_MACOS = 15,
-		
-		MGBA_WIN = 16,
-		MGBA_LINUX = 2,
-		MGBA_MACOS = 3,
-		
-		MELONDS_WIN = 9,
-		MELONDS_LINUX = 1,
-		MELONDS_MACOS = 3,
-		
-		PCSX2_WIN = 5,
-		PCSX2_LINUX = 0,
-		PCSX2_MACOS = 2,
-		
-		XEMU_WIN = 13,
-		XEMU_LINUX = 14,
-		XEMU_MACOS = 2,
-		
-		// Referres to Xenia Edge
-		XENIA_LINUX = 0,
-		XENIA_WIN = 1
-	};
-
+	int ASSET_ID;
+	
    enum _directory_ids {
        EMULATOR_PATH,
        THUMBNAILS_PATH,

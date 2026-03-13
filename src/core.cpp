@@ -9,6 +9,9 @@
 #include <system_error>
 #include <unordered_set>
 
+#include <inicpp.h>
+#include <nlohmann/json.hpp>
+
 using json = nlohmann::json;
 
 static uint32_t* frame_buf;
@@ -17,8 +20,8 @@ static retro_log_printf_t log_cb;
 
 #ifdef CORE
 #ifdef SYSTEM_NAME
-constexpr std::string_view core_name = CORE;
-constexpr std::string_view system_name = SYSTEM_NAME;
+std::string core_name = CORE;
+std::string system_name = SYSTEM_NAME;
 #endif
 #endif
 
@@ -34,6 +37,8 @@ core::core()
 {
     _is_flatpak = false;
     _base_path = std::filesystem::current_path();
+    ASSET_ID = 0;
+    _url_asset_id = 0;
 
     _directories = {
          (_base_path / "system" / core_name).string(),
@@ -51,64 +56,50 @@ core::core()
 
 #ifdef _WIN32
 
-   if constexpr (core_name == "azahar") {
-        _asset_id = _asset_ids::AZAHAR_WIN;
+   if (core_name == "azahar") {
         _downloaderDirs.push_back((_base_path / "system" / core_name / "azahar.zip").string());
         _executable = (_base_path / "system" / core_name / "azahar.exe").string();
-    } else if constexpr (core_name == "duckstation") {
-        _asset_id = _asset_ids::DUCKSTATION_WIN;
+    } else if (core_name == "duckstation") {
         _downloaderDirs.push_back((_base_path / "system" / core_name / "DuckStation-x64.zip").string());
         _executable = (_base_path / "system" / core_name / "duckstation-qt-x64-ReleaseLTCG.exe").string();
-    } else if constexpr (core_name == "mgba") {
-        _asset_id = _asset_ids::MGBA_WIN;
+    } else if (core_name == "mgba") {
         _downloaderDirs.push_back((_base_path / "system" / core_name / "mGBA.7z").string());
         _executable = (_base_path / "system" / core_name / "mGBA.exe").string();
-    } else if constexpr (core_name == "melonds") {
-        _asset_id = _asset_ids::MELONDS_WIN;
+    } else if (core_name == "melonds") {
         _downloaderDirs.push_back((_base_path / "system" / core_name / "melonDS.zip").string());
         _executable = (_base_path / "system" / core_name / "melonDS.exe").string();
-    } else if constexpr (core_name == "pcsx2") {
-        _asset_id = _asset_ids::PCSX2_WIN;
+    } else if (core_name == "pcsx2") {
         _downloaderDirs.push_back((_base_path / "system" / core_name / "pcsx2.7z").string());
         _executable = (_base_path / "system" / core_name / "pcsx2-qt.exe").string();
-    } else if constexpr (core_name == "xemu") {
-        _asset_id = _asset_ids::XEMU_WIN;
+    } else if (core_name == "xemu") {
         _downloaderDirs.push_back((_base_path / "system" / core_name / "xemu.zip").string());
         _executable = (_base_path / "system" / core_name / "xemu.exe").string();
-    } else if constexpr (core_name == "xenia") {
-        _asset_id = _asset_ids::XENIA_WIN;
+    } else if (core_name == "xenia") {
         _downloaderDirs.push_back((_base_path / "system" / core_name / "xenia_edge.zip").string());
         _executable = (_base_path / "system" / core_name / "xenia_edge.exe").string();
     }
 
 #elif __linux__
     
-    if constexpr (core_name == "azahar") {
-        _asset_id = _asset_ids::AZAHAR_LINUX;
+    if (core_name == "azahar") {
         _executable = (_base_path / "system" / core_name / "azahar.AppImage").string();
         _downloaderDirs.push_back(_executable);
-    } else if constexpr (core_name == "duckstation") {
-        _asset_id = _asset_ids::DUCKSTATION_LINUX;
+    } else if (core_name == "duckstation") {
         _executable = (_base_path / "system" / core_name / "duckstation.AppImage").string();
         _downloaderDirs.push_back(_executable);
-    } else if constexpr (core_name == "mgba") {
-        _asset_id = _asset_ids::MGBA_LINUX;
+    } else if (core_name == "mgba") {
         _executable = (_base_path / "system" / core_name / "mGBA.AppImage").string();
         _downloaderDirs.push_back(_executable);
-    } else if constexpr (core_name == "melonds") {
-        _asset_id = _asset_ids::MELONDS_LINUX;
+    } else if (core_name == "melonds") {
         _executable = (_base_path / "system" / core_name / "melonDS-x86_64.AppImage").string();
         _downloaderDirs.push_back(_executable + ".zip");
-    } else if constexpr (core_name == "pcsx2") {
-        _asset_id = _asset_ids::PCSX2_LINUX;
+    } else if (core_name == "pcsx2") {
         _executable = (_base_path / "system" / core_name / "pcsx2.AppImage").string();
         _downloaderDirs.push_back(_executable);
-    } else if constexpr (core_name == "xemu") {
-        _asset_id = _asset_ids::XEMU_LINUX;
+    } else if (core_name == "xemu") {
         _executable = (_base_path / "system" / core_name / "xemu.AppImage").string();
         _downloaderDirs.push_back(_executable);
-    } else if constexpr (core_name == "xenia") {
-        _asset_id = _asset_ids::XENIA_LINUX;
+    } else if (core_name == "xenia") {
         _executable = (_base_path / "system" / core_name / "xenia.AppImage").string();
         _downloaderDirs.push_back((_executable));
     }
@@ -130,53 +121,57 @@ core::core()
         }
     }
 #endif
-
-    _url_asset_id = 0;
-
-    if constexpr (core_name == "azahar") {
-        _urls = {
-            "https://api.github.com/repos/azahar-emu/azahar/releases/latest",
-            "https://github.com/azahar-emu/azahar/releases/download"
-        };
-    }
-    else if constexpr (core_name == "duckstation") {
-        _urls = {
-          "https://api.github.com/repos/stenzek/duckstation/releases/latest",
-          "https://github.com/stenzek/duckstation/releases/download"
-        };
-    }
-    else if constexpr (core_name == "mgba") {
-        _urls = {
-          "https://api.github.com/repos/mGBA-emu/mGBA/releases/latest",
-          "https://github.com/mGBA-emu/mGBA/releases/download"
-        };
-    }
-    else if constexpr (core_name == "melonds") {
-        _urls = {
-          "https://api.github.com/repos/melonDS-emu/melonDS/releases/latest",
-          "https://github.com/melonDS-emu/melonDS/releases/download"
-        };
-    } else if constexpr (core_name == "pcsx2") {
-        _urls = {
-         "https://api.github.com/repos/PCSX2/pcsx2/releases/latest",
-         "https://github.com/PCSX2/pcsx2/releases/download"
-        };
-    }
-    else if constexpr (core_name == "xemu") {
-        _urls = {
-         "https://api.github.com/repos/xemu-project/xemu/releases/latest",
-         "https://github.com/xemu-project/xemu/releases/download"
-        };
-    }
-    else if constexpr (core_name == "xenia") {
-        _urls = {
-        "https://api.github.com/repos/has207/xenia-edge/releases/latest",
-        "https://github.com/has207/xenia-edge/releases/download",
-        };
-    }
 }
 
-bool core::retro_core_setup()
+bool core::retro_core_setup_urls_ids()
+{
+    bool is_loaded = false;
+    ini::IniFile cfg;
+    auto ini_path = (_base_path / "LCL.cfg").string();
+
+    log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Loading ini from: %s\n", ini_path.c_str());
+
+    cfg.load(ini_path);
+
+    if (cfg.empty()) {
+        log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Failed to parse config file.\n");
+        return false;
+    }
+
+    std::string section = core_name;
+
+    if (!cfg.contains(section)) {
+        log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Section %s not found.\n", section.c_str());
+        return false;
+    }
+
+    auto &sec = cfg[section];
+
+#ifdef _WIN32
+    ASSET_ID = sec["WINDOWS"].as<int>();
+#elif __linux
+    ASSET_ID = sec["LINUX"].as<int>();
+#endif
+
+    _urls.push_back(sec["API_URL"].as<std::string>());
+    _urls.push_back(sec["GIT_URL"].as<std::string>());
+
+    if (_urls.empty()) {
+        log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Could not fetch urls.\n");
+        return false;
+    }
+
+    log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Loaded url config from LCL.cfg\n");
+    log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] API URL: %s\n", _urls[LATEST_RELEASE_URL].c_str());
+    log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] GIT URL: %s\n", _urls[BASE_URL].c_str());
+
+    is_loaded = true;
+    log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Loaded asset id config from LCL.cfg\n");
+    cfg.clear();
+    return is_loaded;
+}
+
+bool core::retro_core_setup_dirs()
 {
     for (auto& path : _directories) {
         if (!std::filesystem::exists(path)) {
@@ -196,6 +191,7 @@ bool core::retro_core_setup()
 
         log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Downloading emulator.\n");
     }
+
     return true;
 }
 
@@ -246,19 +242,20 @@ bool core::build_download_url(CURL* curl, CURLcode& res)
     _tag = parsed["tag_name"];
     const auto& assets = parsed["assets"];
 
-    if (_asset_id >= assets.size()) {
-        log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Asset ID %d out of range.\n", _asset_id);
+    if (ASSET_ID >= assets.size()) {
+        log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Asset ID %d out of range.\n", ASSET_ID);
         return false;
     }
 
-    std::string name = assets[_asset_id]["name"];
-    _url_asset_id = assets[_asset_id]["id"];
+    std::string name = assets[ASSET_ID]["name"];
+    _url_asset_id = assets[ASSET_ID]["id"];
     _current_version = std::to_string(_url_asset_id);
     _new_version = std::to_string(_url_asset_id);
+
+    // write final download url into vector
     _urls.push_back(_urls[_url_ids::BASE_URL] + "/" + _tag + "/" + name);
 
     // export final download URL
-
     std::ofstream urlOut(_downloaderDirs[_downloader_ids::URL_FILE]);
 
     if (urlOut.is_open()) {
@@ -577,7 +574,7 @@ bool core::retro_core_boot(const struct retro_game_info* info)
     std::string cmd_win{};
     std::string cmd_flatpak{};
 
-    if constexpr (core_name == "azahar") {
+    if (core_name == "azahar") {
         if (info != NULL && info->path != NULL) {
             cmd = std::format("'{}' '{}'", _executable, info->path);
             cmd_win = std::format("powershell -c .'{}' '{}'", _executable, info->path);
@@ -589,7 +586,7 @@ bool core::retro_core_boot(const struct retro_game_info* info)
             cmd_flatpak = std::format("'{}' --appimage-extract-and-run", _executable);
         }
     }
-    else if constexpr (core_name == "duckstation") {
+    else if (core_name == "duckstation") {
         if (info != NULL && info->path != NULL) {
             cmd = std::format("'{}' -fullscreen '{}'", _executable, info->path);
             cmd_win = std::format("powershell -c .'{}' -fullscreen '{}'", _executable, info->path);
@@ -601,7 +598,7 @@ bool core::retro_core_boot(const struct retro_game_info* info)
             cmd_flatpak = std::format("'{}' --appimage-extract-and-run -fullscreen -bios", _executable);
         }
     }
-    else if constexpr (core_name == "mgba") {
+    else if (core_name == "mgba") {
         if (info != NULL && info->path != NULL) {
             cmd = std::format("'{}' -f '{}'", _executable, info->path);
             cmd_win = std::format("powershell -c .'{}' -f '{}'", _executable, info->path);
@@ -613,7 +610,7 @@ bool core::retro_core_boot(const struct retro_game_info* info)
             cmd_flatpak = std::format("'{}' --appimage-extract-and-run", _executable);
         }
     }
-    else if constexpr (core_name == "melonds") {
+    else if (core_name == "melonds") {
         if (info != NULL && info->path != NULL) {
             cmd = std::format("'{}' -f '{}'", _executable, info->path);
             cmd_win = std::format("powershell -c .'{}' -f '{}'", _executable, info->path);
@@ -625,7 +622,7 @@ bool core::retro_core_boot(const struct retro_game_info* info)
             cmd_flatpak = std::format("'{}' --appimage-extract-and-run", _executable);
         }
     }
-    else if constexpr (core_name == "pcsx2") {
+    else if (core_name == "pcsx2") {
         if (info != NULL && info->path != NULL) {
             cmd = std::format("'{}' -fullscreen '{}'", _executable, info->path);
             cmd_win = std::format("powershell -c .'{}' -fullscreen '{}'", _executable, info->path);
@@ -637,7 +634,7 @@ bool core::retro_core_boot(const struct retro_game_info* info)
             cmd_flatpak = std::format("'{}' --appimage-extract-and-run -fullscreen -bios", _executable);
         }
     }
-    else if constexpr (core_name == "xemu") {
+    else if (core_name == "xemu") {
         if (info != NULL && info->path != NULL) {
 			cmd = std::format("'{}' -full-screen -dvd_path '{}'", _executable, info->path);
             cmd_win = std::format("powershell -c .'{}' -full-screen -dvd_path '{}'", _executable, info->path);
@@ -649,7 +646,7 @@ bool core::retro_core_boot(const struct retro_game_info* info)
             cmd_flatpak = std::format("'{}' --appimage-extract-and-run -full-screen", _executable);
         }
     }
-    else if constexpr (core_name == "xenia") {
+    else if (core_name == "xenia") {
         if (info != NULL && info->path != NULL) {
 			cmd = std::format("'{}' --fullscreen=true '{}'", _executable, info->path);
             cmd_win = std::format("powershell -c .'{}' --fullscreen=true '{}'", _executable, info->path);
@@ -662,7 +659,7 @@ bool core::retro_core_boot(const struct retro_game_info* info)
         }
         
     }
-     else if constexpr (core_name == "windows") {
+     else if (core_name == "windows") {
         if (info != NULL && info->path != NULL) {
             cmd_win = std::format("powershell -c . '{}'", info->path);
         }
@@ -703,15 +700,6 @@ bool core::retro_core_boot(const struct retro_game_info* info)
     return true;
 }
 
-//TODO
-bool core::retro_core_updater()
-{
-    std::vector<std::string> core_urls = {
-    };
-
-    return true;
-}
-
 static void fallback_log(enum retro_log_level level, const char* fmt, ...)
 {
     (void)level;
@@ -746,48 +734,48 @@ void retro_get_system_info(struct retro_system_info* info)
 {
     memset(info, 0, sizeof(*info));
     
-    if constexpr (core_name == "azahar") {
+    if (core_name == "azahar") {
         info->library_name = "Azahar";
         info->library_version = "0.1a";
         info->need_fullpath = true;
         info->valid_extensions = "3ds|3dsx|elf|axf|cci|cxi|app";
     }
-    else if constexpr (core_name == "duckstation") {
+    else if (core_name == "duckstation") {
         info->library_name = "Duckstation";
         info->library_version = "0.1a";
         info->need_fullpath = true;
         info->valid_extensions = "cue|img|ecm|chd";
     }
-    else if constexpr (core_name == "mgba") {
+    else if (core_name == "mgba") {
         info->library_name = "mGBA";
         info->library_version = "0.1a";
         info->need_fullpath = true;
         info->valid_extensions = "gba|gbc|gc";
     }
-    else if constexpr (core_name == "melonds") {
+    else if (core_name == "melonds") {
         info->library_name = "melonDS";
         info->library_version = "0.1a";
         info->need_fullpath = true;
         info->valid_extensions = "nds|ids|dsi";
     }
-    else if constexpr (core_name == "pcsx2") {
+    else if (core_name == "pcsx2") {
         info->library_name = "PCSX2";
         info->library_version = "0.1a";
         info->need_fullpath = true;
         info->valid_extensions = "iso|chd|elf|ciso|cso|bin|cue|mdf|nrg|dump|gz|img|m3u";
     }
-    else if constexpr (core_name == "xemu") {
+    else if (core_name == "xemu") {
         info->library_name = "Xemu";
         info->library_version = "0.1a";
         info->need_fullpath = true;
         info->valid_extensions = "iso";
     }
-    else if constexpr (core_name == "xenia") {
+    else if (core_name == "xenia") {
         info->library_name = "Xenia";
         info->library_version = "0.1a";
         info->need_fullpath = true;
         info->valid_extensions = "iso|xex|zar";
-    }  else if constexpr (core_name == "windows") {
+    }  else if (core_name == "windows") {
         info->library_name = "Windows";
         info->library_version = "0.1a";
         info->need_fullpath = true;
@@ -882,14 +870,17 @@ bool retro_load_game(const struct retro_game_info* info)
 {
     auto core_obj = std::make_unique<core>();
 
+    // If running windows .lnk, skip url and ID setup.
     if (core_name == "windows") {
-        core_obj->retro_core_setup();
+        core_obj->retro_core_setup_dirs();
         core_obj->retro_core_boot(info);
         return true;
     }
 
+    core_obj->retro_core_setup_urls_ids();
+
     // if first boot download emulator, else check for updates
-    if (core_obj->retro_core_setup()) {
+    if (core_obj->retro_core_setup_dirs()) {
         core_obj->retro_core_get();
         core_obj->retro_core_extractor();
     } else if (core_obj->retro_core_get()) {

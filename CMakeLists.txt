@@ -110,6 +110,15 @@ endif()
 
 FetchContent_MakeAvailable(curl)
 
+FetchContent_Declare(
+  inifile-cpp
+  GIT_REPOSITORY https://github.com/Rookfighter/inifile-cpp
+)
+
+# forza build statica se supportato
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(inifile-cpp)
+
 add_library(${TARGET_NAME} SHARED ${SOURCES})
 
 # Define string macros for the core and system. Both are exported in a string.
@@ -124,6 +133,7 @@ target_link_libraries(${TARGET_NAME} PRIVATE
     nlohmann_json
     CURL::libcurl
     nghttp2_static
+    inicpp
 )
 
 # Force correct output name

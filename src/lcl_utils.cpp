@@ -26,6 +26,8 @@ std::string system_name = SYSTEM_NAME;
 #endif
 #endif
 
+static std::string g_emu_extensions;
+
 // libcurl callback
 static inline size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* output) {
     size_t totalSize = size * nmemb;
@@ -54,57 +56,14 @@ lcl_utils::lcl_utils() {
         (_base_path / "system" / core_name / "2.NewVersion.txt").string()
     };
 
-#ifdef _WIN32
+#ifdef __linux__
+    lcl_check_flatpak();
+#endif
+}
 
-   if (core_name == "azahar") {
-        _downloaderDirs.push_back((_base_path / "system" / core_name / "azahar.zip").string());
-        _executable = (_base_path / "system" / core_name / "azahar.exe").string();
-    } else if (core_name == "duckstation") {
-        _downloaderDirs.push_back((_base_path / "system" / core_name / "DuckStation-x64.zip").string());
-        _executable = (_base_path / "system" / core_name / "duckstation-qt-x64-ReleaseLTCG.exe").string();
-    } else if (core_name == "mgba") {
-        _downloaderDirs.push_back((_base_path / "system" / core_name / "mGBA.7z").string());
-        _executable = (_base_path / "system" / core_name / "mGBA.exe").string();
-    } else if (core_name == "melonds") {
-        _downloaderDirs.push_back((_base_path / "system" / core_name / "melonDS.zip").string());
-        _executable = (_base_path / "system" / core_name / "melonDS.exe").string();
-    } else if (core_name == "pcsx2") {
-        _downloaderDirs.push_back((_base_path / "system" / core_name / "pcsx2.7z").string());
-        _executable = (_base_path / "system" / core_name / "pcsx2-qt.exe").string();
-    } else if (core_name == "xemu") {
-        _downloaderDirs.push_back((_base_path / "system" / core_name / "xemu.zip").string());
-        _executable = (_base_path / "system" / core_name / "xemu.exe").string();
-    } else if (core_name == "xenia") {
-        _downloaderDirs.push_back((_base_path / "system" / core_name / "xenia_edge.zip").string());
-        _executable = (_base_path / "system" / core_name / "xenia_edge.exe").string();
-    }
+#ifdef __linux__
+bool lcl_utils::lcl_check_flatpak() {
 
-#elif __linux__
-    
-    if (core_name == "azahar") {
-        _executable = (_base_path / "system" / core_name / "azahar.AppImage").string();
-        _downloaderDirs.push_back(_executable);
-    } else if (core_name == "duckstation") {
-        _executable = (_base_path / "system" / core_name / "duckstation.AppImage").string();
-        _downloaderDirs.push_back(_executable);
-    } else if (core_name == "mgba") {
-        _executable = (_base_path / "system" / core_name / "mGBA.AppImage").string();
-        _downloaderDirs.push_back(_executable);
-    } else if (core_name == "melonds") {
-        _executable = (_base_path / "system" / core_name / "melonDS-x86_64.AppImage").string();
-        _downloaderDirs.push_back(_executable + ".zip");
-    } else if (core_name == "pcsx2") {
-        _executable = (_base_path / "system" / core_name / "pcsx2.AppImage").string();
-        _downloaderDirs.push_back(_executable);
-    } else if (core_name == "xemu") {
-        _executable = (_base_path / "system" / core_name / "xemu.AppImage").string();
-        _downloaderDirs.push_back(_executable);
-    } else if (core_name == "xenia") {
-        _executable = (_base_path / "system" / core_name / "xenia.AppImage").string();
-        _downloaderDirs.push_back((_executable));
-    }
-
-    /*flatpak check*/
     if (std::getenv("container") != nullptr) {
         const char *flatpak_path = "/run/host/usr/bin/fusermount";
         const char *flatpak_var = "FUSERMOUNT_PROG";
@@ -120,10 +79,11 @@ lcl_utils::lcl_utils() {
             log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Flatpak setup failed with error %d\n.", errno);
         }
     }
-#endif
 }
+#endif
 
 bool lcl_utils::lcl_check_config_file() {
+    
     bool is_config_available = false;
     auto ini_path = (_base_path / "LCL.cfg").string();
 
@@ -134,43 +94,42 @@ bool lcl_utils::lcl_check_config_file() {
 
     _cfg.load(ini_path);
 
+    if (!_cfg.contains(core_name)) {
+        log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Section %s not found.\n", _cfg_section);
+        return is_config_available;
+    }
+
+    _cfg_section = _cfg[core_name];
+
     is_config_available = true;
+
     return is_config_available;
 }
 
-bool lcl_utils::lcl_setup_urls_ids() {
+bool lcl_utils::lcl_setup_config_params() {
 
-    log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Loading configuration from %s\n", _config_path.c_str());
-
-    _cfg.load(_config_path);
-
-    if (_cfg.empty()) {
-        log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Failed to parse config file.\n");
-        return false;
-    }
-
-    std::string section = core_name;
-
-    if (!_cfg.contains(section)) {
-        log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Section %s not found.\n", section.c_str());
-        return false;
-    }
-
-    auto &sec = _cfg[section];
+    log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Loading configuration from %s\n", _config_path);
 
 #ifdef _WIN32
-    _asset_id = sec["WINDOWS"].as<int>();
-#elif __linux
-    _asset_id = sec["LINUX"].as<int>();
+    _asset_id = _cfg_section["WINDOWS"].as<int>();
+    _downloaderDirs.push_back((_base_path / "system" / core_name / _cfg_section["ARCHIVE"].as<std::string>()).string());
+    _executable = (_base_path / "system" / core_name / _cfg_section["WIN_EXECUTABLE"].as<std::string>()).string();
+#elif __linux__
+    _asset_id = _cfg_section["LINUX"].as<int>();
+    _executable = (_base_path / "system" / core_name / _cfg_section["LINUX_EXECUTABLE"].as<std::string>()).string();
+    _downloaderDirs.push_back((_executable));
 #endif
 
-    _urls.push_back(sec["API_URL"].as<std::string>());
-    _urls.push_back(sec["GIT_URL"].as<std::string>());
+    _urls.push_back(_cfg_section["API_URL"].as<std::string>());
+    _urls.push_back(_cfg_section["GIT_URL"].as<std::string>());
 
     if (_urls.empty()) {
         log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Could not fetch urls.\n");
         return false;
     }
+
+    _emu_extensions = _cfg_section["EXTENSIONS"].as<std::string>();
+    g_emu_extensions = _emu_extensions; // export extensions for retro_system_info struct.
 
     log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Loaded url config from LCL.cfg\n");
     log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] API URL: %s\n", _urls[LATEST_RELEASE_URL].c_str());
@@ -182,7 +141,7 @@ bool lcl_utils::lcl_setup_urls_ids() {
 
 bool lcl_utils::lcl_setup_dirs()
 {
-    for (auto& path : _directories) {
+    for (const auto& path : _directories) {
         if (!std::filesystem::exists(path)) {
 			std::filesystem::create_directories(path);
 			log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Created directory: %s\n", path.c_str());
@@ -580,28 +539,28 @@ bool lcl_utils::lcl_core_extractor()
 bool lcl_utils::lcl_core_boot(const struct retro_game_info* info) {
     std::string cmd_win{};
     std::string cmd{};
-    std::string section = core_name;
     std::string args {};
-
-    if (!_cfg.contains(section)) {
-        log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Section %s not found.\n", section.c_str());
-        return false;
-    }
-
-    auto &sec = _cfg[section];
+    std::string bios_arg{};
 
     if (_is_flatpak) {
-        args = sec["FLATPAK_ARGS"].as<std::string>();
+        args = _cfg_section["FLATPAK_ARGS"].as<std::string>();
     } else {
-        args = sec["ARGS"].as<std::string>();
+        args = _cfg_section["ARGS"].as<std::string>();
     }
     
     if (info != NULL && info->path != NULL) {
-        cmd_win = std::format("powershell -c \"& '{}' '{}' {}\"", _executable, args, info->path);
+        if (core_name == "xemu") {
+            // xemu is special with spaces...
+            cmd_win = std::format("powershell -c .\"'{}' {} '{}'\"", _executable, args, info->path);
+        } else {
+            cmd_win = std::format("powershell -c .\"'{}' '{}' '{}'\"", _executable, args, info->path);
+        }
+       
         cmd = std::format("'{}' '{}' '{}'", _executable, args, info->path);
     } else {
-        cmd_win = std::format("\"{}\" {}", _executable, args);
-        cmd = std::format("\"{}\" '{}'", _executable, args);
+        bios_arg = _cfg_section["BIOS_ARG"].as<std::string>();
+        cmd_win = std::format("\"{}\" {}", _executable, bios_arg);
+        cmd = std::format("\"{}\" '{}'", _executable, bios_arg);
     }
 
 #ifdef _WIN32
@@ -615,7 +574,7 @@ bool lcl_utils::lcl_core_boot(const struct retro_game_info* info) {
 #elif __linux__
     log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Booting emulator with command: %s\n", cmd.c_str());
 
-    if (!system(cmd_flatpak.c_str()) != 0) {
+    if (system(cmd_flatpak.c_str()) != 0) {
         log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Failed to launch emulator under flatpak.\n");
         return false;
     }
@@ -657,54 +616,11 @@ void retro_set_controller_port_device(unsigned port, unsigned device)
 void retro_get_system_info(struct retro_system_info* info)
 {
     memset(info, 0, sizeof(*info));
-    
-    if (core_name == "azahar") {
-        info->library_name = "Azahar";
-        info->library_version = "0.1a";
-        info->need_fullpath = true;
-        info->valid_extensions = "3ds|3dsx|elf|axf|cci|cxi|app";
-    }
-    else if (core_name == "duckstation") {
-        info->library_name = "Duckstation";
-        info->library_version = "0.1a";
-        info->need_fullpath = true;
-        info->valid_extensions = "cue|img|ecm|chd";
-    }
-    else if (core_name == "mgba") {
-        info->library_name = "mGBA";
-        info->library_version = "0.1a";
-        info->need_fullpath = true;
-        info->valid_extensions = "gba|gbc|gc";
-    }
-    else if (core_name == "melonds") {
-        info->library_name = "melonDS";
-        info->library_version = "0.1a";
-        info->need_fullpath = true;
-        info->valid_extensions = "nds|ids|dsi";
-    }
-    else if (core_name == "pcsx2") {
-        info->library_name = "PCSX2";
-        info->library_version = "0.1a";
-        info->need_fullpath = true;
-        info->valid_extensions = "iso|chd|elf|ciso|cso|bin|cue|mdf|nrg|dump|gz|img|m3u";
-    }
-    else if (core_name == "xemu") {
-        info->library_name = "Xemu";
-        info->library_version = "0.1a";
-        info->need_fullpath = true;
-        info->valid_extensions = "iso";
-    }
-    else if (core_name == "xenia") {
-        info->library_name = "Xenia";
-        info->library_version = "0.1a";
-        info->need_fullpath = true;
-        info->valid_extensions = "iso|xex|zar";
-    }  else if (core_name == "windows") {
-        info->library_name = "Windows";
-        info->library_version = "0.1a";
-        info->need_fullpath = true;
-        info->valid_extensions = "lnk";
-    }
+
+    info->library_name = core_name.c_str();
+    info->library_version = "0.1a";
+    info->need_fullpath = true;
+    info->valid_extensions = g_emu_extensions.c_str();
 }
 
 static retro_video_refresh_t video_cb;
@@ -787,7 +703,6 @@ void retro_run(void)
 #ifdef _WIN32
      system("pause");
 #endif
-   
 }
 
 bool retro_load_game(const struct retro_game_info* info)
@@ -805,7 +720,7 @@ bool retro_load_game(const struct retro_game_info* info)
         return true;
     }
 
-    core_obj->lcl_setup_urls_ids();
+    core_obj->lcl_setup_config_params();
 
     // if first boot download emulator, else check for updates
     if (core_obj->lcl_setup_dirs()) {

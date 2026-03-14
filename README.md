@@ -22,14 +22,8 @@ Place the file `LCL.cfg` in the root folder of retroarch, where `Retroarch.exe` 
  
 # Core configuration
 
-Through the `LCL.cfg` file, it is now possible to configure the following:
-
-- Asset ids: they represent the position of the archive to download in the release section.
-  - If an ID is subject to change, you must go to the github release section of the emulator,
-    then you count the positions of the archives until you reach the one you need. 
-    Place that position number in the CFG.
-- Api and github url where to fetch and parse the available assets.
-- Emulator Arguments
+Before using, please check the file `LCL.cfg` for more information on how to download the correct asset
+for your system.
 
 # Core behavior
 

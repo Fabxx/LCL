@@ -12,9 +12,10 @@ public:
 	lcl_utils();
 
 	bool lcl_check_config_file();
+	bool lcl_check_flatpak();
 	bool lcl_load_config_file();
 	bool lcl_setup_dirs();
-	bool lcl_setup_urls_ids();
+	bool lcl_setup_config_params();
 
 	bool lcl_core_get();
 	bool lcl_core_extractor();
@@ -22,6 +23,8 @@ public:
 	bool lcl_core_boot(const struct retro_game_info* info);
 	bool lcl_build_download_url(CURL* curl, CURLcode& res);
 	bool lcl_download_asset(CURL* curl, CURLcode& res, std::string& url);
+
+	bool lcl_get_config_status();
 
 private:
 	std::vector<std::string> _directories;
@@ -33,11 +36,14 @@ private:
 	std::string _current_version;
 	std::string _new_version;
 	std::string _config_path;
+	
+	std::string _emu_extensions;
 
 	// using path to not worry about separators
 	std::filesystem::path _base_path;
 
 	ini::IniFile _cfg;
+	ini::IniSection _cfg_section;
 
 	int _asset_id;
 	int _url_asset_id;

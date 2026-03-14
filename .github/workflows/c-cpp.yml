@@ -129,7 +129,7 @@ jobs:
         shell: pwsh
         run: |
           git pull --rebase origin main
-          $baseVersion = "2.0"
+          $baseVersion = "3.0"
           echo "TAG_NAME=$baseVersion" >> $env:GITHUB_ENV
 
       - name: Create or update Git tag
@@ -180,7 +180,7 @@ jobs:
         shell: pwsh
         run: |
           git pull --rebase origin main
-          $baseVersion = "2.0"
+          $baseVersion = "3.0"
           echo "TAG_NAME=$baseVersion" >> $env:GITHUB_ENV
 
       - name: Create or update Git tag

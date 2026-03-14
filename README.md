@@ -46,7 +46,7 @@ for your system.
         
   - Game names and covers must NOT have special characters like dash, ampersand, apostrophe etc
   - Game and cover names must be identical if using manual scan.
-  - You can get some thumbnails from here (boxarts): https://shorturl.at/WNnij
+  - You can get some thumbnails from here (boxarts): https://shorturl.at/7DN0n
     - Drag & drop the thumbnails folder inside the retroarch installation folder.
 
 - Boot

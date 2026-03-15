@@ -560,17 +560,11 @@ bool lcl_utils::lcl_core_boot(const struct retro_game_info* info) {
     }
     
     if (info != NULL && info->path != NULL) {
-        if (core_name == "xemu") {
-            // xemu is special with spaces...
-            cmd_win = std::format("powershell -c .\"'{}' {} '{}'\"", _executable, args, info->path);
-        } else {
-            cmd_win = std::format("powershell -c .\"'{}' '{}' '{}'\"", _executable, args, info->path);
-        }
-       
+        cmd_win = std::format("cmd /c \"\"{}\" {} \"{}\"\"", _executable, args, info->path);
         cmd = std::format("'{}' '{}' '{}'", _executable, args, info->path);
     } else {
         bios_arg = _cfg_section["BIOS_ARG"].as<std::string>();
-        cmd_win = std::format("\"{}\" {}", _executable, bios_arg);
+        cmd_win = std::format("cmd /c \"\"{}\" {}\"\"", _executable, bios_arg);
         cmd = std::format("\"{}\" '{}'", _executable, bios_arg);
     }
 
@@ -723,7 +717,6 @@ bool retro_load_game(const struct retro_game_info* info)
     if (core_name == "windows") {
         core_obj->lcl_setup_dirs();
         core_obj->lcl_core_boot(info);
-        environ_cb(RETRO_ENVIRONMENT_SHUTDOWN, NULL);
         return true;
     }
 
@@ -738,14 +731,6 @@ bool retro_load_game(const struct retro_game_info* info)
     }
 
     core_obj->lcl_core_boot(info);
-    environ_cb(RETRO_ENVIRONMENT_SHUTDOWN, NULL);
-
-    /* 
-        This flag is applied to not let retroarch UI popup 
-        when no game is selected.
-    */
-    bool no_game = true;
-    environ_cb(RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME, &no_game);
 
     return true;
 }

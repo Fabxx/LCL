@@ -36,16 +36,15 @@ private:
 	std::string _current_version;
 	std::string _new_version;
 	std::string _config_path;
-	
 	std::string _emu_extensions;
+	std::string _search_token;
 
 	// using path to not worry about separators
 	std::filesystem::path _base_path;
 
 	ini::IniFile _cfg;
 	ini::IniSection _cfg_section;
-
-	int _asset_id;
+	
 	int _url_asset_id;
 
 	bool _is_flatpak;

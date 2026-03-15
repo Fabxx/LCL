@@ -39,7 +39,6 @@ lcl_utils::lcl_utils() {
     _is_flatpak = false;
     _base_path = std::filesystem::current_path();
     _config_path = (_base_path / "LCL.cfg").string();
-    _asset_id = 0;
     _url_asset_id = 0;
 
     _directories = {
@@ -108,14 +107,14 @@ bool lcl_utils::lcl_check_config_file() {
 
 bool lcl_utils::lcl_setup_config_params() {
 
-    log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Loading configuration from %s\n", _config_path);
+    log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Loading configuration from %s\n", _config_path.c_str());
 
 #ifdef _WIN32
-    _asset_id = _cfg_section["WINDOWS"].as<int>();
+    _search_token = _cfg_section["WINDOWS_SEARCH_TOKEN"].as<std::string>();
     _downloaderDirs.push_back((_base_path / "system" / core_name / _cfg_section["ARCHIVE"].as<std::string>()).string());
     _executable = (_base_path / "system" / core_name / _cfg_section["WIN_EXECUTABLE"].as<std::string>()).string();
 #elif __linux__
-    _asset_id = _cfg_section["LINUX"].as<int>();
+    _search_token = _cfg_section["LINUX_SEARCH_TOKEN"].as<std::string>();
     _executable = (_base_path / "system" / core_name / _cfg_section["LINUX_EXECUTABLE"].as<std::string>()).string();
     _downloaderDirs.push_back((_executable));
 #endif
@@ -134,7 +133,8 @@ bool lcl_utils::lcl_setup_config_params() {
     log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Loaded url config from LCL.cfg\n");
     log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] API URL: %s\n", _urls[LATEST_RELEASE_URL].c_str());
     log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] GIT URL: %s\n", _urls[BASE_URL].c_str());
-    log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Loaded asset id config from LCL.cfg\n");
+    log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Loaded archive search token from LCL.cfg\n");
+    log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Search Token: %s\n", _search_token.c_str());
 
     return true;
 }
@@ -210,18 +210,28 @@ bool lcl_utils::lcl_build_download_url(CURL* curl, CURLcode& res)
     _tag = parsed["tag_name"];
     const auto& assets = parsed["assets"];
 
-    if (_asset_id >= assets.size()) {
-        log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Asset ID %d out of range.\n", _asset_id);
+    std::string download_url;
+
+    for (const auto& asset : assets) {
+        std::string name = asset["name"];
+
+        if (name.find(_search_token) != std::string::npos) {
+            download_url = asset["browser_download_url"];
+            _url_asset_id = asset["id"];
+            break;
+        }
+    }
+
+    if (download_url.empty()) {
+        log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] No asset found matching token: %s\n", _search_token.c_str());
         return false;
     }
 
-    std::string name = assets[_asset_id]["name"];
-    _url_asset_id = assets[_asset_id]["id"];
     _current_version = std::to_string(_url_asset_id);
     _new_version = std::to_string(_url_asset_id);
 
     // write final download url into vector
-    _urls.push_back(_urls[_url_ids::BASE_URL] + "/" + _tag + "/" + name);
+    _urls.push_back(download_url);
 
     // export final download URL
     std::ofstream urlOut(_downloaderDirs[_downloader_ids::URL_FILE]);
@@ -392,7 +402,7 @@ bool lcl_utils::lcl_core_extractor()
             "Remove-Item -Path '{}' -Force; "
             "$subfolder = Get-ChildItem -Path '{}' -Directory | Select-Object -First 1; "
             "if ($subfolder) {{ "
-            "Move-Item -Path \\\"$($subfolder.FullName)\\\\*\\\" -Destination '{}' -Force; "
+            "Copy-Item -Path \\\"$($subfolder.FullName)\\\\*\\\" -Destination '{}' -Recurse -Force; "
             "Remove-Item -Path $subfolder.FullName -Recurse -Force; "
             "}}"
             "\"",
@@ -442,7 +452,7 @@ bool lcl_utils::lcl_core_extractor()
             "Remove-Item -Path '{}' -Force; "
             "$subfolder = Get-ChildItem -Path '{}' -Directory | Select-Object -First 1; "
             "if ($subfolder) {{ "
-            "Move-Item -Path \\\"$($subfolder.FullName)\\\\*\\\" -Destination '{}' -Force; "
+            "Copy-Item -Path \\\"$($subfolder.FullName)\\\\*\\\" -Destination '{}' -Recurse -Force; "
             "Remove-Item -Path $subfolder.FullName -Recurse -Force; "
             "}}"
             "\"",

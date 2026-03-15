@@ -545,8 +545,6 @@ bool lcl_utils::lcl_core_extractor()
 }
 #endif
 
-// Compose the command to boot emulator + args. On windows system() needs powershell, because info->path formatting breaks...
-// to escape and format string properly, first arg in powershell must have a dot to be considered as executable.
 bool lcl_utils::lcl_core_boot(const struct retro_game_info* info) {
     std::string cmd_win{};
     std::string cmd{};
@@ -579,7 +577,7 @@ bool lcl_utils::lcl_core_boot(const struct retro_game_info* info) {
 #elif __linux__
     log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Booting emulator with command: %s\n", cmd.c_str());
 
-    if (system(cmd_flatpak.c_str()) != 0) {
+    if (system(cmd.c_str()) != 0) {
         log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Failed to launch emulator under flatpak.\n");
         return false;
     }

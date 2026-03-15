@@ -545,43 +545,6 @@ bool lcl_utils::lcl_core_extractor()
 }
 #endif
 
-#ifdef _WIN32
-#include <windows.h>
-
-bool run_and_wait(const std::string& cmd) {
-    STARTUPINFOA si{};
-    PROCESS_INFORMATION pi{};
-
-    si.cb = sizeof(si);
-
-    std::string command = cmd;
-
-    if (!CreateProcessA(
-            NULL,
-            command.data(),
-            NULL,
-            NULL,
-            FALSE,
-            0,
-            NULL,
-            NULL,
-            &si,
-            &pi)) 
-    {
-        log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Failed to launch emulator.\n");
-        return false;
-    }
-
-    // aspetta che l'emulatore venga chiuso
-    WaitForSingleObject(pi.hProcess, INFINITE);
-
-    CloseHandle(pi.hProcess);
-    CloseHandle(pi.hThread);
-
-    return true;
-}
-#endif
-
 // Compose the command to boot emulator + args. On windows system() needs powershell, because info->path formatting breaks...
 // to escape and format string properly, first arg in powershell must have a dot to be considered as executable.
 bool lcl_utils::lcl_core_boot(const struct retro_game_info* info) {
@@ -614,13 +577,10 @@ bool lcl_utils::lcl_core_boot(const struct retro_game_info* info) {
 #ifdef _WIN32
     log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Booting emulator with command: %s\n", cmd_win.c_str());
     
-    /*
     if (system(cmd_win.c_str()) != 0) {
         log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Failed to launch emulator.\n");
 		return false;
     }
-        */
-    run_and_wait(cmd_win);
 
 #elif __linux__
     log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Booting emulator with command: %s\n", cmd.c_str());
@@ -743,14 +703,9 @@ void retro_reset(void)
     // Nothing needs to happen when the game is reset.
 }
 
-static bool g_launched = false;
-
 void retro_run(void)
 {
-    if (g_launched) {
-        environ_cb(RETRO_ENVIRONMENT_SHUTDOWN, NULL);
-        g_launched = false;
-    }
+    environ_cb(RETRO_ENVIRONMENT_SHUTDOWN, NULL);
 
     unsigned stride = 320;
     video_cb(frame_buf, 320, 240, stride << 2);
@@ -768,7 +723,7 @@ bool retro_load_game(const struct retro_game_info* info)
     if (core_name == "windows") {
         core_obj->lcl_setup_dirs();
         core_obj->lcl_core_boot(info);
-        g_launched = true;
+        environ_cb(RETRO_ENVIRONMENT_SHUTDOWN, NULL);
         return true;
     }
 
@@ -783,8 +738,14 @@ bool retro_load_game(const struct retro_game_info* info)
     }
 
     core_obj->lcl_core_boot(info);
+    environ_cb(RETRO_ENVIRONMENT_SHUTDOWN, NULL);
 
-    g_launched = true;
+    /* 
+        This flag is applied to not let retroarch UI popup 
+        when no game is selected.
+    */
+    bool no_game = true;
+    environ_cb(RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME, &no_game);
 
     return true;
 }

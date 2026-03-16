@@ -95,7 +95,7 @@ bool lcl_utils::lcl_check_config_file() {
     _cfg.load(ini_path);
 
     if (!_cfg.contains(core_name)) {
-        log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Section %s not found.\n", _cfg_section);
+        log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Section %s not found.\n", core_name.c_str());
         return is_config_available;
     }
 
@@ -119,6 +119,8 @@ bool lcl_utils::lcl_setup_config_params() {
     _executable = (_base_path / "system" / core_name / _cfg_section["LINUX_EXECUTABLE"].as<std::string>()).string();
     _downloaderDirs.push_back((_executable));
 #endif
+
+    _archive_extension = _cfg_section["ARCHIVE_EXT"].as<std::string>();
 
     _urls.push_back(_cfg_section["API_URL"].as<std::string>());
     _urls.push_back(_cfg_section["GIT_URL"].as<std::string>());
@@ -381,21 +383,10 @@ bool lcl_utils::lcl_core_get()
 #ifdef _WIN32
 bool lcl_utils::lcl_core_extractor()
 {
-    const std::filesystem::path archive_path = _downloaderDirs[_downloader_ids::DOWNLOADED_FILE];
-    const std::string ext = archive_path.extension().string();
     std::string command{};
 
-    const std::unordered_set<std::string_view> supported_exts = { ".zip", ".7z" };
-    const std::unordered_set<std::string_view> zip_emulators = { "azahar", "duckstation", "melonds", "xemu", "xenia" };
-    const std::unordered_set<std::string_view> seven_zip_emulators = { "mgba", "pcsx2" };
-
-    if (!supported_exts.contains(ext)) {
-        log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Not an archive, aborting extraction.\n");
-        return false;
-    }
-
 	// On windows use PowerShell
-    if (zip_emulators.contains(core_name)) {
+    if (_archive_extension == ".zip") {
 		log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: Extracting emulator from ZIP archive.\n");
         command = std::format(
             "powershell -Command \""
@@ -419,7 +410,7 @@ bool lcl_utils::lcl_core_extractor()
         std::filesystem::remove(_downloaderDirs[_downloader_ids::DOWNLOADED_FILE]);
     }
     // Use 7z4PowerShell if 7z
-    else if (seven_zip_emulators.contains(core_name)) {
+    else if (_archive_extension == ".7z") {
 		log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO]: 7z archive detected.\n");
         
         command = std::format(
@@ -467,6 +458,9 @@ bool lcl_utils::lcl_core_extractor()
 
         system(command.c_str());
         std::filesystem::remove(_downloaderDirs[_downloader_ids::DOWNLOADED_FILE]);
+    } else {
+        log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Not an archive, nothing to extract.\n");
+        return false;
     }
 
     return true;
@@ -475,15 +469,10 @@ bool lcl_utils::lcl_core_extractor()
 #elif __linux__
 bool lcl_utils::lcl_core_extractor()
 {
-    const std::filesystem::path archive_path = _downloaderDirs[_downloader_ids::DOWNLOADED_FILE];
-    const std::string ext = archive_path.extension().string();
     std::string command{};
 
-    const std::unordered_set<std::string_view> supported_exts = { ".zip", ".7z", ".tar"};
-    const std::unordered_set<std::string_view> zip_emulators = { "azahar", "duckstation", "melonds", "xemu", "xenia" };
-    const std::unordered_set<std::string_view> seven_zip_emulators = { "mgba", "pcsx2" };
-
-    if (ext == ".AppImage") {
+    // On linux if we don't have neither zip or 7z, we have .appImage by default.
+    if (_archive_extension != ".zip" || _archive_extension != ".7z") {
         command = std::format("chmod +x '{}'", _executable);
         if (system(command.c_str())) {
             log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Permission set for appImage.\n");
@@ -494,12 +483,7 @@ bool lcl_utils::lcl_core_extractor()
         }
     }
 
-    if (!supported_exts.contains(ext)) {
-        log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Unsupported file type, aborting extraction.\n");
-        return false;
-    }
-
-    if (zip_emulators.contains(core_name)) {
+    if (_archive_extension == ".zip") {
         command = std::format(
             "unzip -o '{}' -d '{}'; "
             "rm -f '{}'; "
@@ -520,7 +504,7 @@ bool lcl_utils::lcl_core_extractor()
         system(command.c_str());
         std::filesystem::remove(_downloaderDirs[_downloader_ids::DOWNLOADED_FILE]);
     }
-    else if (seven_zip_emulators.contains(core_name)) {
+    else if (_archive_extension != ".7z") {
         command = std::format(
             "7z x -o'{}' '{}' -y; "
             "rm -f '{}'; "

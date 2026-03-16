@@ -14,6 +14,8 @@ cmake -DCMAKE_BUILD_TYPE=Release -DCORE="melonds" -DSYSTEM_NAME="Nintendo - Nint
 
 cmake -DCMAKE_BUILD_TYPE=Release -DCORE="pcsx2" -DSYSTEM_NAME="Sony - Playstation 2" .. && cmake --build .  --parallel
 
+cmake -DCMAKE_BUILD_TYPE=Release -DCORE="ppsspp" -DSYSTEM_NAME="Sony - Playstation Portable" .. && cmake --build .  --parallel
+
 cmake -DCMAKE_BUILD_TYPE=Release -DCORE="xemu" -DSYSTEM_NAME="Microsoft - Xbox" .. && cmake --build . --parallel
 
 cmake -DCMAKE_BUILD_TYPE=Release -DCORE="xenia" -DSYSTEM_NAME="Microsoft - Xbox 360" .. && cmake --build . --parallel

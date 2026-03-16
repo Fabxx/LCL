@@ -14,6 +14,8 @@ cmake -DCMAKE_BUILD_TYPE=Release -G "MinGW Makefiles" -DCORE="melonds" -DSYSTEM_
 
 cmake -DCMAKE_BUILD_TYPE=Release -G "MinGW Makefiles" -DCORE="pcsx2" -DSYSTEM_NAME="Sony - Playstation 2" .. && cmake --build .  --parallel
 
+cmake -DCMAKE_BUILD_TYPE=Release -G "MinGW Makefiles" -DCORE="ppsspp" -DSYSTEM_NAME="Sony - Playstation Portable" .. && cmake --build .  --parallel
+
 cmake -DCMAKE_BUILD_TYPE=Release -G "MinGW Makefiles" -DCORE="xemu" -DSYSTEM_NAME="Microsoft - Xbox" .. && cmake --build . --parallel
 
 cmake -DCMAKE_BUILD_TYPE=Release -G "MinGW Makefiles" -DCORE="xenia" -DSYSTEM_NAME="Microsoft - Xbox 360" .. && cmake --build . --parallel

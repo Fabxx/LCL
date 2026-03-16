@@ -14,6 +14,8 @@ cmake -DCORE="melonds" -DSYSTEM_NAME="Nintendo - Nintendo DS" .. && cmake --buil
 
 cmake -DCORE="pcsx2" -DSYSTEM_NAME="Sony - Playstation 2" .. && cmake --build . --config Release  --parallel
 
+cmake -DCORE="ppsspp" -DSYSTEM_NAME="Sony - Playstation Portable" .. && cmake --build . --config Release  --parallel
+
 cmake -DCORE="xemu" -DSYSTEM_NAME="Microsoft - Xbox" .. && cmake --build . --config Release --parallel
 
 cmake -DCORE="xenia" -DSYSTEM_NAME="Microsoft - Xbox 360" .. && cmake --build . --config Release --parallel

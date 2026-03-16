@@ -38,6 +38,7 @@ private:
 	std::string _config_path;
 	std::string _emu_extensions;
 	std::string _search_token;
+	std::string _archive_extension;
 
 	// using path to not worry about separators
 	std::filesystem::path _base_path;

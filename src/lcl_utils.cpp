@@ -541,9 +541,14 @@ bool lcl_utils::lcl_core_boot(const struct retro_game_info* info) {
         args = _cfg_section["ARGS"].as<std::string>();
     }
     
+    // If executing windows .lnk files, there is no need to pass a specific executable or arguments
     if (info != NULL && info->path != NULL) {
-        cmd_win = std::format("cmd /c \"\"{}\" {} \"{}\"\"", _executable, args, info->path);
-        cmd = std::format("'{}' '{}' '{}'", _executable, args, info->path);
+        if (core_name == "windows") {
+            cmd_win = std::format("cmd /c \"\"{}\"\"", info->path);
+        } else {
+            cmd_win = std::format("cmd /c \"\"{}\" {} \"{}\"\"", _executable, args, info->path);
+            cmd = std::format("'{}' '{}' '{}'", _executable, args, info->path);
+        }
     } else {
         bios_arg = _cfg_section["BIOS_ARG"].as<std::string>();
         cmd_win = std::format("cmd /c \"\"{}\" {}\"\"", _executable, bios_arg);

@@ -10,10 +10,31 @@ if(NOT DEFINED SYSTEM_NAME)
 ENDIF()
 
 set(VALID_CORES azahar duckstation mgba melonds pcsx2 ppsspp xemu xenia windows)
+
+set(VALID_SYS_NAMES 
+    "Nintendo - Nintendo 3DS"
+    "Sony - Playstation"
+    "Nintendo - Game Boy Advance"
+    "Nintendo - Nintendo DS" 
+    "Sony - Playstation 2"
+    "Sony - Playstation Portable"
+    "Microsoft - Xbox"
+    "Microsoft - Xbox 360"
+    "Microsoft - Windows"
+)
+
 list(FIND VALID_CORES "${CORE}" CORE_INDEX)
 
 if(CORE_INDEX EQUAL -1)
     message(FATAL_ERROR "Invalid CORE '${CORE}'. Accepted values: ${VALID_CORES}")
+endif()
+
+list(FIND VALID_SYS_NAMES "${SYSTEM_NAME}" SYS_INDEX)
+
+string(REPLACE ";" "\n" VALID_SYS_NAMES_PRETTY "${VALID_SYS_NAMES}")
+
+if(SYS_INDEX EQUAL -1)
+    message(FATAL_ERROR "Invalid SYSTEM_NAME '${SYSTEM_NAME}'. Accepted values:\n${VALID_SYS_NAMES_PRETTY}")
 endif()
 
 project(${CORE})

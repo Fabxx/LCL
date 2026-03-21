@@ -12,7 +12,7 @@ public:
 	lcl_utils();
 
 	bool lcl_check_config_file();
-	bool lcl_check_flatpak();
+	void lcl_check_flatpak();
 	bool lcl_load_config_file();
 	bool lcl_setup_dirs();
 	bool lcl_setup_config_params();

@@ -62,7 +62,7 @@ lcl_utils::lcl_utils() {
 }
 
 #ifdef __linux__
-bool lcl_utils::lcl_check_flatpak() {
+void lcl_utils::lcl_check_flatpak() {
 
     if (std::getenv("container") != nullptr) {
         const char *flatpak_path = "/run/host/usr/bin/fusermount";

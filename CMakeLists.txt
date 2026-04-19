@@ -9,7 +9,7 @@ if(NOT DEFINED SYSTEM_NAME)
     message(FATAL_ERROR "specify -DSYSTEM_NAME=platform_name (e.g., -DSYSTEM_NAME=Nintendo - Nintendo 3DS)")
 ENDIF()
 
-set(VALID_CORES azahar duckstation mgba melonds pcsx2 ppsspp xemu xenia windows)
+set(VALID_CORES azahar duckstation mgba melonds pcsx2 ppsspp xemu xenia rpcs3 windows)
 
 set(VALID_SYS_NAMES 
     "Nintendo - Nintendo 3DS"
@@ -17,6 +17,7 @@ set(VALID_SYS_NAMES
     "Nintendo - Game Boy Advance"
     "Nintendo - Nintendo DS" 
     "Sony - Playstation 2"
+    "Sony - Playstation 3"
     "Sony - Playstation Portable"
     "Microsoft - Xbox"
     "Microsoft - Xbox 360"

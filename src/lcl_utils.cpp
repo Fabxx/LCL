@@ -555,7 +555,7 @@ bool lcl_utils::lcl_core_boot(const struct retro_game_info* info) {
             cmd = std::format("wine '{}'", info->path);
         } else {
             cmd_win = std::format("cmd /c \"\"{}\" {} \"{}\"\"", _executable, args, info->path);
-            cmd = std::format("'{}' {} '{}'", _executable, args, info->path);
+            cmd = std::format("'{}' {} \"{}\"", _executable, args, info->path);
         }
     } else {
         cmd_win = std::format("cmd /c \"\"{}\" {}\"\"", _executable, bios_arg);

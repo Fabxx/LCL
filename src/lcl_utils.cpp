@@ -476,7 +476,7 @@ bool lcl_utils::lcl_core_extractor()
     // On linux if we don't have neither zip or 7z, we have .appImage by default.
     if (_archive_extension != ".zip" || _archive_extension != ".7z") {
         command = std::format("chmod +x '{}'", _executable);
-        if (system(command.c_str())) {
+        if (system(command.c_str()) == 0) {
             log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Permission set for appImage.\n");
             return true;
         } else {
@@ -535,16 +535,19 @@ bool lcl_utils::lcl_core_boot(const struct retro_game_info* info) {
     std::string cmd_win{};
     std::string cmd{};
     std::string args {};
+    std::string flatpak_args{};
     std::string bios_arg{};
 
     if (_is_flatpak) {
-        args = _cfg_section["FLATPAK_ARGS"].as<std::string>();
-    } else {
-        args = _cfg_section["ARGS"].as<std::string>();
+        flatpak_args = _cfg_section["FLATPAK_ARGS"].as<std::string>();
     }
-
-    bios_arg = _cfg_section["BIOS_ARG"].as<std::string>();
     
+    // concat flatpak args to the emulator args if available
+    args = flatpak_args + " " + _cfg_section["ARGS"].as<std::string>();
+    bios_arg = _cfg_section["BIOS_ARG"].as<std::string>();
+
+    log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Emulator Args: %s\n", args.c_str());
+
     // If executing windows .lnk files, there is no need to pass a specific executable or arguments
     if (info != NULL && info->path != NULL) {
         if (core_name == "windows") {
@@ -556,7 +559,7 @@ bool lcl_utils::lcl_core_boot(const struct retro_game_info* info) {
         }
     } else {
         cmd_win = std::format("cmd /c \"\"{}\" {}\"\"", _executable, bios_arg);
-        cmd = std::format("\"{}\" {}", _executable, bios_arg);
+        cmd = std::format("\"{}\" {} {}", _executable, args, bios_arg);
     }
 
 #ifdef _WIN32

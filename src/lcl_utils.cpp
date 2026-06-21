@@ -87,6 +87,8 @@ bool lcl_utils::lcl_check_config_file() {
     bool is_config_available = false;
     auto ini_path = (_base_path / "LCL.cfg").string();
 
+    log_cb(RETRO_LOG_INFO, "[LAUNCHER-INFO] Searching config file in %s.\n", ini_path.c_str());
+
     if (!std::filesystem::exists(ini_path)) {
         log_cb(RETRO_LOG_ERROR, "[LAUNCHER-ERROR] Configuration file not found, aborting.\n");
         return is_config_available;
